@@ -70,7 +70,7 @@
 gfortran -c -O2 src/python_main.f -fbounds-check -fno-align-commons -fPIC
 gfortran -o chemlib.so python_main.o dcrates.o freeze.o dvode.o subs.o dcodes.o dcanalyse.o -fbounds-check -fno-align-commons  -Wimplicit-procedure -shared -fPIC
 
-# gfortran -c -O2 python_bindings.f -fbounds-check -fno-align-commons -fPIC
+# gfortran -c -O2 src/python_bindings.f -fbounds-check -fno-align-commons -fPIC
 # gfortran -o chemlib.so python_bindings.o dcrates.o freeze.o dvode.o subs.o dcodes.o dcanalyse.o -fbounds-check -fno-align-commons  -Wimplicit-procedure -shared -fPIC
 
 

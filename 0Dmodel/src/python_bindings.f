@@ -6,10 +6,8 @@
       subroutine original_main(arr, NNN) bind(c, name="original_main")
           use iso_c_binding
 
-!          integer(c_int), intent(in), value :: NNN
-!          real(c_double), intent(inout)     :: arr(NNN)
-    
-!          arr = exp(arr)
+      
+      
 
 
 ! Content of the Original main function
@@ -32,24 +30,29 @@
       COMMON/BL1/ K,X,TOTAL,GR,DN,ACCR,HNR,IFREEZE
       COMMON/BL10/ MASS,SH
       COMMON/BL3/ Y,X_G,A_G,TEMP,AV,ZETA,ALBEDO,RAD
-!  NC = Number of conserved species, NR = Number of reactions, N = Number of species (ODEs)
+C  NC = Number of conserved species, NR = Number of reactions, N = Number of species (ODEs)
       PARAMETER(OU=8,NC=2,NR=6173,N=466)
       EXTERNAL DIFFUN
 
-!     PHYSICAL CONSTANTS
+c      integer(c_int), intent(in), value :: NNN
+c      real(c_double), intent(inout)     :: arr(NNN)
+
+c      arr = exp(arr)
+C
+C  PHYSICAL CONSTANTS
       DATA PI,MH,MU,KB/3.1415927,1.6605E-24,2.2,1.3807E-16/
-
-      OPEN(UNIT=11, FILE="rate13steady.state")
+C
+      OPEN(UNIT=11, FILE="dat/rate13steady.state")
       
-!     RATE FILE NAME
-      FRATES = 'rate13.rates'
-!     SPECIES FILE NAME
-      FSPECS = 'dc.specs' 
-!     OUTPUT FILE NAME
-      FOUTF = 'dc.out' 
-!     PARENTS FILE NAME      
-      FPARENTS = 'dc.parents'
-
+C  RATE FILE NAME
+      FRATES = 'dat/rate13.rates'
+C  SPECIES FILE NAME
+      FSPECS = 'dat/dc.specs' 
+C  OUTPUT FILE NAME
+      FOUTF = 'dat/dc.out' 
+      
+      FPARENTS = 'dat/dc.parents'
+C
       USPEC = 1
       UFRAC = 3
       URATES = 4
@@ -79,9 +82,9 @@ C  GRAIN NUMBER DENSITY/H2 (assuming gas/dust = 200, rho = 3.5 g/cm^3)
 C  USED FOR H-ATOM ACCRETION CALCULATION
       X_G = 1.5E-12
 C	HNR = 1.0 FOR DENSE CLOUD CHEMISTRY
-       HNR = 1.0
+      HNR = 1.0
 C   GRAIN ALBEDO
-       ALBEDO = 0.6
+      ALBEDO = 0.6
 C SET STICKING COEFFICIENT FOR H ATOMS
       SH = 0.3
 C
@@ -117,14 +120,15 @@ c
       WRITE(*,*)'Visual extinction..  ',AV
       WRITE(11,*)'Visual extinction.. ',AV
       WRITE(*,*)'Reading species and initial abundances..'
+C
+c Input section
+c -------------
+C read species file.. get species names, masses and initial abundances
+C
+C  parent species tov H
+C  density #/cm3
 
-
-!     Input section
-!     -------------
-!     read species file.. get species names, masses and initial abundances
-!
-!     parent species tov H
-!     density #/cm3
+! dit in python doen
       WRITE(*,*)'Initially, relative to H2'
       WRITE(11,*)'Initially, relative to H2'
       DO 2 I = 1,N
@@ -132,11 +136,11 @@ c
          IF(Y(I).GT.0) THEN
             WRITE(*,100)SP(I),2*Y(I),MASS(I)
             WRITE(11,100)SP(I),2*Y(I),MASS(I)
-!           CONVERT ABUNDANCES TO PER UNIT VOLUME RATHER THAN FRACTIONAL WRT H2
+C CONVERT ABUNDANCES TO PER UNIT VOLUME RATHER THAN FRACTIONAL WRT H2
             Y(I)=Y(I)*DN
          ENDIF
  2    CONTINUE
-
+! dit in python doen
       DO 3 I=1,NC
          READ(USPEC,100)SP(N+I),CINP(I),MASS(N+I)
          WRITE(*,100)SP(N+I),CINP(I),MASS(N+I)
@@ -155,42 +159,46 @@ c
    
 
 
-!     SET INITIAL ABUNDANCES
+C  SET INITIAL ABUNDANCES
       DO I = 1,NPAR
          DO J = 1,N+NC
             IF(SP(J).EQ.PARENT(I)) THEN
             Y(J) = PABUND(I)*DN
-!             LOAD FIRST ELEMENT OF OUTPUT ARRAYS
-!             B(J,0) = PABUND(I)* HNR
+C  LOAD FIRST ELEMENT OF OUTPUT ARRAYS
+c             B(J,0) = PABUND(I)* HNR
             WRITE(*,106) SP(J),PABUND(I)
  106        FORMAT(3X,A12,1PE8.2)
             ENDIF
          END DO
       END DO
 
-
-!     READ RATE FILE AND EXTRACT RATE DATA FOR EACH REACTION
-!     ------------------------------------------------------
+      
+C
+C  *****READ RATE FILE AND EXTRACT RATE DATA FOR EACH REACTION**********
+!     python'en --> inlezen & berekenen rates (Silke)
 
       WRITE(*,*) '...Reading rate file..............'
 
       CALL READR(FRATES,URATES)
       
+ 
       
-!     CALL SUBROUTINE TO CALCULATE RATE COEFFICIENTS
+C  CALL SUBROUTINE TO CALCULATE RATE COEFFICIENTS
       CALL RATES
       
+c
       WRITE(*,*)'Starting calculation..'
+      
+C *****INITIALISE INTEGRATION STEP VARIABLES****************************
+C  IRUN measures the number of time steps/output points
 
-
-!     INITIALISE INTEGRATION STEP VARIABLES
-!     IRUN measures the number of time steps/output points
       T = TSTART
       IRUN = 1
       NTOT = N + NC
       NSPEC = N
 
-!     INITIALISE DVODE SOLVER VARIABLES
+C *****INITIALISE DVODE SOLVER VARIABLES********************************
+
       LIW = NTOT + 30
       LRW = 22 + (9*NTOT) + (2*(NTOT**2))
       ITOL   = 1
@@ -202,38 +210,37 @@ c
       JAC    = 'DUMMYMATRIX'
       MF     = 22
 
-
-!     MAIN SOLVER LOOP
-!     ----------------
+C *****MAIN SOLVER LOOP*************************************************
  6    CONTINUE
-    
-!     Set next output time
-!     Currently uses logarithmic time steps
+
+C    
+c set next output time
+c currently uses logarithmic time steps
+c
       TOUT=LOG10(TOUT)+0.1
       TOUT=10.0**TOUT
-
-!     Call integrator
+C
+c call integrator
+c
       CALL DVODE (DIFFUN,NSPEC,Y,T,TOUT,ITOL,RTOL,ATOL,ITASK,
      &            ISTATE,IOPT,RWORK,LRW,IWORK,LIW,JAC,MF,RPAR,IPAR)
 
       IF(ISTATE.LT.0) ISTATE=1
-     
-!     Save time in array tage
+C     
+c save time in array tage
+c
       TAGE(IRUN)=TOUT*3.171E-08
       WRITE(*,*)IRUN,TAGE(IRUN),Y(75)/X(2)
       
-!     Store output data in array b for analyse subroutine (before normalisation)
+C store output data in array b for analyse subroutine (before normalisation)
       DO 88 I=1,N
          B(I,IRUN)=Y(I)
  88   CONTINUE
-     
+C     
       DO 99 I=1,NC
          B(N+I,IRUN)=X(I)
  99   CONTINUE
-
-
-!     CALL THE SUBROUTINE TO ANALYSE THE OUTPUT
-!     -----------------------------------------
+C  *****CALL THE SUBROUTINE TO ANALYSE THE OUTPUT***********************
 
       IF(IANA.EQ.1.AND.IRUN.EQ.51) THEN
       WRITE(*,*) '...Analysing chemistry............'
@@ -241,29 +248,38 @@ c
       WRITE(*,*) '...Resuming model.................'
       IANA = 0
       ENDIF
-     
-!     Store output data in array b NOW IN NORMALISED FORM wrt total density
+C     
+C store output data in array b NOW IN NORMALISED FORM wrt total density
+C
       DO 8 I=1,N
          B(I,IRUN)=Y(I)/DN
  8    CONTINUE
-
+C     
       DO 9 I=1,NC
          B(N+I,IRUN)=X(I)/DN
          IF(I.EQ.2) B(N+I,IRUN)=X(I)
  9    CONTINUE
-
+C
       IRUN=IRUN+1
       IF(TOUT.LE.TLAST) GO TO 6
       TL = TOUT
-      
+C     
+C 
+
+
+C     
  11   CONTINUE
-!     loop if not finished
+c
+c loop if not finished
+c
 
-
-!     Output routine
-!     --------------
-
-!     First save steady state species file
+c *********************
+c
+C Output routine
+c --------------
+C
+C first save steady state species file
+C     
       WRITE(11,*)'----------------------'
       DO 953 I = 1,NC
          WRITE(11,100)SP(N+I),X(I)/DN
@@ -272,9 +288,9 @@ c
       DO 952 I = 1,N
          WRITE(11,100)SP(I),Y(I)/DN
  952  CONTINUE   
-
+c
       CLOSE(UNIT=11)
-
+C
  7    IRUN=IRUN-1
       IS=1
       IF=10
@@ -289,32 +305,27 @@ c
       IF(IF.GT.N+NC) IF=N+NC
       IF(IS.LT.N+NC) GO TO 13
       CLOSE(UNIT=UFRAC)
-
-
-!     Formats
-!     -------
-
-!     Read species file and write steady state output file
+C
+c formats
+c
+c read species file and write steady state output file
  100  FORMAT(6X,A10,1X,1PE8.2,2X,F5.1)
  170  FORMAT(3X,'TOTAL(1) = ELECTRONS = ',1PE8.2,3X,'TOTAL(2) = H2 = ',
      *  1PE8.2)
-
-!     Write main output file
+c write main output file
  114  FORMAT(//)
  116  FORMAT(3X,'TIME',7X,10(1A9,2X))
  118  FORMAT(1X,11(1PE11.3))
+c read ratefile
 
-!     Read ratefile
  102  FORMAT(6X,A9,A9,A9,A9,A9,A8,1PE8.2,1X,0PF5.2,F9.1)
  105  FORMAT(1PE11.5)
  123  FORMAT(I5,1X,A9,A9,A9,A9,A9,A8,1PE8.2,F6.2,F9.1)
  202  FORMAT(5X,A9,A9,A9,A9,A9,A5,A5,1PE8.2,1X,0PF7.2,2X,F8.1,A1,
      *     I5,I5,A5)
-
-!     Write binned.rates
+c write binned.rates
  223  FORMAT(I4,1X,A9,A9,A9,A9,A9,A5,A5,1PE8.2,1X,0PF7.2,2X,F8.1,A1,
      *     I5,I5,A5)
-
 
       ! Just ending the subroutine
       ! --------------------------
