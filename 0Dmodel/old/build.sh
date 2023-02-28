@@ -1,5 +1,3 @@
-	
-
 # SOURCES1=$(wildcard src/*.f)
 # SOURCES2=$(filter-out scr/rate13main.f, $(SOURCES1))
 # SOURCES3=$(filter-out scr/python_main.f, $(SOURCES2))
@@ -36,15 +34,6 @@
 
 # build:
 # 	mkdir bin
-
-
-
-
-
-
-
-
-
 
 
 #------------
