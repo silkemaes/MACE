@@ -4,4 +4,4 @@
 
 Trying & testing autoencoders on chemical kinetics models tuned for AGB outflows.
 
-(version: 0.0.2)
+(version 0.0.2)
