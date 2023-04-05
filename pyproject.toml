@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mace"
-version = "0.0.3"
+version = "0.0.4"
 description = "Probabilistic 3D Reconstruction of Specrtral Line Observations."
 readme = "README.md"
 authors = [{ name = "Silke Maes", email = "maes.silke@hotmail.com" }]
@@ -36,7 +36,7 @@ dev = ["black", "bumpver", "pip-tools", "pytest"]
 Homepage = "https://github.com/silkemaes/MACE/"
 
 [tool.bumpver]
-current_version = "0.0.3"
+current_version = "0.0.4"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message  = "Bump version {old_version} -> {new_version}"
 commit          = true
@@ -46,8 +46,8 @@ push            = false
 [tool.bumpver.file_patterns]
 "pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
 "src/mace/__init__.py" = ["{version}"]
-#"conda/meta.yaml" = ['version: "{version}"']
 "README.md" = ['(version {version})']
+#"conda/meta.yaml" = ['Version: "{version}"']
 #"docs/index.rst" = ['(version {version})']
 
 [tool.pytest.ini_options]
