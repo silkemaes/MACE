@@ -47,7 +47,7 @@ push            = false
 "pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
 "src/mace/__init__.py" = ["{version}"]
 #"conda/meta.yaml" = ['version: "{version}"']
-#"README.md" = ['(version {version})']
+"README.md" = ['(version {version})']
 #"docs/index.rst" = ['(version {version})']
 
 [tool.pytest.ini_options]
