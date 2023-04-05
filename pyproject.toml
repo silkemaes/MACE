@@ -3,11 +3,11 @@ requires      = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "p3droslo"
-version = "0.0.8"
+name = "mace"
+version = "0.0.1"
 description = "Probabilistic 3D Reconstruction of Specrtral Line Observations."
 readme = "README.md"
-authors = [{ name = "Frederik De Ceuster", email = "frederik.deceuster@gmail.com" }]
+authors = [{ name = "Silke Maes", email = "maes.silke@hotmail.com" }]
 license = { file = "LICENSE" }
 classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -15,10 +15,8 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Scientific/Engineering :: Astronomy",
-    "Topic :: Scientific/Engineering :: Visualization",
-    "Topic :: Scientific/Engineering :: Image Processing",
 ]
-keywords = ["3D Reconstruction", "Astrophysics", "Astronomy"]
+keywords = ["Astrophysics", "Astronomy"]
 dependencies = [
     "matplotlib",
     "astroquery",
@@ -35,10 +33,10 @@ requires-python = ">=3.7"
 dev = ["black", "bumpver", "pip-tools", "pytest"]
 
 [project.urls]
-Homepage = "https://github.com/Magritte-code/p3droslo"
+Homepage = "https://github.com/silkemaes/MACE/"
 
 [tool.bumpver]
-current_version = "0.0.8"
+current_version = "0.0.1"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message  = "Bump version {old_version} -> {new_version}"
 commit          = true
@@ -47,10 +45,10 @@ push            = false
 
 [tool.bumpver.file_patterns]
 "pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
-"src/p3droslo/__init__.py" = ["{version}"]
-"conda/meta.yaml" = ['version: "{version}"']
-"README.md" = ['(version {version})']
-"docs/index.rst" = ['(version {version})']
+"src/mace/__init__.py" = ["{version}"]
+#"conda/meta.yaml" = ['version: "{version}"']
+#"README.md" = ['(version {version})']
+#"docs/index.rst" = ['(version {version})']
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
