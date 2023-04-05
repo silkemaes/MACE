@@ -1,0 +1,60 @@
+[build-system]
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "p3droslo"
+version = "0.0.8"
+description = "Probabilistic 3D Reconstruction of Specrtral Line Observations."
+readme = "README.md"
+authors = [{ name = "Frederik De Ceuster", email = "frederik.deceuster@gmail.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+keywords = ["3D Reconstruction", "Astrophysics", "Astronomy"]
+dependencies = [
+    "matplotlib",
+    "astroquery",
+    "ipywidgets",
+    "astropy",
+    "torch>=2.0.0",
+    "numpy",
+    "numba",
+    "tqdm",
+]
+requires-python = ">=3.7"
+
+[project.optional-dependencies]
+dev = ["black", "bumpver", "pip-tools", "pytest"]
+
+[project.urls]
+Homepage = "https://github.com/Magritte-code/p3droslo"
+
+[tool.bumpver]
+current_version = "0.0.8"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message  = "Bump version {old_version} -> {new_version}"
+commit          = true
+tag             = false
+push            = false
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
+"src/p3droslo/__init__.py" = ["{version}"]
+"conda/meta.yaml" = ['version: "{version}"']
+"README.md" = ['(version {version})']
+"docs/index.rst" = ['(version {version})']
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
+pythonpath = [".", "src"]
+
+#[project.scripts]
+#realpython = "reader.__main__:main"
