@@ -1,0 +1,109 @@
+
+import numpy             as np
+import os
+
+from torch.utils.data    import Dataset
+
+
+
+
+
+'''
+Class to initialise the dataset to train & test emulator
+'''
+class MyDataset(Dataset):
+    '''
+    Get data from textfiles (output CSE model)
+    
+    Preprocess:
+        - set all abundances < cutoff to cutoff
+        - take np.log10 of abudances
+
+    '''
+    def __init__(self, dir=None, file=None, train=True, fraction=0.7, cutoff = 1e-40, scale = 'norm'):
+        data = []
+
+        if dir != None:
+            locs = os.listdir(dir) 
+
+            for i in range(1,len(locs)+1):
+                name = dir+'csfrac_smooth_'+str(i)+'.out'
+                proper = MyDataset.read_data(name)
+                data.append(proper)
+        
+        if file != None:
+            proper = MyDataset.read_data(file)
+            data.append(proper)
+
+        df = np.concatenate(data)
+        
+        ## Clip and take log10
+        self.df = np.clip(df, cutoff, 1)
+        self.df = np.log10(self.df)
+
+        ## Statistics of the data
+        self.mean = np.mean(self.df)
+        self.std  = np.std(self.df)
+        self.min  = np.min(self.df)
+        self.max  = np.max(self.df)
+
+        ## Normalise 
+        if scale == 'norm':
+            self.df = (self.df - self.mean ) / (self.std)
+
+        ## Scale
+        if scale == 'minmax':
+            self.df = (self.df - self.min) / (np.abs( self.min - self.max ))
+        
+        ## Original data
+        if scale == None:
+            self.df = self.df
+
+        ## Set type
+        self.df   = self.df.astype(np.float32)
+        self.mean = self.mean.astype(np.float32)
+        self.std  = self.std.astype(np.float32)
+        self.min  = self.min.astype(np.float32)
+        self.max  = self.max.astype(np.float32)
+
+        ## Split training - testing data
+        N = int(fraction * self.df.shape[0])
+        if train:
+            self.df = self.df[:N]
+        else:
+            self.df = self.df[N:]
+            
+            
+    def __len__(self):
+        return self.df.shape[0]
+
+    def __getitem__(self, idx):
+        return self.df[idx]
+
+    def get_stats(self):
+        return self.mean, self.std, self.min, self.max
+
+    
+    '''
+    Read data text file of output abundances of 1D CSE models
+    '''
+    @staticmethod
+    def read_data(file_name):
+        with open(file_name, 'r') as file:
+            dirty = []
+            proper = None
+            for line in file:
+                try:  
+                    if len(line) > 1: 
+                        dirty.append([float(el) for el in line.split()])
+                except:
+                    if len(dirty) != 0:
+                        dirty = np.array(dirty)[:,1:]
+                        if proper is None:
+                            proper = dirty
+                        else:
+                            proper = np.concatenate((proper, dirty), axis = 1)
+                    dirty = []
+        return proper
+
+    
