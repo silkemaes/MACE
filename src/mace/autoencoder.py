@@ -42,41 +42,7 @@ class Encoder(nn.Module):
         return
 
 
-def overview(coder):
-    ## Retrieve the number of nodes in each layer
-    input_nodes = coder.layer_in.in_features
-    hidden_nodes = list()
-    for layer in coder.hidden:
-        hidden_nodes.append(layer.in_features)
-    hidden_nodes.append(coder.layer_out.in_features)
-    output_nodes = coder.layer_out.out_features
 
-    ## Calculate the number of parameters to be trained in each layer
-    input_params = coder.layer_in.out_features * (coder.layer_in.in_features+1)
-    hidden_params = list()
-    for layer in coder.hidden:
-        hidden_params.append(layer.out_features * (layer.in_features+1))
-    output_params = coder.layer_out.out_features * (coder.layer_out.in_features+1)
-
-    return (input_nodes, hidden_nodes, output_nodes), (input_params,hidden_params,output_params)
-
-def print_overview(coder):
-    (input_nodes, hidden_nodes, output_nodes), (input_params,hidden_params,output_params) = overview(coder)
-    total_params = input_params + output_params
-    print(str(coder.name)+':')
-    print('{:>8} | {:>5} | {:>10}'.format('#'  , 'nodes'    ,  'parameters'))
-    print('-----------------------------------')
-    print('{:>8} | {:>5} | {:>10}'.format('input'  ,   input_nodes,  input_params))
-    for i in range(len(hidden_params)):
-        print('{:>8} | {:>5} | {:>10}'.format('hidden'  ,   hidden_nodes[i],  hidden_params[i]))
-        total_params += hidden_params[i]
-    print('{:>8} | {:>5} | {:>10}'.format('hidden'  ,   hidden_nodes[i+1],  output_params))
-    print('{:>8} | {:>5} | {:>10}'.format('output'  ,   output_nodes, '/'))
-    print('-----------------------------------')
-    print('{:>8} | {:>5} | {:>10}'.format(' ', ' ', total_params))
-
-    return
-    
 class Decoder(nn.Module):
     """
     Decoder network.
@@ -137,3 +103,50 @@ class Autoencoder(nn.Module):
     def set_name(self, name):
         self.name = name
         return
+
+
+
+
+def get_overview(coder):
+    ## Retrieve the number of nodes in each layer
+    input_nodes = coder.layer_in.in_features
+    hidden_nodes = list()
+    for layer in coder.hidden:
+        hidden_nodes.append(layer.in_features)
+    hidden_nodes.append(coder.layer_out.in_features)
+    output_nodes = coder.layer_out.out_features
+
+    ## Calculate the number of parameters to be trained in each layer
+    input_params = coder.layer_in.out_features * (coder.layer_in.in_features+1)
+    hidden_params = list()
+    for layer in coder.hidden:
+        hidden_params.append(layer.out_features * (layer.in_features+1))
+    output_params = coder.layer_out.out_features * (coder.layer_out.in_features+1)
+
+    return (input_nodes, hidden_nodes, output_nodes), (input_params,hidden_params,output_params)
+
+def print_overview(coder):
+    (input_nodes, hidden_nodes, output_nodes), (input_params,hidden_params,output_params) = get_overview(coder)
+    total_params = input_params + output_params
+    print(str(coder.name)+':')
+    print('{:>8} | {:>5} | {:>10}'.format('#'  , 'nodes'    ,  'parameters'))
+    print('-----------------------------------')
+    print('{:>8} | {:>5} | {:>10}'.format('input'  ,   input_nodes,  input_params))
+    for i in range(len(hidden_params)):
+        print('{:>8} | {:>5} | {:>10}'.format('hidden'  ,   hidden_nodes[i],  hidden_params[i]))
+        total_params += hidden_params[i]
+    print('{:>8} | {:>5} | {:>10}'.format('hidden'  ,   hidden_nodes[i+1],  output_params))
+    print('{:>8} | {:>5} | {:>10}'.format('output'  ,   output_nodes, '/'))
+    print('-----------------------------------')
+    print('{:>8} | {:>5} | {:>10}'.format(' ', ' ', total_params))
+
+    return
+
+def overview(model):
+    print('Overview '+model.name+':')
+    print('___________________________________\n')
+    print_overview(model.Encoder)
+    print('')
+    print_overview(model.Decoder)
+    return
+    
