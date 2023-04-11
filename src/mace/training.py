@@ -9,6 +9,7 @@ from torch.optim         import Adam
 
 ## own scripts
 import dataset as ds
+import plotting   
 
 
 
@@ -75,7 +76,7 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
 
 
 
-def validate_one_epoch(test_loader, model, DEVICE, optimizer):
+def validate_one_epoch(test_loader, model, DEVICE):
 
     overall_loss = 0
 
@@ -93,13 +94,14 @@ def validate_one_epoch(test_loader, model, DEVICE, optimizer):
         return (overall_loss)/(i+1)  ## save losses
 
 
-def Train(model, lr, data_loader, test_loader, epochs, DEVICE):
+def Train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log = True):
     optimizer = Adam(model.parameters(), lr=lr)
 
     loss_train_all = []
     loss_test_all  = []
 
-    print(model.name+':')
+    print('Model:         '+model.name)
+    print('learning rate: '+str(lr))
     for epoch in range(epochs):
 
         ## Training
@@ -111,11 +113,14 @@ def Train(model, lr, data_loader, test_loader, epochs, DEVICE):
         ## Validating
         model.eval() ## zelfde als torch.no_grad
 
-        test_loss = validate_one_epoch(test_loader, model, DEVICE, optimizer)
+        test_loss = validate_one_epoch(test_loader, model, DEVICE)
         loss_test_all.append(test_loss)
         
         print("\tEpoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss, end="\r")
-    print('\nDONE!\n')
+    print('\n \tDONE!\n')
+
+    if plot == True:
+        plotting.plot_loss(loss_train_all, loss_test_all, log = log)
 
     return loss_train_all, loss_test_all
 
@@ -135,6 +140,6 @@ def Test(model, test_loader, DEVICE):
             overall_loss += loss.item()
 
     loss = (overall_loss)/(i+1)
-    print('loss '+model.name+': ',loss)
+    print('Test loss '+model.name+': ',loss)
 
     return x, x_hat, loss
