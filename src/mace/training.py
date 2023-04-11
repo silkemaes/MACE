@@ -5,6 +5,7 @@ import pandas as pd
 import torch
 import torch.nn          as nn
 from torch.utils.data    import DataLoader
+from torch.optim         import Adam
 
 ## own scripts
 import dataset as ds
@@ -90,3 +91,49 @@ def validate_one_epoch(test_loader, model, DEVICE, optimizer):
 
         return (overall_loss)/(i+1)  ## save losses
 
+
+def Train(model, lr, data_loader, test_loader, epochs, DEVICE):
+    optimizer = Adam(model.parameters(), lr=lr)
+
+    loss_train_all = []
+    loss_test_all  = []
+
+    print(model.name+':')
+    for epoch in range(epochs):
+
+        ## Training
+        model.train()
+
+        train_loss = train_one_epoch(data_loader, model, DEVICE, optimizer)
+        loss_train_all.append(train_loss)  ## save losses
+
+        ## Validating
+        model.eval() ## zelfde als torch.no_grad
+
+        test_loss = validate_one_epoch(test_loader, model, DEVICE, optimizer)
+        loss_test_all.append(test_loss)
+        
+        print("\tEpoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss, end="\r")
+    print('\nDONE!\n')
+
+    return loss_train_all, loss_test_all
+
+
+def Test(model, test_loader, DEVICE):
+    overall_loss = 0
+
+    with torch.no_grad():
+        for i, x in enumerate(test_loader):
+
+            x     = x.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
+
+            x_hat = model(x)         ## output van het autoecoder model
+
+            ## Calculate losses
+            loss  = loss_function(x,x_hat)
+            overall_loss += loss.item()
+
+    loss = (overall_loss)/(i+1)
+    print('loss '+model.name+': ',loss)
+
+    return x, x_hat, loss

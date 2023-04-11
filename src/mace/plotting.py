@@ -45,48 +45,53 @@ def plot_loss(train, test, log = True):
 
     return
 
-def plot_compare(real,pred, molecs, specs = None, scale = 'norm'):
+def plot_compare(real, preds, models, molecs, spec, scale = 'norm'):
 
-    fig = plt.figure(figsize = (5,5))
+    colors = mpl.cm.Set3(np.linspace(0, 1, len(models)))
+
+    fig = plt.figure(figsize = (3,3))
     ax1 = fig.add_subplot((111))
 
-    if specs == None:
-        for spec in molecs:
-            ax1.scatter(real[:,molecs[spec]] ,pred[:,molecs[spec]]  , marker = '.', label = spec, alpha = 0.6)
-    else:
-        for spec in specs:
-            ax1.scatter(real[:,molecs[spec]] ,pred[:,molecs[spec]]  , marker = '.', label = spec, alpha = 0.6)
+    ax1.set_title(spec, fontsize = 7)
+
+    for i, pred in enumerate(preds): 
+        ax1.scatter(real[:,molecs[spec]] ,pred[:,molecs[spec]], marker = '.', label = models[i].name, alpha = 0.6, color = colors[i])
 
     if scale == 'norm':
         line = [-3,2]
     if scale == 'minmax':
         line = [0,1]
         
-    ax1.plot(line,line, '--k', lw = 1)
+    ax1.plot(line,line, '--k', lw = 0.5)
 
     ax1.set_xlabel('real')
     ax1.set_ylabel('predicted')
 
     ax1.grid(True, linestyle = '--', linewidth = 0.2)
 
-    ax1.legend()
+    ax1.legend(fontsize = 5)
 
     plt.show()
 
-def plot_fracs_profile(rad, real, pred, molecs, spec, lw = 1):
+def plot_fracs_profile(rad, real, preds, models, molecs, spec, lw = 1):
+        
+    colors = mpl.cm.Set3(np.linspace(0, 1, len(models)))
+  
+    
     fig, ax = plt.subplots(2,1, gridspec_kw={'height_ratios': [5,2]},figsize=(5,5))
     ## first row
     ax1 = ax[0]
     ax2 = ax[1]
     axs = [ax1,ax2]
 
-    ax1.set_title(spec)
+    ax1.set_title(spec, fontsize = 7)
 
     idx = molecs[spec]
 
-    ax1.plot(rad,real[:,idx], label = 'real'     , lw = lw, c = 'royalblue')
-    ax1.plot(rad,pred[:,idx], label = 'predicted by autoencoder', lw = lw, c = 'firebrick')
-    ax2.plot(rad,np.abs(real[:,idx]-pred[:,idx]),'--k', lw=lw)
+    ax1.plot(rad,real[:,idx], label = 'real' , lw = lw, c = 'grey')
+    for i, pred in enumerate(preds): 
+        ax1.plot(rad,pred[:,idx], label = models[i].name  , lw = lw, c = colors[i])
+        ax2.plot(rad,np.abs(real[:,idx]-pred[:,idx])      , lw = lw, c = colors[i],ls = '--')
     for ax in axs:
         ax.set_xscale('log')
         ax.grid(True, linestyle = '--', linewidth = 0.2)
