@@ -98,9 +98,10 @@ def plot_fracs_profile(rad, real, preds, models, molecs, spec, lw = 1):
         ax.set_yscale('log')
     ax1.set(xticklabels=[])
 
+    ax1.set_ylim(bottom=1e-12)
     ax2.set_xlabel('Radius (cm)')
     ax1.set_ylabel('Fractional abundance w.r.t. H')
-    ax2.set_ylabel('Residual')
+    ax2.set_ylabel('Residuals')
 
     ax1.legend(loc = 'lower left')
 
