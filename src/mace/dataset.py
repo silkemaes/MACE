@@ -2,9 +2,9 @@
 import numpy             as np
 import os
 
-from torch.utils.data    import Dataset
+from torch.utils.data    import Dataset, DataLoader
 
-
+import plotting     
 
 
 
@@ -106,4 +106,24 @@ class MyDataset(Dataset):
                     dirty = []
         return proper
 
+
+def get_dataset(dir, batch_size, kwargs, plot = False, scale = 'norm'):
+    ## Make PyTorch dataset
+    train = MyDataset(dir=dir, scale = scale)
+    test  = MyDataset(dir=dir, scale = scale, train = False)
     
+    print('Dataset:')
+    print('------------------------------')
+    print('total # of samples:',len(train)+len(test))
+    print('# training samples:',len(train))
+    print('# testing samples: ',len(test) )
+    print('            ratio: ',np.round(len(test)/(len(train)+len(test)),2))
+
+    data_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=True ,  **kwargs)
+    test_loader = DataLoader(dataset=test , batch_size=len(test) , shuffle=False,  **kwargs)
+
+    if plot == True:
+        print('\nPlotting histrogram of dataset...')
+        plotting.plot_hist(train.df)
+
+    return train, data_loader, test_loader

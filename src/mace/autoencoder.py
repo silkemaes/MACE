@@ -150,3 +150,15 @@ def overview(model):
     print_overview(model.Decoder)
     return
     
+def build(input_dim, hidden_dim, latent_dim,output_dim, nb_hidden, type, DEVICE):
+    encoder = Encoder( input_dim, hidden_dim, latent_dim, nb_hidden=nb_hidden, type = type)
+    decoder = Decoder(latent_dim, hidden_dim, output_dim, nb_hidden=nb_hidden, type = type)
+    model = Autoencoder(Encoder=encoder, Decoder=decoder).to(DEVICE)  
+
+    return model
+
+def name(model, encoder_name, decoder_name, model_name):
+    model.set_name(model_name)
+    model.Encoder.set_name(encoder_name)
+    model.Decoder.set_name(decoder_name)
+    return
