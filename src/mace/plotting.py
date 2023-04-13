@@ -22,17 +22,19 @@ def plot_hist(df):
     return
 
 def plot_loss(train, test, log = True):
-    fig = plt.figure(figsize = (10,4))
+    fig = plt.figure(figsize = (9,3))
     ax1 = fig.add_subplot((111))
 
-    ax1.plot(train, ls = '-'    , c='k', lw = 1)
+    lw = 0.5
+
+    ax1.plot(train, ls = '-'    , c='k', lw = lw)
     ax1.plot(train, ls = None, marker = '.', c='royalblue', label = 'train')
 
-    ax1.plot(test, ls = '-'    , c='k', lw = 1)
+    ax1.plot(test, ls = '-'    , c='k', lw = lw)
     ax1.plot(test, ls = None, marker = '.', c='firebrick', label = 'test')
 
     if log == True:
-        ax1.set_yscale('log')
+        ax1.set_yscale('log') 
 
     ax1.set_xlabel('epoch')
     ax1.set_ylabel('MSE')
@@ -99,6 +101,48 @@ def plot_fracs_profile(rad, real, preds, models, molecs, spec, lw = 1):
     ax1.set(xticklabels=[])
 
     ax1.set_ylim(bottom=1e-12)
+    ax2.set_xlabel('Radius (cm)')
+    ax1.set_ylabel('Fractional abundance w.r.t. H')
+    ax2.set_ylabel('Residuals')
+
+    ax1.legend(loc = 'lower left')
+
+    fig.tight_layout()
+    fig.subplots_adjust(hspace = 0.07)
+
+    plt.show()
+    return
+
+'''
+preds = dict()
+'''
+def plot_fracs_profile_lr(rad, real, preds, molecs, spec, lw = 0.8):
+        
+    colors = mpl.cm.viridis(np.linspace(0, 1, len(preds)))
+  
+    
+    fig, ax = plt.subplots(2,1, gridspec_kw={'height_ratios': [5,2]},figsize=(5,5))
+    ## first row
+    ax1 = ax[0]
+    ax2 = ax[1]
+    axs = [ax1,ax2]
+
+    ax1.set_title(spec, fontsize = 7)
+
+    idx = molecs[spec]
+    alpha = 0.8
+
+    ax1.plot(rad,real[:,idx], label = 'real' , lw = 1.1, c = 'k')
+    for i,lr in enumerate(preds): 
+        ax1.plot(rad,preds[lr][:,idx], label = 'lr = '+str(lr) , lw = lw, c = colors[i], alpha = alpha)
+        ax2.plot(rad,np.abs(real[:,idx]-preds[lr][:,idx])      , lw = lw, c = colors[i], alpha = alpha,ls = '--')
+    for ax in axs:
+        ax.set_xscale('log')
+        ax.grid(True, linestyle = '--', linewidth = 0.2)
+        ax.set_yscale('log')
+    ax1.set(xticklabels=[])
+
+    ax1.set_ylim([1e-12,1e-3])
     ax2.set_xlabel('Radius (cm)')
     ax1.set_ylabel('Fractional abundance w.r.t. H')
     ax2.set_ylabel('Residuals')
