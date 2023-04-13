@@ -94,7 +94,7 @@ def validate_one_epoch(test_loader, model, DEVICE):
         return (overall_loss)/(i+1)  ## save losses
 
 
-def Train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log = True):
+def Train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log = True, show = True):
     optimizer = Adam(model.parameters(), lr=lr)
 
     loss_train_all = []
@@ -120,7 +120,7 @@ def Train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log
     print('\n \tDONE!\n')
 
     if plot == True:
-        plotting.plot_loss(loss_train_all, loss_test_all, log = log)
+        plotting.plot_loss(loss_train_all, loss_test_all, log = log, show = show)
 
     return loss_train_all, loss_test_all
 

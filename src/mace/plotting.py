@@ -21,7 +21,7 @@ def plot_hist(df):
 
     return
 
-def plot_loss(train, test, log = True):
+def plot_loss(train, test, log = True, show = True):
     fig = plt.figure(figsize = (9,3))
     ax1 = fig.add_subplot((111))
 
@@ -42,8 +42,9 @@ def plot_loss(train, test, log = True):
     ax1.grid(True, linestyle = '--', linewidth = 0.2)
 
     ax1.legend(loc = 'upper right')
-
-    plt.show()
+    
+    if show == True:
+        plt.show()
 
     return
 
@@ -93,7 +94,7 @@ def plot_fracs_profile(rad, real, preds, models, molecs, spec, lw = 1):
     ax1.plot(rad,real[:,idx], label = 'real' , lw = lw, c = 'grey')
     for i, pred in enumerate(preds): 
         ax1.plot(rad,pred[:,idx], label = models[i].name  , lw = lw, c = colors[i])
-        ax2.plot(rad,np.abs(real[:,idx]-pred[:,idx])      , lw = lw, c = colors[i],ls = '--')
+        ax2.plot(rad,np.abs(real[:,idx]-pred[:,idx])/max(real[:,idx])      , lw = lw, c = colors[i],ls = '--')
     for ax in axs:
         ax.set_xscale('log')
         ax.grid(True, linestyle = '--', linewidth = 0.2)
@@ -103,7 +104,7 @@ def plot_fracs_profile(rad, real, preds, models, molecs, spec, lw = 1):
     ax1.set_ylim(bottom=1e-12)
     ax2.set_xlabel('Radius (cm)')
     ax1.set_ylabel('Fractional abundance w.r.t. H')
-    ax2.set_ylabel('Residuals')
+    ax2.set_ylabel('Relative residuals')
 
     ax1.legend(loc = 'lower left')
 
@@ -133,21 +134,23 @@ def plot_fracs_profile_lr(rad, real, preds, molecs, spec, lw = 0.8):
     alpha = 0.8
 
     ax1.plot(rad,real[:,idx], label = 'real' , lw = 1.1, c = 'k')
+    # ax2.plot([9e14,2e18],[0,0] , lw = 1.1, c = 'k', ls='--')
     for i,lr in enumerate(preds): 
         ax1.plot(rad,preds[lr][:,idx], label = 'lr = '+str(lr) , lw = lw, c = colors[i], alpha = alpha)
-        ax2.plot(rad,np.abs(real[:,idx]-preds[lr][:,idx])      , lw = lw, c = colors[i], alpha = alpha,ls = '--')
+        ax2.plot(rad,np.abs(real[:,idx]-preds[lr][:,idx])/max(real[:,idx])      , lw = lw, c = colors[i], alpha = alpha,ls = '--')
     for ax in axs:
         ax.set_xscale('log')
         ax.grid(True, linestyle = '--', linewidth = 0.2)
         ax.set_yscale('log')
     ax1.set(xticklabels=[])
 
-    ax1.set_ylim([1e-12,1e-3])
+    ax1.set_ylim([1e-12,3e-3])
+    # ax2.set_ylim([1e-4,1e2])
     ax2.set_xlabel('Radius (cm)')
     ax1.set_ylabel('Fractional abundance w.r.t. H')
-    ax2.set_ylabel('Residuals')
+    ax2.set_ylabel('Relative residuals')
 
-    ax1.legend(loc = 'lower left')
+    ax1.legend(loc = 'upper right', fontsize = 5)
 
     fig.tight_layout()
     fig.subplots_adjust(hspace = 0.07)
