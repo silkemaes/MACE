@@ -2,6 +2,8 @@ import numpy             as np
 import matplotlib.pyplot as plt
 import matplotlib        as mpl
 
+## own scripts
+import utils
 
 
 
@@ -118,15 +120,15 @@ def plot_fracs_profile(rad, real, preds, models, molecs, spec, lw = 1):
 preds = dict()
 '''
 def plot_fracs_profile_lr(rad, real, preds, molecs, spec, lw = 0.8):
-        
-    colors = mpl.cm.viridis(np.linspace(0, 1, len(preds)))
-  
     
-    fig, ax = plt.subplots(2,1, gridspec_kw={'height_ratios': [5,2]},figsize=(5,5))
+    colors = mpl.cm.viridis(np.linspace(0, 1, len(preds)))
+      
+    fig, ax = plt.subplots(3,1, gridspec_kw={'height_ratios': [5,2,2]},figsize=(5,6))
     ## first row
     ax1 = ax[0]
     ax2 = ax[1]
-    axs = [ax1,ax2]
+    ax3 = ax[2]
+    axs = [ax1,ax2, ax3]
 
     ax1.set_title(spec, fontsize = 7)
 
@@ -138,17 +140,23 @@ def plot_fracs_profile_lr(rad, real, preds, molecs, spec, lw = 0.8):
     for i,lr in enumerate(preds): 
         ax1.plot(rad,preds[lr][:,idx], label = 'lr = '+str(lr) , lw = lw, c = colors[i], alpha = alpha)
         ax2.plot(rad,np.abs(real[:,idx]-preds[lr][:,idx])/max(real[:,idx])      , lw = lw, c = colors[i], alpha = alpha,ls = '--')
+        ## absolute residuals
+        res = utils.get_absolute_residuals(real, preds[lr])
+        ax3.plot(rad, res, lw = lw, c = colors[i], alpha = alpha,ls = '--')
+   
     for ax in axs:
         ax.set_xscale('log')
         ax.grid(True, linestyle = '--', linewidth = 0.2)
         ax.set_yscale('log')
     ax1.set(xticklabels=[])
+    ax2.set(xticklabels=[])
 
     ax1.set_ylim([1e-12,3e-3])
     # ax2.set_ylim([1e-4,1e2])
-    ax2.set_xlabel('Radius (cm)')
+    ax3.set_xlabel('Radius (cm)')
     ax1.set_ylabel('Fractional abundance w.r.t. H')
     ax2.set_ylabel('Relative residuals')
+    ax3.set_ylabel('Total residual')
 
     ax1.legend(loc = 'upper right', fontsize = 5)
 

@@ -65,5 +65,5 @@ for lr in tqdm(lrs):
 
 toc = time.time()
 
-print('** ALL DONE! in [s]', round(toc-tic,3))
+print('** ALL DONE! in [min]', round((toc-tic)/60,2))
 
