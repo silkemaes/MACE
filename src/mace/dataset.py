@@ -4,8 +4,10 @@ import os
 
 from torch.utils.data    import Dataset, DataLoader
 
-import plotting     
 
+## own scripts
+import plotting     
+import utils
 
 
 '''
@@ -28,11 +30,11 @@ class MyDataset(Dataset):
 
             for i in range(1,len(locs)+1):
                 name = dir+'csfrac_smooth_'+str(i)+'.out'
-                proper = MyDataset.read_data(name)
+                proper = read_data(name)
                 data.append(proper)
         
         if file != None:
-            proper = MyDataset.read_data(file)
+            proper = read_data(file)
             data.append(proper)
 
         df = np.concatenate(data)
@@ -84,27 +86,51 @@ class MyDataset(Dataset):
         return self.mean, self.std, self.min, self.max
 
     
-    '''
-    Read data text file of output abundances of 1D CSE models
-    '''
-    @staticmethod
-    def read_data(file_name):
-        with open(file_name, 'r') as file:
-            dirty = []
-            proper = None
-            for line in file:
-                try:  
-                    if len(line) > 1: 
-                        dirty.append([float(el) for el in line.split()])
-                except:
-                    if len(dirty) != 0:
-                        dirty = np.array(dirty)[:,1:]
-                        if proper is None:
-                            proper = dirty
-                        else:
-                            proper = np.concatenate((proper, dirty), axis = 1)
-                    dirty = []
-        return proper
+'''
+Read data text file of output abundances of 1D CSE models
+'''
+def read_data(file_name):
+    with open(file_name, 'r') as file:
+        dirty = []
+        proper = None
+        for line in file:
+            try:  
+                if len(line) > 1: 
+                    dirty.append([float(el) for el in line.split()])
+            except:
+                if len(dirty) != 0:
+                    dirty = np.array(dirty)[:,1:]
+                    if proper is None:
+                        proper = dirty
+                    else:
+                        proper = np.concatenate((proper, dirty), axis = 1)
+                dirty = []
+    return proper
+
+
+
+def retrieve_file(dir_name):
+    all_paths_C = []
+    all_paths_O = []
+
+    path = '/lhome/silkem/CHEM/'+dir_name+'/'
+    locs = utils.get_files_in(path)
+    
+    for loc in locs:
+        # print(loc[-3:-1])
+        if loc[-3:-1] == 'ep':
+            # print(path+loc+'/models/')
+            path_mods = utils.get_files_in(path+loc+'/models/')
+            for mod in path_mods:
+                if mod[-1] != 't':
+                    if loc[13] == 'O':
+                        all_paths_O.append(path+loc+'/models/'+mod+'/csfrac_smooth.out')
+                    if loc[13] == 'C':
+                        all_paths_C.append(path+loc+'/models/'+mod+'/csfrac_smooth.out')
+    
+    return all_paths_O, all_paths_C
+
+
 
 
 def get_dataset(dir, batch_size, kwargs, plot = False, scale = 'norm'):

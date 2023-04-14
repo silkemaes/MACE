@@ -20,3 +20,11 @@ def get_absolute_residuals(real, pred):
     res = res/nb_specs
 
     return res
+
+def get_files_in(path):
+    files = os.listdir(path) 
+    locs = []
+    for file in files:
+        locs.append(file)
+    
+    return locs
