@@ -8,8 +8,8 @@ from torch.utils.data    import DataLoader
 from torch.optim         import Adam
 
 ## own scripts
-import dataset as ds
-import plotting   
+from . import dataset as ds
+from . import plotting   
 
 
 
@@ -60,7 +60,8 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
     for i, x in enumerate(data_loader):
            
         x     = x.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
-
+       # print(model.device)
+        print(x.device)
         x_hat = model(x)         ## output van het autoecoder model
 
         ## Calculate losses
@@ -106,7 +107,7 @@ def Train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log
 
         ## Training
         model.train()
-
+        model.to(DEVICE)
         train_loss = train_one_epoch(data_loader, model, DEVICE, optimizer)
         loss_train_all.append(train_loss)  ## save losses
 

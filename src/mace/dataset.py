@@ -6,8 +6,8 @@ from torch.utils.data    import Dataset, DataLoader
 
 
 ## own scripts
-import plotting     
-import utils
+from . import plotting     
+from . import utils
 
 
 '''

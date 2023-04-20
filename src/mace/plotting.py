@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib        as mpl
 
 ## own scripts
-import utils
+from . import utils
 
 
 
