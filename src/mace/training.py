@@ -60,8 +60,6 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
     for i, x in enumerate(data_loader):
            
         x     = x.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
-       # print(model.device)
-        print(x.device)
         x_hat = model(x)         ## output van het autoecoder model
 
         ## Calculate losses

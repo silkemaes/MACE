@@ -11,7 +11,7 @@ plt.rcParams['figure.dpi'] = 200
 
 
 ## import own functions
-sys.path.insert(1, '/lhome/silkem/MACE/MACE/src/mace')
+sys.path.insert(1, './src/mace')
 import autoencoder  as ae
 import dataset      as ds
 import training     as tr
@@ -29,7 +29,7 @@ kwargs = {'num_workers': 1, 'pin_memory': True}
 
 ## -------------------------------------------------------------------------
 
-dir = '/lhome/silkem/MACE/MACE/train_data_C/'
+dir = './data/train_data_C/'
 
 train, data_loader, test_loader = ds.get_dataset(dir, batch_size, kwargs, plot = False)
 
@@ -47,7 +47,7 @@ type = 'decr'
 name = 'model4'
 
 ## make dir for output
-path = '/lhome/silkem/MACE/MACE/ae-models/learning-rate/'+name+'/'
+path = './ae-models/learning-rate/'+name+'/'
 utils.makeOutputDir(path)
 
 
