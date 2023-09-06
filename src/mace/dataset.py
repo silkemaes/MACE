@@ -43,7 +43,7 @@ class Data(Dataset):
         df = []
         times = []
         self.idx = np.zeros(len(dirs)+1)
-        self.p = np.zeros(len(dirs)+1)
+        self.p   = np.zeros(len(dirs)+1)
 
         for i in range(len(dirs)):
             mod = ChemTorchMod(dirs[i])
@@ -61,9 +61,15 @@ class Data(Dataset):
     def __len__(self):
         return len(self.idx)-1
 
-    def __getitem__(self, idx):
+    def __getitem__(self,i):
         ## hier uiteindelijk terug ChemTorchMod instance teruggeven?
-        pass
+        start = self.idx[i-1]
+        stop  = start + self.idx[i]
+
+        if i > len(self):
+            return None
+
+        return self.n[start:stop], self.tstep[start:stop], self.p[i]
     
 
 
