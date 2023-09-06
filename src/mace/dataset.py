@@ -1,6 +1,8 @@
 
 import numpy             as np
 import os
+from os import listdir
+from datetime import datetime
 
 from torch.utils.data    import Dataset, DataLoader
 
@@ -10,11 +12,71 @@ import plotting
 import utils
 
 
-'''
-Class to initialise the dataset to train & test emulator
-'''
-class MyDataset(Dataset):
+class ChemTorchMod():
     '''
+    Object representing 1 ChemTorch model.
+    Contains:
+        - n     [2d np.array]: Abundances at different timesteps
+        - tstep [1d np.array]: Timesteps that the classical ODE solver is evaluated
+        - p     [1d np.array]: input of the model -> [rho, T, delta, Av]
+    '''
+    def __init__(self, dir=None, cutoff = 1e-40):
+        outpath = '/STER/silkem/ChemTorch/out/'
+        
+        self.n      = np.load(outpath+'new/'+dir+'/abundances.npy')
+        self.tstep  = np.load(outpath+'new/'+dir+'/tstep.npy')
+        input       = np.load(outpath+'new/'+dir+'/input.npy')
+        self.p      = input[0:-1]
+
+        ## Clip
+        self.n = np.clip(self.n, cutoff, 1)
+        ## Will we take the log10?
+        # self.n = np.log10(self.n)
+
+    def __len__(self):
+        return len(self.tstep)
+
+
+class Data(Dataset):
+    def __init__(self, dirs, train=True, fraction=0.7, scale = 'norm'):
+
+        df = []
+        times = []
+        self.idx = np.zeros(len(dirs)+1)
+        self.p = np.zeros(len(dirs)+1)
+
+        for i in range(len(dirs)):
+            mod = ChemTorchMod(dirs[i])
+            df.append(mod.n)
+            times.append(mod.tstep)
+            self.idx[i+1] = len(mod)
+            self.p[i] = mod.p
+        
+        self.n      = np.concatenate(df)
+        self.tstep  = np.concatenate(times)
+
+        ## Hoe data normaliseren?
+
+
+    def __len__(self):
+        return len(self.idx)-1
+
+    def __getitem__(self, idx):
+        ## hier uiteindelijk terug ChemTorchMod instance teruggeven?
+        pass
+    
+
+
+def get_dirs():
+    outpath = '/STER/silkem/ChemTorch/out/'
+    return listdir(outpath+'new/')
+
+
+
+class MyDataset_1Dmodel(Dataset):
+    '''
+    Class to initialise the dataset to train & test emulator
+
     Get data from textfiles (output CSE model)
     
     Preprocess:
@@ -30,11 +92,11 @@ class MyDataset(Dataset):
 
             for i in range(1,len(locs)+1):
                 name = dir+'csfrac_smooth_'+str(i)+'.out'
-                proper = read_data(name)
+                proper = read_data_1Dmodel(name)
                 data.append(proper)
         
         if file != None:
-            proper = read_data(file)
+            proper = read_data_1Dmodel(file)
             data.append(proper)
 
         df = np.concatenate(data)
@@ -86,10 +148,11 @@ class MyDataset(Dataset):
         return self.mean, self.std, self.min, self.max
 
     
-'''
-Read data text file of output abundances of 1D CSE models
-'''
-def read_data(file_name):
+
+def read_data_1Dmodel(file_name):
+    '''
+    Read data text file of output abundances of 1D CSE models
+    '''
     with open(file_name, 'r') as file:
         dirty = []
         proper = None
