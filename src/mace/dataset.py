@@ -25,9 +25,9 @@ class ChemTorchMod():
     def __init__(self, dir=None):
         outpath = '/STER/silkem/ChemTorch/out/'
         
-        self.n      = np.load(outpath+'new/'+dir+'/abundances.npy')
-        self.tstep  = np.load(outpath+'new/'+dir+'/tstep.npy')
-        input       = np.load(outpath+'new/'+dir+'/input.npy')
+        self.n      = np.load(outpath+'new/'+dir+'/abundances.npy')[:,1:].astype(np.float32)    ## want n_0 dubbel
+        self.tstep  = np.load(outpath+'new/'+dir+'/tstep.npy').astype(np.float32)
+        input       = np.load(outpath+'new/'+dir+'/input.npy').astype(np.float32)
         self.p      = input[0:-1]
 
         # ## log10 from rho, T and delta
@@ -75,17 +75,28 @@ class Data(Dataset):
         self.Av_min = self.meta['Av_min']
         self.Av_max = self.meta['Av_max']
 
-        self.mins = np.array(self.logρ_min, self.logT_min, self.logδ_min, self.Av_min)
-        self.maxs = np.array(self.logρ_max, self.logT_max, self.logδ_max, self.Av_max)
+        self.mins = np.array([self.logρ_min, self.logT_min, self.logδ_min, self.Av_min])
+        self.maxs = np.array([self.logρ_max, self.logT_max, self.logδ_max, self.Av_max])
 
         self.cutoff = cutoff
+        self.fraction = fraction
+        self.train = train
+
+        np.random.seed(0)
+        rand_idx = np.random.permutation(len(self.dirs))
+        N = int(self.fraction*len(self.dirs))
+        if self.train:
+            self.rand_idx = rand_idx[:N]
+        else:
+            self.rand_idx = rand_idx[N:]
+
 
     @staticmethod
     def normalise(x,min,max):
         return (x - min)*(1/np.abs( min - max ))
 
     def __len__(self):
-        return len(self.dirs)
+        return len(self.rand_idx)
 
     def __getitem__(self,i):
         '''
@@ -94,12 +105,15 @@ class Data(Dataset):
         The self.idx array has stored at what index in Data a new ChemTorchMod instance starts, 
         needed to get a certain item i.
         '''
-        mod = ChemTorchMod(self.dirs[i])
+
+        idx = self.rand_idx[i]
+
+        mod = ChemTorchMod(self.dirs[idx])
 
         ## physical parameters
         trans_p = np.empty_like(mod.p)
-        for i in range(3):
-            trans_p[i] = Data.normalise(np.log10(mod.p[i]), self.mins[i], self.maxs[i])
+        for j in range(3):
+            trans_p[j] = Data.normalise(np.log10(mod.p[j]), self.mins[j], self.maxs[j])
         trans_p[3] = Data.normalise(mod.p[3], self.mins[3], self.maxs[3])
 
         ## abundances
@@ -111,7 +125,10 @@ class Data(Dataset):
         ## normaliseren? eens nadenken
         trans_tstep = mod.tstep
 
-        return torch.from_numpy(trans_n), torch.from_numpy(trans_p), torch.from_numpy(trans_tstep)
+        # print(trans_n.shape, trans_p.shape, trans_tstep.shape)
+
+
+        return trans_n, trans_p, trans_tstep
 
 
 def get_dirs():
@@ -120,10 +137,10 @@ def get_dirs():
 
 
 
-def get_data(dirs, batch_size, kwargs, plot = False, scale = 'norm'):
+def get_data(dirname, batch_size, kwargs, plot = False, scale = 'norm'):
     ## Make PyTorch dataset
-    train = Data(dir=dirs)
-    test  = Data(dir=dirs, train = False)
+    train = Data(dirname)
+    test  = Data(dirname, train = False)
     
     print('Dataset:')
     print('------------------------------')
@@ -132,9 +149,8 @@ def get_data(dirs, batch_size, kwargs, plot = False, scale = 'norm'):
     print('# testing samples: ',len(test) )
     print('            ratio: ',np.round(len(test)/(len(train)+len(test)),2))
 
-    data_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=True ,  **kwargs)
+    data_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=False ,  **kwargs)
     test_loader = DataLoader(dataset=test , batch_size=len(test) , shuffle=False,  **kwargs)
-
 
     return train, data_loader, test_loader
 

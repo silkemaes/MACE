@@ -41,7 +41,9 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
         p     = p.to(DEVICE) 
         t     = t.to(DEVICE)
 
-        n_hat = model(n[0],p,t)         ## output van het autoecoder model
+        print(n.shape)
+
+        n_hat = model(n[:,:,0],p,t)         ## output van het autoecoder model
 
         ## Calculate losses
         loss  = loss_function(n,n_hat)
@@ -67,7 +69,7 @@ def validate_one_epoch(test_loader, model, DEVICE):
             p     = p.to(DEVICE) 
             t     = t.to(DEVICE)
 
-            n_hat = model(n[0],p,t)         ## output van het autoecoder model
+            n_hat = model(n[:,:,0],p,t)         ## output van het autoecoder model
 
             ## Calculate losses
             loss  = loss_function(n,n_hat)

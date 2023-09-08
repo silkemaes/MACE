@@ -16,9 +16,9 @@ class A(nn.Module):
 
         self.z_dim = z_dim
 
-        hidden_dim1 = out_dim
+        hidden_dim1 = z_dim
         out_dim = z_dim**2
-        hidden_dim2 = out_dim/2
+        hidden_dim2 = out_dim//2
 
         self.layer_in = nn.Linear( input_dim, hidden_dim1)
         self.layer_hidden = nn.Linear(hidden_dim1,hidden_dim2)
@@ -47,10 +47,10 @@ class B(nn.Module):
 
         self.z_dim = z_dim
 
-        hidden_dim1 = out_dim
+        hidden_dim1 = z_dim
         out_dim = z_dim**3
-        hidden_dim2 = np.sqrt(out_dim)
-        hidden_dim3 = out_dim/2
+        hidden_dim2 = int(np.sqrt(out_dim))
+        hidden_dim3 = out_dim//2
 
         self.layer_in = nn.Linear( input_dim, hidden_dim1)
         self.layer_hidden1 = nn.Linear(hidden_dim1,hidden_dim2)
@@ -76,10 +76,14 @@ class G(nn.Module):
         self.a = A(p_dim, z_dim)  
         self.b = B(p_dim, z_dim)   
 
+        # print(self.a.shape)
+
     def forward(self, t, z, p):     ## volgorde specifiek voor torchode solver 
         A = self.a(p)       ## hier wordt de forward() uitgevoerd, normaal
         B = self.b(p)
-        return torch.einsum("ij, j -> i", A, z) + torch.einsum("ijk, j, k -> i", B, z, z)
+        # print(A.shape, B.shape)
+        # print(z.shape)
+        return torch.einsum("ij, bj -> bi", A, z) + torch.einsum("ijk, bj, bk -> bi", B, z, z)  ## b is de index vd batchsize
     
 
 class Solver(nn.Module):
@@ -96,10 +100,10 @@ class Solver(nn.Module):
 
         self.jit_solver = torch.compile(self.solver)
 
-        input_ae_dim  = n_dim+p_dim
-        hidden_ae_dim = gmean([input_ae_dim, z_dim])
-        self.encoder = ae.Encoder(input_dim=input_ae_dim, hidden_dim=hidden_ae_dim, output_dim=z_dim       )
-        self.decoder = ae.Decoder(input_dim=z_dim       , hidden_dim=hidden_ae_dim, output_dim=input_ae_dim)
+        input_ae_dim  = n_dim#+p_dim
+        hidden_ae_dim = int(gmean([input_ae_dim, z_dim]))
+        self.encoder = ae.Encoder(input_dim=input_ae_dim, hidden_dim=hidden_ae_dim, latent_dim=z_dim       )
+        self.decoder = ae.Decoder(latent_dim=z_dim      , hidden_dim=hidden_ae_dim, output_dim=input_ae_dim)
 
         self.g = G(p_dim=p_dim, z_dim=z_dim)
 
@@ -107,8 +111,8 @@ class Solver(nn.Module):
         z_0 = self.encoder(n_0)
 
         problem = to.InitialValueProblem(
-            y0     = torch.from_numpy(z_0  ).view((1,-1)),  ## "view" is om met de batches om te gaan
-            t_eval = torch.from_numpy(tstep).view((1,-1)),
+            y0     = z_0.view((1,-1)),  ## "view" is om met de batches om te gaan
+            t_eval = tstep.view((1,-1)),
         )
 
         solution = self.jit_solver.solve(problem, args=p)
