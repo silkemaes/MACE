@@ -17,10 +17,11 @@ def loss_function(x, x_hat):
     reproduction_loss = nn.functional.mse_loss(x_hat, x)
     return reproduction_loss
 
-'''
-x = dataset in PyTorch tensor form
-'''
+
 def get_unscaled(Dataset, x, scale):
+    '''
+    x = dataset in PyTorch tensor form
+    '''
     mean, std, min, max = Dataset.get_stats()
 
     if scale == 'norm':
@@ -30,10 +31,11 @@ def get_unscaled(Dataset, x, scale):
     
     return unscale
 
-'''
-Function to compare an abundance profile with the autoencoded version.
-'''
+
 def test_abundance_profile(dir, label, model, DEVICE, kwargs, scale = 'norm'):
+    '''
+    Function to compare an abundance profile with the autoencoded version.
+    '''
     physpar = pd.read_fwf(dir+'csphyspar_smooth_'+label+'.out', )
     test_fracs = ds.MyDataset(file=dir+'csfrac_smooth_'+label+'.out', fraction=1, scale = scale)
     

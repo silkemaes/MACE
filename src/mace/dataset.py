@@ -30,7 +30,8 @@ class ChemTorchMod():
 
         ## Clip
         self.n = np.clip(self.n, cutoff, 1)
-        ## Will we take the log10?
+
+        ## Will we take the log10? Does that make sense for the ODE solver?
         # self.n = np.log10(self.n)
 
     def __len__(self):
@@ -38,13 +39,29 @@ class ChemTorchMod():
 
 
 class Data(Dataset):
+    '''
+    Dataset for training MACE.
+    Contains:
+        - n     [2d np.array]: Abundances at different timesteps
+        - tstep [1d np.array]: Timesteps that the classical ODE solver is evaluated
+        - p     [1d np.array]: input of the model -> [rho, T, delta, Av]  
+        where different ChemTorchMods are stuck together.
+        - idx   [1d np.array]: Containing the indixes of at what location in n, tstep and p a new ChemTorchMod starts.
+
+        This idx is used in the __getitem()__ function.
+    '''
     def __init__(self, dirs, train=True, fraction=0.7, scale = 'norm'):
+
+        ### VRAGEN
+        ##  - Is het nodig om er hier al Torch tensors van te maken, of is het goed genoeg als de dataloader dat doet?
+        ##  - Hoe data normaliseren? 
 
         df = []
         times = []
         self.idx = np.zeros(len(dirs)+1)
         self.p   = np.zeros(len(dirs)+1)
 
+        ## Data achter elkaar plakken, maar idx bijhouden wanneer er een nieuw model begint.
         for i in range(len(dirs)):
             mod = ChemTorchMod(dirs[i])
             df.append(mod.n)
@@ -55,14 +72,16 @@ class Data(Dataset):
         self.n      = np.concatenate(df)
         self.tstep  = np.concatenate(times)
 
-        ## Hoe data normaliseren?
-
-
     def __len__(self):
         return len(self.idx)-1
 
     def __getitem__(self,i):
-        ## hier uiteindelijk terug ChemTorchMod instance teruggeven?
+        '''
+        Returns an item of Data --> similar content as a ChemTorchMod instance. 
+        
+        The self.idx array has stored at what index in Data a new ChemTorchMod instance starts, 
+        needed to get a certain item i.
+        '''
         start = self.idx[i-1]
         stop  = start + self.idx[i]
 
@@ -76,6 +95,27 @@ class Data(Dataset):
 def get_dirs():
     outpath = '/STER/silkem/ChemTorch/out/'
     return listdir(outpath+'new/')
+
+
+
+def get_data(dirs, batch_size, kwargs, plot = False, scale = 'norm'):
+    ## Make PyTorch dataset
+    train = Data(dir=dirs, scale = scale)
+    test  = Data(dir=dirs, scale = scale, train = False)
+    
+    print('Dataset:')
+    print('------------------------------')
+    print('total # of samples:',len(train)+len(test))
+    print('# training samples:',len(train))
+    print('# testing samples: ',len(test) )
+    print('            ratio: ',np.round(len(test)/(len(train)+len(test)),2))
+
+    data_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=True ,  **kwargs)
+    test_loader = DataLoader(dataset=test , batch_size=len(test) , shuffle=False,  **kwargs)
+
+
+    return train, data_loader, test_loader
+
 
 
 
@@ -200,12 +240,10 @@ def retrieve_file(dir_name):
     return all_paths_O, all_paths_C
 
 
-
-
 def get_dataset(dir, batch_size, kwargs, plot = False, scale = 'norm'):
     ## Make PyTorch dataset
-    train = MyDataset(dir=dir, scale = scale)
-    test  = MyDataset(dir=dir, scale = scale, train = False)
+    train = MyDataset_1Dmodel(dir=dir, scale = scale)
+    test  = MyDataset_1Dmodel(dir=dir, scale = scale, train = False)
     
     print('Dataset:')
     print('------------------------------')

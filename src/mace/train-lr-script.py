@@ -14,7 +14,7 @@ plt.rcParams['figure.dpi'] = 200
 sys.path.insert(1, '/lhome/silkem/MACE/MACE/src/mace')
 import autoencoder  as ae
 import dataset      as ds
-import training     as tr
+import mace.train_1Dchem     as tr
 import utils
 from tqdm import tqdm 
 
