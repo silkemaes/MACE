@@ -3,6 +3,8 @@ import numpy             as np
 import os
 from os import listdir
 from datetime import datetime
+import json
+import torch
 
 from torch.utils.data    import Dataset, DataLoader
 
@@ -20,7 +22,7 @@ class ChemTorchMod():
         - tstep [1d np.array]: Timesteps that the classical ODE solver is evaluated
         - p     [1d np.array]: input of the model -> [rho, T, delta, Av]
     '''
-    def __init__(self, dir=None, cutoff = 1e-40):
+    def __init__(self, dir=None):
         outpath = '/STER/silkem/ChemTorch/out/'
         
         self.n      = np.load(outpath+'new/'+dir+'/abundances.npy')
@@ -28,10 +30,13 @@ class ChemTorchMod():
         input       = np.load(outpath+'new/'+dir+'/input.npy')
         self.p      = input[0:-1]
 
-        ## Clip
-        self.n = np.clip(self.n, cutoff, 1)
+        # ## log10 from rho, T and delta
+        # for i in range(3):
+        #     self.p[i]  = np.log10(input[i])
+        # self.p[3] = input[3]
 
-        ## Will we take the log10? Does that make sense for the ODE solver?
+        ## Clip & log10
+        # self.n = np.clip(self.n, cutoff, None)
         # self.n = np.log10(self.n)
 
     def __len__(self):
@@ -50,30 +55,37 @@ class Data(Dataset):
 
         This idx is used in the __getitem()__ function.
     '''
-    def __init__(self, dirs, train=True, fraction=0.7, scale = 'norm'):
+    def __init__(self, dirname, train=True, fraction=0.7, cutoff = 1e-20, scale = 'norm'):
 
-        ### VRAGEN
-        ##  - Is het nodig om er hier al Torch tensors van te maken, of is het goed genoeg als de dataloader dat doet?
-        ##  - Hoe data normaliseren? 
+        outpath = '/STER/silkem/ChemTorch/out/'
+        self.dirname = dirname
+        self.dirs = listdir(outpath+self.dirname+'/')
 
-        df = []
-        times = []
-        self.idx = np.zeros(len(dirs)+1)
-        self.p   = np.zeros(len(dirs)+1)
+        # Opening JSON file
+        with open(outpath+self.dirname+'/meta.json', 'r') as file:
+            # Reading from json file
+            self.meta = json.load(file)
 
-        ## Data achter elkaar plakken, maar idx bijhouden wanneer er een nieuw model begint.
-        for i in range(len(dirs)):
-            mod = ChemTorchMod(dirs[i])
-            df.append(mod.n)
-            times.append(mod.tstep)
-            self.idx[i+1] = len(mod)
-            self.p[i] = mod.p
-        
-        self.n      = np.concatenate(df)
-        self.tstep  = np.concatenate(times)
+        self.logρ_min = np.log10(10)
+        self.logρ_max = np.log10(1e10)
+        self.logT_min = np.log10(10)
+        self.logT_max = np.log10(4000)
+        self.logδ_min = np.log10(self.meta['delta_min'])
+        self.logδ_max = np.log10(self.meta['delta_max'])
+        self.Av_min = self.meta['Av_min']
+        self.Av_max = self.meta['Av_max']
+
+        self.mins = np.array(self.logρ_min, self.logT_min, self.logδ_min, self.Av_min)
+        self.maxs = np.array(self.logρ_max, self.logT_max, self.logδ_max, self.Av_max)
+
+        self.cutoff = cutoff
+
+    @staticmethod
+    def normalise(x,min,max):
+        return (x - min)*(1/np.abs( min - max ))
 
     def __len__(self):
-        return len(self.idx)-1
+        return len(self.dirs)
 
     def __getitem__(self,i):
         '''
@@ -82,14 +94,24 @@ class Data(Dataset):
         The self.idx array has stored at what index in Data a new ChemTorchMod instance starts, 
         needed to get a certain item i.
         '''
-        start = self.idx[i-1]
-        stop  = start + self.idx[i]
+        mod = ChemTorchMod(self.dirs[i])
 
-        if i > len(self):
-            return None
+        ## physical parameters
+        trans_p = np.empty_like(mod.p)
+        for i in range(3):
+            trans_p[i] = Data.normalise(np.log10(mod.p[i]), self.mins[i], self.maxs[i])
+        trans_p[3] = Data.normalise(mod.p[3], self.mins[3], self.maxs[3])
 
-        return self.n[start:stop], self.tstep[start:stop], self.p[i]
-    
+        ## abundances
+        trans_n = np.clip(mod.n, self.cutoff, None)
+        trans_n = np.log10(trans_n)
+        trans_n = Data.normalise(trans_n, self.cutoff, 1)
+
+        ## timesteps
+        ## normaliseren? eens nadenken
+        trans_tstep = mod.tstep
+
+        return torch.from_numpy(trans_n), torch.from_numpy(trans_p), torch.from_numpy(trans_tstep)
 
 
 def get_dirs():
@@ -100,8 +122,8 @@ def get_dirs():
 
 def get_data(dirs, batch_size, kwargs, plot = False, scale = 'norm'):
     ## Make PyTorch dataset
-    train = Data(dir=dirs, scale = scale)
-    test  = Data(dir=dirs, scale = scale, train = False)
+    train = Data(dir=dirs)
+    test  = Data(dir=dirs, train = False)
     
     print('Dataset:')
     print('------------------------------')

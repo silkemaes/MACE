@@ -35,14 +35,16 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
     '''    
     overall_loss = 0
     
-    for i, x in enumerate(data_loader):
+    for i, (n,p,t) in enumerate(data_loader):
            
-        x     = x.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
+        n     = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
+        p     = p.to(DEVICE) 
+        t     = t.to(DEVICE)
 
-        x_hat = model(x)         ## output van het autoecoder model
+        n_hat = model(n[0],p,t)         ## output van het autoecoder model
 
         ## Calculate losses
-        loss  = loss_function(x,x_hat)
+        loss  = loss_function(n,n_hat)
         overall_loss += loss.item()
 
         ## Backpropagation
@@ -59,17 +61,19 @@ def validate_one_epoch(test_loader, model, DEVICE):
     overall_loss = 0
 
     with torch.no_grad():
-        for i, x in enumerate(test_loader):
+        for i, (n,p,t) in enumerate(test_loader):
 
-            x     = x.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
+            n     = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
+            p     = p.to(DEVICE) 
+            t     = t.to(DEVICE)
 
-            x_hat = model(x)         ## output van het autoecoder model
+            n_hat = model(n[0],p,t)         ## output van het autoecoder model
 
             ## Calculate losses
-            loss  = loss_function(x,x_hat)
+            loss  = loss_function(n,n_hat)
             overall_loss += loss.item()
 
-        return (overall_loss)/(i+1)  ## save losses
+            return (overall_loss)/(i+1)  ## save losses
 
 
 def train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log = True, show = True):
@@ -78,7 +82,7 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log
     loss_train_all = []
     loss_test_all  = []
 
-    print('Model:         '+model.name)
+    print('Model:         ')
     print('learning rate: '+str(lr))
     for epoch in range(epochs):
 

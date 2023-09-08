@@ -83,7 +83,7 @@ class G(nn.Module):
     
 
 class Solver(nn.Module):
-    def __init__(self, p_dim, z_dim, n_dim=466, atol = 1e-25, rtol = 1e-6):
+    def __init__(self, p_dim, z_dim, n_dim=466, atol = 1e-20, rtol = 1e-6):
         super(Solver, self).__init__()
         self.z_dim = z_dim
 
