@@ -73,8 +73,8 @@ class Decoder(nn.Module):
         
         self.LeakyReLU = nn.LeakyReLU(0.2)
         
-    def forward(self, x):
-        h = self.LeakyReLU(self.layer_in(x))
+    def forward(self, z):
+        h = self.LeakyReLU(self.layer_in(z))
         for layer in self.hidden:
             h = self.LeakyReLU(layer(h))
         h = self.LeakyReLU(self.layer_out(h))

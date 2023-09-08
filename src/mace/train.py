@@ -8,7 +8,8 @@ from torch.optim         import Adam
 
 ## own scripts
 import dataset  as ds
-import plotting   
+import plotting  
+import tqdm 
 
 
 
@@ -36,14 +37,19 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
     overall_loss = 0
     
     for i, (n,p,t) in enumerate(data_loader):
+
+        print('\r',i,'\r')
            
-        n     = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
-        p     = p.to(DEVICE) 
-        t     = t.to(DEVICE)
+        n = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
+        p = p.to(DEVICE) 
+        t = t.to(DEVICE)
 
-        print(n.shape)
+        n = torch.swapaxes(n,1,2)
 
-        n_hat = model(n[:,:,0],p,t)         ## output van het autoecoder model
+
+        # print(n.shape)
+
+        n_hat = model(n[:,0,:],p,t)         ## output van het autoecoder model
 
         ## Calculate losses
         loss  = loss_function(n,n_hat)
@@ -86,6 +92,7 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log
 
     print('Model:         ')
     print('learning rate: '+str(lr))
+    print('\n >>> Training model...')
     for epoch in range(epochs):
 
         ## Training
@@ -112,6 +119,7 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log
 def test(model, test_loader, DEVICE):
     overall_loss = 0
 
+    print('\n >>> Testing model...')
     with torch.no_grad():
         for i, x in enumerate(test_loader):
 

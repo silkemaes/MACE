@@ -89,7 +89,9 @@ class G(nn.Module):
 class Solver(nn.Module):
     def __init__(self, p_dim, z_dim, n_dim=466, atol = 1e-20, rtol = 1e-6):
         super(Solver, self).__init__()
+
         self.z_dim = z_dim
+        self.n_dim = n_dim
 
         self.g       = G(p_dim, z_dim)
         self.odeterm = to.ODETerm(self.g, with_args=True)
@@ -117,13 +119,16 @@ class Solver(nn.Module):
 
         solution = self.jit_solver.solve(problem, args=p)
 
-        z_s = solution.ys.view(len(tstep), self.z_dim)  ## want batches 
+        # print('solution',solution.ys.shape)
+        z_s = solution.ys.view(-1, self.z_dim)  ## want batches 
 
-        y_s_unravel = self.decoder(z_s)
+        n_s_ravel = self.decoder(z_s)
 
-        y_s = y_s_unravel.reshape(1,len(tstep), self.z_dim)
+        n_s = n_s_ravel.reshape(1,tstep.shape[1], self.n_dim)
 
-        return y_s
+        # print('shape ns', n_s.shape)
+
+        return n_s
 
         
         
