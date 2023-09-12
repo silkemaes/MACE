@@ -38,7 +38,7 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
     
     for i, (n,p,t) in enumerate(data_loader):
 
-        print('\r',i,'\r')
+        print(i,end="\r")
            
         n = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
         p = p.to(DEVICE) 
@@ -70,12 +70,13 @@ def validate_one_epoch(test_loader, model, DEVICE):
 
     with torch.no_grad():
         for i, (n,p,t) in enumerate(test_loader):
+            print(i,end="\r")
 
             n     = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
             p     = p.to(DEVICE) 
             t     = t.to(DEVICE)
 
-            n_hat = model(n[:,:,0],p,t)         ## output van het autoecoder model
+            n_hat = model(n[:,0,:],p,t)         ## output van het autoecoder model
 
             ## Calculate losses
             loss  = loss_function(n,n_hat)
@@ -98,12 +99,14 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log
         ## Training
         model.train()
 
+        print('train')
         train_loss = train_one_epoch(data_loader, model, DEVICE, optimizer)
         loss_train_all.append(train_loss)  ## save losses
 
         ## Validating
         model.eval() ## zelfde als torch.no_grad
 
+        print('\n test')
         test_loss = validate_one_epoch(test_loader, model, DEVICE)
         loss_test_all.append(test_loss)
         

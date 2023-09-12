@@ -22,12 +22,12 @@ class ChemTorchMod():
         - tstep [1d np.array]: Timesteps that the classical ODE solver is evaluated
         - p     [1d np.array]: input of the model -> [rho, T, delta, Av]
     '''
-    def __init__(self, dir=None):
+    def __init__(self, dirname, dir=None):
         outpath = '/STER/silkem/ChemTorch/out/'
         
-        self.n      = np.load(outpath+'new/'+dir+'/abundances.npy')[:,1:].astype(np.float32)    ## want n_0 dubbel
-        self.tstep  = np.load(outpath+'new/'+dir+'/tstep.npy').astype(np.float32)
-        input       = np.load(outpath+'new/'+dir+'/input.npy').astype(np.float32)
+        self.n      = np.load(outpath+dirname+'/'+dir+'/abundances.npy')[:,1:].astype(np.float32)    ## want n_0 dubbel
+        self.tstep  = np.load(outpath+dirname+'/'+dir+'/tstep.npy').astype(np.float32)
+        input       = np.load(outpath+dirname+'/'+dir+'/input.npy').astype(np.float32)
         self.p      = input[0:-1]
 
         # ## log10 from rho, T and delta
@@ -60,6 +60,7 @@ class Data(Dataset):
         outpath = '/STER/silkem/ChemTorch/out/'
         self.dirname = dirname
         self.dirs = listdir(outpath+self.dirname+'/')
+        self.dirs.remove('meta.json')
 
         # Opening JSON file
         with open(outpath+self.dirname+'/meta.json', 'r') as file:
@@ -108,7 +109,7 @@ class Data(Dataset):
 
         idx = self.rand_idx[i]
 
-        mod = ChemTorchMod(self.dirs[idx])
+        mod = ChemTorchMod(self.dirname,self.dirs[idx])
 
         ## physical parameters
         trans_p = np.empty_like(mod.p)
@@ -131,9 +132,9 @@ class Data(Dataset):
         return trans_n, trans_p, trans_tstep
 
 
-def get_dirs():
+def get_dirs(dirname):
     outpath = '/STER/silkem/ChemTorch/out/'
-    return listdir(outpath+'new/')
+    return listdir(outpath+dirname+'/')
 
 
 
@@ -149,8 +150,8 @@ def get_data(dirname, batch_size, kwargs, plot = False, scale = 'norm'):
     print('# testing samples: ',len(test) )
     print('            ratio: ',np.round(len(test)/(len(train)+len(test)),2))
 
-    data_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=False ,  **kwargs)
-    test_loader = DataLoader(dataset=test , batch_size=len(test) , shuffle=False,  **kwargs)
+    data_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=True ,  **kwargs)
+    test_loader = DataLoader(dataset=test , batch_size=1 , shuffle=False,  **kwargs)
 
     return train, data_loader, test_loader
 
