@@ -46,9 +46,6 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
 
         n = torch.swapaxes(n,1,2)
 
-
-        # print(n.shape)
-
         n_hat = model(n[:,0,:],p,t)         ## output van het autoecoder model
 
         ## Calculate losses
@@ -75,6 +72,8 @@ def validate_one_epoch(test_loader, model, DEVICE):
             n     = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
             p     = p.to(DEVICE) 
             t     = t.to(DEVICE)
+            
+            n = torch.swapaxes(n,1,2)
 
             n_hat = model(n[:,0,:],p,t)         ## output van het autoecoder model
 
