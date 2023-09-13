@@ -119,11 +119,14 @@ class Solver(nn.Module):
 
         solution = self.jit_solver.solve(problem, args=p)
 
-        # print('solution',solution.ys.shape)
+        # # print('solution',solution.ys.shape)
         z_s = solution.ys.view(-1, self.z_dim)  ## want batches 
 
-        n_s_ravel = self.decoder(z_s)
+        # print(z_s)
 
+        # n_0 = self.decoder(z_0.view(-1, self.z_dim))
+
+        n_s_ravel = self.decoder(z_s)
         n_s = n_s_ravel.reshape(1,tstep.shape[1], self.n_dim)
 
         # print('shape ns', n_s.shape)

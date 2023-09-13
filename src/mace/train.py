@@ -35,10 +35,11 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
     - losses
     '''    
     overall_loss = 0
-    
+    count_nan = 0
+
     for i, (n,p,t) in enumerate(data_loader):
 
-        print(i,end="\r")
+        print('\tbatch',i+1,'/',len(data_loader),', # nan',count_nan,end="\r")
            
         n = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
         p = p.to(DEVICE) 
@@ -47,6 +48,9 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
         n = torch.swapaxes(n,1,2)
 
         n_hat = model(n[:,0,:],p,t)         ## output van het autoecoder model
+        
+        if torch.isnan(n_hat[0][-1]).any(0):
+            count_nan +=1
 
         ## Calculate losses
         loss  = loss_function(n,n_hat)
@@ -56,7 +60,9 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
+        # break
+        
+    print('\n\t\t# nan:',count_nan,'/',len(data_loader))
     return (overall_loss)/(i+1)  ## save losses
 
 
@@ -67,7 +73,7 @@ def validate_one_epoch(test_loader, model, DEVICE):
 
     with torch.no_grad():
         for i, (n,p,t) in enumerate(test_loader):
-            print(i,end="\r")
+            print('\tbatch',i+1,'/',len(test_loader),end="\r")
 
             n     = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
             p     = p.to(DEVICE) 
@@ -92,25 +98,23 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log
 
     print('Model:         ')
     print('learning rate: '+str(lr))
-    print('\n >>> Training model...')
+    print('\n>>> Training model...')
     for epoch in range(epochs):
 
         ## Training
         model.train()
 
-        print('train')
         train_loss = train_one_epoch(data_loader, model, DEVICE, optimizer)
         loss_train_all.append(train_loss)  ## save losses
 
         ## Validating
         model.eval() ## zelfde als torch.no_grad
 
-        print('\n test')
         test_loss = validate_one_epoch(test_loader, model, DEVICE)
         loss_test_all.append(test_loss)
         
-        print("\tEpoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss, end="\r")
-    print('\n \tDONE!\n')
+        print("\nEpoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss, end="\r")
+    print('\n \tDONE!')
 
     if plot == True:
         plotting.plot_loss(loss_train_all, loss_test_all, log = log, show = show)
@@ -121,19 +125,30 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log
 def test(model, test_loader, DEVICE):
     overall_loss = 0
 
-    print('\n >>> Testing model...')
+    print('\n>>> Testing model...')
+    count_nan = 0
     with torch.no_grad():
-        for i, x in enumerate(test_loader):
+        for i, (n,p,t) in enumerate(test_loader):
+            print('\tbatch',i+1,'/',len(test_loader),', # nan',count_nan,end="\r")
 
-            x     = x.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
+            n     = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
+            p     = p.to(DEVICE) 
+            t     = t.to(DEVICE)
+            
+            n = torch.swapaxes(n,1,2)
 
-            x_hat = model(x)         ## output van het autoecoder model
+            n_hat = model(n[:,0,:],p,t)         ## output van het autoecoder model
+
+            if torch.isnan(n_hat[0][-1]).any(0):
+                count_nan +=1
 
             ## Calculate losses
-            loss  = loss_function(x,x_hat)
+            loss  = loss_function(n,n_hat)
             overall_loss += loss.item()
 
-    loss = (overall_loss)/(i+1)
-    print('Test loss '+model.name+': ',loss)
+            # break
 
-    return x, x_hat, loss
+    loss = (overall_loss)/(i+1)
+    print('\nTest loss:',loss)
+
+    return n, n_hat, loss
