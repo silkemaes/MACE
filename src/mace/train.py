@@ -51,6 +51,7 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
         
         if torch.isnan(n_hat[0][-1]).any(0):
             count_nan +=1
+            break
 
         ## Calculate losses
         loss  = loss_function(n,n_hat)
@@ -60,7 +61,7 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        # break
+        
         
     print('\n\t\t# nan:',count_nan,'/',len(data_loader))
     return (overall_loss)/(i+1)  ## save losses
@@ -113,7 +114,7 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log
         test_loss = validate_one_epoch(test_loader, model, DEVICE)
         loss_test_all.append(test_loss)
         
-        print("\nEpoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss, end="\r")
+        print("Epoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss, end="\r")
     print('\n \tDONE!')
 
     if plot == True:
@@ -141,12 +142,13 @@ def test(model, test_loader, DEVICE):
 
             if torch.isnan(n_hat[0][-1]).any(0):
                 count_nan +=1
+                break
 
             ## Calculate losses
             loss  = loss_function(n,n_hat)
             overall_loss += loss.item()
 
-            # break
+            
 
     loss = (overall_loss)/(i+1)
     print('\nTest loss:',loss)

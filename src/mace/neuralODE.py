@@ -87,20 +87,22 @@ class G(nn.Module):
     
 
 class Solver(nn.Module):
-    def __init__(self, p_dim, z_dim, n_dim=466, atol = 1e-20, rtol = 1e-6):
+    def __init__(self, p_dim, z_dim, DEVICE,  n_dim=466, atol = 1e-20, rtol = 1e-5):
         super(Solver, self).__init__()
 
         self.z_dim = z_dim
         self.n_dim = n_dim
+        self.DEVICE = DEVICE
 
         self.g       = G(p_dim, z_dim)
         self.odeterm = to.ODETerm(self.g, with_args=True)
 
         self.step_method          = to.Tsit5(term=self.odeterm)
         self.step_size_controller = to.IntegralController(atol=atol, rtol=rtol, term=self.odeterm)
-        self.solver               = to.AutoDiffAdjoint(self.step_method, self.step_size_controller)
+        self.adjoint              = to.AutoDiffAdjoint(self.step_method, self.step_size_controller).to(self.DEVICE)
 
-        self.jit_solver = torch.compile(self.solver)
+        self.jit_solver = torch.compile(self.adjoint)
+        # self.jit_solver = torch.jit.script(self.adjoint)
 
         input_ae_dim  = n_dim#+p_dim
         hidden_ae_dim = int(gmean([input_ae_dim, z_dim]))
@@ -113,11 +115,13 @@ class Solver(nn.Module):
         z_0 = self.encoder(n_0)
 
         problem = to.InitialValueProblem(
-            y0     = z_0.view((1,-1)),  ## "view" is om met de batches om te gaan
-            t_eval = tstep.view((1,-1)),
+            y0     = z_0.view((1,-1)).to(self.DEVICE),  ## "view" is om met de batches om te gaan
+            t_eval = tstep.view((1,-1)).to(self.DEVICE),
         )
 
         solution = self.jit_solver.solve(problem, args=p)
+
+        print(solution.stats)
 
         # # print('solution',solution.ys.shape)
         z_s = solution.ys.view(-1, self.z_dim)  ## want batches 
