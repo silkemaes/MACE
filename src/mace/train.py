@@ -1,5 +1,5 @@
 import numpy    as np
-import pandas   as pd
+# import pandas   as pd
 
 import torch
 import torch.nn          as nn
@@ -9,7 +9,7 @@ from torch.optim         import Adam
 ## own scripts
 import dataset  as ds
 import plotting  
-import tqdm 
+# import tqdm 
 
 
 

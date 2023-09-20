@@ -78,7 +78,7 @@ class G(nn.Module):
 
         # print(self.a.shape)
 
-    def forward(self, t, z, p):     ## volgorde specifiek voor torchode solver 
+    def forward(self, t, z, p: torch.Tensor):     ## volgorde specifiek voor torchode solver 
         A = self.a(p)       ## hier wordt de forward() uitgevoerd, normaal
         B = self.b(p)
         # print(A.shape, B.shape)
@@ -97,7 +97,7 @@ class Solver(nn.Module):
         self.g       = G(p_dim, z_dim)
         self.odeterm = to.ODETerm(self.g, with_args=True)
 
-        self.step_method          = to.Tsit5(term=self.odeterm)
+        self.step_method          = to.Dopri5(term=self.odeterm)
         self.step_size_controller = to.IntegralController(atol=atol, rtol=rtol, term=self.odeterm)
         self.adjoint              = to.AutoDiffAdjoint(self.step_method, self.step_size_controller).to(self.DEVICE)
 

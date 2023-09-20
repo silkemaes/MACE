@@ -129,7 +129,7 @@ class Data(Dataset):
         # print(trans_n.shape, trans_p.shape, trans_tstep.shape)
 
 
-        return trans_n, trans_p, trans_tstep
+        return torch.from_numpy(trans_n), torch.from_numpy(trans_p), torch.from_numpy(trans_tstep)
 
 
 def get_dirs(dirname):
