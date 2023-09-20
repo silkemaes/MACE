@@ -102,7 +102,6 @@ class Solver(nn.Module):
         self.adjoint              = to.AutoDiffAdjoint(self.step_method, self.step_size_controller).to(self.DEVICE)
 
         self.jit_solver = torch.compile(self.adjoint)
-        # self.jit_solver = torch.jit.script(self.adjoint)
 
         input_ae_dim  = n_dim#+p_dim
         hidden_ae_dim = int(gmean([input_ae_dim, z_dim]))
@@ -114,28 +113,35 @@ class Solver(nn.Module):
     def forward(self, n_0, p, tstep):
         z_0 = self.encoder(n_0)
 
+        # problem = to.InitialValueProblem(
+        #     y0     = z_0.view((1,-1)).to(self.DEVICE),  ## "view" is om met de batches om te gaan
+        #     t_eval = tstep.view((1,-1)).to(self.DEVICE),
+        # )
+
         problem = to.InitialValueProblem(
-            y0     = z_0.view((1,-1)).to(self.DEVICE),  ## "view" is om met de batches om te gaan
-            t_eval = tstep.view((1,-1)).to(self.DEVICE),
+            y0     = z_0.to(self.DEVICE),  ## "view" is om met de batches om te gaan
+            t_eval = tstep.to(self.DEVICE),
         )
 
         solution = self.jit_solver.solve(problem, args=p)
 
-        print(solution.stats)
+        print('len tstep    ',tstep.shape)
+        print('stats        ',solution.stats)
+        print('status       ',solution.status)
 
         # # print('solution',solution.ys.shape)
-        z_s = solution.ys.view(-1, self.z_dim)  ## want batches 
+        z_s = solution.ys#.view(-1, self.z_dim)  ## want batches 
 
-        # print(z_s)
+        print(z_s.shape)
 
         # n_0 = self.decoder(z_0.view(-1, self.z_dim))
 
         n_s_ravel = self.decoder(z_s)
-        n_s = n_s_ravel.reshape(1,tstep.shape[1], self.n_dim)
+        # n_s = n_s_ravel.reshape(1,tstep.shape[1], self.n_dim)
 
         # print('shape ns', n_s.shape)
 
-        return n_s
+        return n_s_ravel
 
         
         
