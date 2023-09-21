@@ -62,6 +62,7 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
         loss.backward()
         optimizer.step()
         
+        # break
         
     print('\n\t\t# nan:',count_nan,'/',len(data_loader))
     return (overall_loss)/(i+1)  ## save losses
@@ -142,12 +143,13 @@ def test(model, test_loader, DEVICE):
 
             if torch.isnan(n_hat[0][-1]).any(0):
                 count_nan +=1
-                break
+                # break
 
             ## Calculate losses
             loss  = loss_function(n,n_hat)
             overall_loss += loss.item()
 
+            break
             
 
     loss = (overall_loss)/(i+1)

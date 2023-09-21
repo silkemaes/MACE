@@ -113,15 +113,15 @@ class Solver(nn.Module):
     def forward(self, n_0, p, tstep):
         z_0 = self.encoder(n_0)
 
-        # problem = to.InitialValueProblem(
-        #     y0     = z_0.view((1,-1)).to(self.DEVICE),  ## "view" is om met de batches om te gaan
-        #     t_eval = tstep.view((1,-1)).to(self.DEVICE),
-        # )
-
         problem = to.InitialValueProblem(
-            y0     = z_0.to(self.DEVICE),  ## "view" is om met de batches om te gaan
-            t_eval = tstep.to(self.DEVICE),
+            y0     = z_0.view((1,-1)).to(self.DEVICE),  ## "view" is om met de batches om te gaan
+            t_eval = tstep.view((1,-1)).to(self.DEVICE),
         )
+
+        # problem = to.InitialValueProblem(
+        #     y0     = z_0.to(self.DEVICE),  ## "view" is om met de batches om te gaan
+        #     t_eval = tstep.to(self.DEVICE),
+        # )
 
         solution = self.jit_solver.solve(problem, args=p)
 
@@ -130,18 +130,18 @@ class Solver(nn.Module):
         print('status       ',solution.status)
 
         # # print('solution',solution.ys.shape)
-        z_s = solution.ys#.view(-1, self.z_dim)  ## want batches 
+        z_s = solution.ys.view(-1, self.z_dim)  ## want batches 
 
-        print(z_s.shape)
+        # print(z_s.shape)
 
         # n_0 = self.decoder(z_0.view(-1, self.z_dim))
 
         n_s_ravel = self.decoder(z_s)
-        # n_s = n_s_ravel.reshape(1,tstep.shape[1], self.n_dim)
+        n_s = n_s_ravel.reshape(1,tstep.shape[1], self.n_dim)
 
         # print('shape ns', n_s.shape)
 
-        return n_s_ravel
+        return n_s
 
         
         
