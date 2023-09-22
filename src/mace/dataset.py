@@ -94,42 +94,13 @@ class Data(Dataset):
 
     @staticmethod
     def normalise(x,min,max):
-        print("Normalising")
+        # print("Normalising")
         norm = (x - min)*(1/np.abs( min - max ))
-        print(x, norm)
+        # print(x, norm)
         return norm
 
     def __len__(self):
         return len(self.rand_idx)
-    
-    # def __getitem__(self,i):
-    #     '''
-    #     Returns an item of Data --> similar content as a ChemTorchMod instance. 
-        
-    #     The self.idx array has stored at what index in Data a new ChemTorchMod instance starts, 
-    #     needed to get a certain item i.
-    #     '''
-
-    #     idx = self.rand_idx[i]
-
-    #     mod = ChemTorchMod(self.dirname,self.dirs[idx])
-
-    #     ## physical parameters
-    #     trans_p = mod.p
-
-
-    #     ## abundances
-    #     trans_n = np.clip(mod.n, self.cutoff, None)
-
-
-    #     ## timesteps
-    #     ## normaliseren? eens nadenken
-    #     trans_tstep = mod.tstep
-
-    #     # print(trans_n.shape, trans_p.shape, trans_tstep.shape)
-
-
-    #     return torch.from_numpy(trans_n), torch.from_numpy(trans_p), torch.from_numpy(trans_tstep)
 
 
     def __getitem__(self,i):
@@ -151,11 +122,11 @@ class Data(Dataset):
         trans_p[3] = Data.normalise(mod.p[3], self.mins[3], self.maxs[3])
 
         ## abundances
-        print("abs")
+        # print("abs")
         trans_n = np.clip(mod.n, self.cutoff, None)
         trans_n = np.log10(trans_n)
-        print(trans_n)
-        # trans_n = Data.normalise(trans_n, trans_n.min, trans_n.max)
+        # print(trans_n)
+        trans_n = Data.normalise(trans_n, trans_n.min(), trans_n.max())
 
         ## timesteps
         ## normaliseren? eens nadenken

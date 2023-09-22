@@ -78,7 +78,7 @@ class G(nn.Module):
 
         # print(self.a.shape)
 
-    def forward(self, t, z, p: torch.Tensor):     ## volgorde specifiek voor torchode solver 
+    def forward(self, z, p: torch.Tensor):     ## volgorde specifiek voor torchode solver 
         A = self.a(p)       ## hier wordt de forward() uitgevoerd, normaal
         B = self.b(p)
         # print(A.shape, B.shape)
@@ -87,7 +87,7 @@ class G(nn.Module):
     
 
 class Solver(nn.Module):
-    def __init__(self, p_dim, z_dim, DEVICE,  n_dim=466, atol = 1e-20, rtol = 1e-5):
+    def __init__(self, p_dim, z_dim, DEVICE,  n_dim=466, atol = 1e-5, rtol = 1e-2):
         super(Solver, self).__init__()
 
         self.z_dim = z_dim
