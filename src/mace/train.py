@@ -37,6 +37,8 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
     overall_loss = 0
     count_nan = 0
 
+    # Aold = np.zeros((10,10))
+
     for i, (n,p,t) in enumerate(data_loader):
 
         print('\tbatch',i+1,'/',len(data_loader),', # nan',count_nan,end="\r")
@@ -47,10 +49,10 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
 
         n = torch.swapaxes(n,1,2)
 
-        # print(i, model.g.a(p).tolist())
+        print('\n',i, t[:,-1])#, model.g.A.tolist())
 
-        n_hat = model(n[:,0,:],p,t)         ## output van het autoecoder model
-        
+        n_hat = model(n[:,0,:],p,t)        
+
         # if torch.isnan(n_hat[0][-1]).any(0):
         #     count_nan +=1
         #     break
@@ -59,17 +61,25 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
         loss  = loss_function(n,n_hat)
         overall_loss += loss.item()
 
+        A = model.g.A.detach().numpy()
+        Aold = A.copy()
+
         ## Backpropagation
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        # print(model.g.a(p).tolist())
+        print('loss     ',loss.item())
+
+        A = model.g.A.detach().numpy()
+        # print(Aold)
+        # print(A)
+        print('verschil ',np.max(A-Aold))
         
-        if i == 1: 
+        if i == 100: 
             break
         
-    # print('\n\t\t# nan:',count_nan,'/',len(data_loader))
+    print('\n\t\t# nan:',count_nan,'/',len(data_loader))
     return (overall_loss)/(i+1)  ## save losses
 
 
@@ -105,16 +115,17 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log
 
     print('Model:         ')
     print('learning rate: '+str(lr))
-    print('\n>>> Training model...')
     for epoch in range(epochs):
 
         ## Training
+        print('\n>>> Training model...')
         model.train()
 
         train_loss = train_one_epoch(data_loader, model, DEVICE, optimizer)
         loss_train_all.append(train_loss)  ## save losses
 
         ## Validating
+        print('\n>>> Validating model...')
         model.eval() ## zelfde als torch.no_grad
 
         test_loss = validate_one_epoch(test_loader, model, DEVICE)

@@ -75,9 +75,11 @@ class Data(Dataset):
         self.logδ_max = np.log10(self.meta['delta_max'])
         self.Av_min = self.meta['Av_min']
         self.Av_max = self.meta['Av_max']
+        self.dt_min = 2.235616584465647
+        self.dt_max = 908602.5520318691
 
-        self.mins = np.array([self.logρ_min, self.logT_min, self.logδ_min, self.Av_min])
-        self.maxs = np.array([self.logρ_max, self.logT_max, self.logδ_max, self.Av_max])
+        self.mins = np.array([self.logρ_min, self.logT_min, self.logδ_min, self.Av_min, self.dt_min])
+        self.maxs = np.array([self.logρ_max, self.logT_max, self.logδ_max, self.Av_max, self.dt_max])
 
         self.cutoff = cutoff
         self.fraction = fraction
@@ -131,9 +133,7 @@ class Data(Dataset):
         ## timesteps
         ## normaliseren? eens nadenken: JA! op dezelfde manier
         trans_tstep = mod.tstep
-
-        # print(trans_n.shape, trans_p.shape, trans_tstep.shape)
-
+        trans_tstep = Data.normalise(trans_tstep, self.dt_min, self.dt_max)
 
         return torch.from_numpy(trans_n), torch.from_numpy(trans_p), torch.from_numpy(trans_tstep)
 

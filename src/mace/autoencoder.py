@@ -37,6 +37,7 @@ class Encoder(nn.Module):
         h = self.LeakyReLU(self.layer_out(h))
         return h
 
+
     def set_name(self, name):
         self.name = name
         return
