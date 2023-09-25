@@ -23,6 +23,14 @@ class A(nn.Module):
         self.layer_in = nn.Linear( input_dim, hidden_dim1)
         self.layer_hidden = nn.Linear(hidden_dim1,hidden_dim2)
         self.layer_out = nn.Linear(hidden_dim2, out_dim)
+
+        self.layer_out.weight.data = torch.zeros_like(self.layer_out.weight)
+        # print(self.layer_out.bias.data.shape)
+        bias = torch.diag(-torch.ones(z_dim))
+        self.layer_out.bias.data = bias.ravel()
+        self.layer_hidden.weight.requires_grad_(True)
+        self.layer_hidden.bias.requires_grad_(True)
+
         
         self.LeakyReLU = nn.LeakyReLU(0.2)
         
@@ -74,17 +82,26 @@ class G(nn.Module):
     def __init__(self, p_dim, z_dim):
         super(G, self).__init__()
         self.a = A(p_dim, z_dim)  
-        self.b = B(p_dim, z_dim)   
+        # self.b = B(p_dim, z_dim)   
 
         # print(self.a.shape)
 
-    def forward(self, z, p: torch.Tensor):     ## volgorde specifiek voor torchode solver 
+    # def forward(self,t, z, p: torch.Tensor):     ## volgorde specifiek voor torchode solver 
+    #     A = self.a(p)       ## hier wordt de forward() uitgevoerd, normaal
+    #     B = self.b(p)
+    #     # print(A.shape, B.shape)
+    #     # print(z.shape)
+    #     return torch.einsum("ij, bj -> bi", A, z) + torch.einsum("ijk, bj, bk -> bi", B, z, z)  ## b is de index vd batchsize
+
+    def forward(self,t, z, p: torch.Tensor):     ## volgorde specifiek voor torchode solver 
         A = self.a(p)       ## hier wordt de forward() uitgevoerd, normaal
-        B = self.b(p)
+        # B = self.b(p)
         # print(A.shape, B.shape)
         # print(z.shape)
-        return torch.einsum("ij, bj -> bi", A, z) + torch.einsum("ijk, bj, bk -> bi", B, z, z)  ## b is de index vd batchsize
+        return torch.einsum("ij, bj -> bi", A, z)  ## b is de index vd batchsize
     
+    
+
 
 class Solver(nn.Module):
     def __init__(self, p_dim, z_dim, DEVICE,  n_dim=466, atol = 1e-5, rtol = 1e-2):
@@ -118,23 +135,13 @@ class Solver(nn.Module):
             t_eval = tstep.view((1,-1)).to(self.DEVICE),
         )
 
-        # problem = to.InitialValueProblem(
-        #     y0     = z_0.to(self.DEVICE),  ## "view" is om met de batches om te gaan
-        #     t_eval = tstep.to(self.DEVICE),
-        # )
-
         solution = self.jit_solver.solve(problem, args=p)
 
-        print('len tstep    ',tstep.shape)
-        print('stats        ',solution.stats)
+        # print('len tstep    ',tstep.shape)
+        # print('stats        ',solution.stats)
         print('status       ',solution.status)
 
-        # # print('solution',solution.ys.shape)
         z_s = solution.ys.view(-1, self.z_dim)  ## want batches 
-
-        # print(z_s.shape)
-
-        # n_0 = self.decoder(z_0.view(-1, self.z_dim))
 
         n_s_ravel = self.decoder(z_s)
         n_s = n_s_ravel.reshape(1,tstep.shape[1], self.n_dim)

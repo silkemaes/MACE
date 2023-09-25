@@ -129,7 +129,7 @@ class Data(Dataset):
         trans_n = Data.normalise(trans_n, trans_n.min(), trans_n.max())
 
         ## timesteps
-        ## normaliseren? eens nadenken
+        ## normaliseren? eens nadenken: JA! op dezelfde manier
         trans_tstep = mod.tstep
 
         # print(trans_n.shape, trans_p.shape, trans_tstep.shape)

@@ -47,11 +47,13 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
 
         n = torch.swapaxes(n,1,2)
 
+        # print(i, model.g.a(p).tolist())
+
         n_hat = model(n[:,0,:],p,t)         ## output van het autoecoder model
         
-        if torch.isnan(n_hat[0][-1]).any(0):
-            count_nan +=1
-            break
+        # if torch.isnan(n_hat[0][-1]).any(0):
+        #     count_nan +=1
+        #     break
 
         ## Calculate losses
         loss  = loss_function(n,n_hat)
@@ -61,10 +63,13 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+
+        # print(model.g.a(p).tolist())
         
-        # break
+        if i == 1: 
+            break
         
-    print('\n\t\t# nan:',count_nan,'/',len(data_loader))
+    # print('\n\t\t# nan:',count_nan,'/',len(data_loader))
     return (overall_loss)/(i+1)  ## save losses
 
 
