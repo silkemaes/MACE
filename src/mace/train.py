@@ -154,4 +154,4 @@ def test(model, test_loader, DEVICE):
     loss = (overall_loss)/(i+1)
     print('\nTest loss:',loss)
 
-    return n, n_hat, loss
+    return n, n_hat, t, loss
