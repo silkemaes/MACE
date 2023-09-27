@@ -25,9 +25,9 @@ class ChemTorchMod():
     def __init__(self, dirname, dir=None):
         outpath = '/STER/silkem/ChemTorch/out/'
         
-        self.n      = np.load(outpath+dirname+'/'+dir+'/abundances.npy')[:,1:].astype(np.float32)    ## want n_0 dubbel
-        self.tstep  = np.load(outpath+dirname+'/'+dir+'/tstep.npy').astype(np.float32)
-        input       = np.load(outpath+dirname+'/'+dir+'/input.npy').astype(np.float32)
+        self.n      = np.load(outpath+dirname+'/'+dir+'/abundances.npy')[:,1:].astype(np.float32)    # type: ignore ## want n_0 dubbel
+        self.tstep  = np.load(outpath+dirname+'/'+dir+'/tstep.npy').astype(np.float32) # type: ignore
+        input       = np.load(outpath+dirname+'/'+dir+'/input.npy').astype(np.float32) # type: ignore
         self.p      = input[0:-1]
 
         # ## log10 from rho, T and delta
@@ -156,7 +156,7 @@ def get_data(dirname, batch_size, kwargs, plot = False, scale = 'norm'):
     print('# testing samples: ',len(test) )
     print('            ratio: ',np.round(len(test)/(len(train)+len(test)),2))
 
-    data_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=False ,  **kwargs)
+    data_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=True ,  **kwargs)
     test_loader = DataLoader(dataset=test , batch_size=1 , shuffle=False,  **kwargs)
 
     return train, data_loader, test_loader

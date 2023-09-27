@@ -37,49 +37,37 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
     overall_loss = 0
     count_nan = 0
 
-    # Aold = np.zeros((10,10))
 
     for i, (n,p,t) in enumerate(data_loader):
 
-        print('\tbatch',i+1,'/',len(data_loader),', # nan',count_nan,end="\r")
-           
+        print('\tbatch',i+1,'/',len(data_loader),end="\r")
+        
         n = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
         p = p.to(DEVICE) 
         t = t.to(DEVICE)
 
         n = torch.swapaxes(n,1,2)
 
-        print('\n',i, t[:,-1])#, model.g.A.tolist())
+        # print('\n',i, t[:,-1])#, model.g.A.tolist())
 
-        n_hat = model(n[:,0,:],p,t)        
+        n_hat, status = model(n[:,0,:],p,t)        
 
-        # if torch.isnan(n_hat[0][-1]).any(0):
-        #     count_nan +=1
-        #     break
+        if status.item() == 4:
+            print('ERROR: neuralODE could not be solved!')
+            break
 
         ## Calculate losses
         loss  = loss_function(n,n_hat)
         overall_loss += loss.item()
-
-        A = model.g.A.detach().numpy()
-        Aold = A.copy()
 
         ## Backpropagation
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        print('loss     ',loss.item())
+        # print('loss     ',loss.item())
 
-        A = model.g.A.detach().numpy()
-        # print(Aold)
-        # print(A)
-        print('verschil ',np.max(A-Aold))
-        
-        if i == 100: 
-            break
-        
-    print('\n\t\t# nan:',count_nan,'/',len(data_loader))
+    # print('\n\t\t# nan:',count_nan,'/',len(data_loader))
     return (overall_loss)/(i+1)  ## save losses
 
 
@@ -98,7 +86,11 @@ def validate_one_epoch(test_loader, model, DEVICE):
             
             n = torch.swapaxes(n,1,2)
 
-            n_hat = model(n[:,0,:],p,t)         ## output van het autoecoder model
+            n_hat, status = model(n[:,0,:],p,t)         ## output van het autoecoder model
+
+            if status.item() == 4:
+                print('ERROR: neuralODE could not be solved!')
+                break
 
             ## Calculate losses
             loss  = loss_function(n,n_hat)
@@ -155,11 +147,11 @@ def test(model, test_loader, DEVICE):
             
             n = torch.swapaxes(n,1,2)
 
-            n_hat = model(n[:,0,:],p,t)         ## output van het autoecoder model
+            n_hat, status = model(n[:,0,:],p,t)         ## output van het autoecoder model
 
-            if torch.isnan(n_hat[0][-1]).any(0):
-                count_nan +=1
-                # break
+            if status.item() == 4:
+                print('ERROR: neuralODE could not be solved!')
+                break
 
             ## Calculate losses
             loss  = loss_function(n,n_hat)
@@ -167,7 +159,6 @@ def test(model, test_loader, DEVICE):
 
             break
             
-
     loss = (overall_loss)/(i+1)
     print('\nTest loss:',loss)
 
