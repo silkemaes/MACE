@@ -1,5 +1,4 @@
 import numpy    as np
-# import pandas   as pd
 
 import torch
 import torch.nn          as nn
@@ -10,7 +9,6 @@ from torch.optim         import Adam
 import dataset  as ds
 import plotting  
 # import tqdm 
-
 
 
 def loss_function(x, x_hat):
@@ -35,8 +33,6 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
     - losses
     '''    
     overall_loss = 0
-    count_nan = 0
-
 
     for i, (n,p,t) in enumerate(data_loader):
 
@@ -47,8 +43,6 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
         t = t.to(DEVICE)
 
         n = torch.swapaxes(n,1,2)
-
-        # print('\n',i, t[:,-1])#, model.g.A.tolist())
 
         n_hat, status = model(n[:,0,:],p,t)        
 
@@ -65,9 +59,6 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
         loss.backward()
         optimizer.step()
 
-        # print('loss     ',loss.item())
-
-    # print('\n\t\t# nan:',count_nan,'/',len(data_loader))
     return (overall_loss)/(i+1)  ## save losses
 
 
@@ -107,17 +98,18 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log
 
     print('Model:         ')
     print('learning rate: '+str(lr))
+    print('\n>>> Training model...')
     for epoch in range(epochs):
 
         ## Training
-        print('\n>>> Training model...')
+        
         model.train()
 
         train_loss = train_one_epoch(data_loader, model, DEVICE, optimizer)
         loss_train_all.append(train_loss)  ## save losses
 
         ## Validating
-        print('\n>>> Validating model...')
+        # print('\n>>> Validating model...')
         model.eval() ## zelfde als torch.no_grad
 
         test_loss = validate_one_epoch(test_loader, model, DEVICE)

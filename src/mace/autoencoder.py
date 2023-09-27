@@ -3,7 +3,7 @@ import torch.nn          as nn
 
 class Encoder(nn.Module):
     """
-    Encoder network.
+    Encoder neural network.
     """
     def __init__(self, input_dim, hidden_dim, latent_dim, nb_hidden = 1, type = 'straight'):
         super(Encoder, self).__init__()
@@ -46,7 +46,7 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
     """
-    Decoder network.
+    Decoder nearal network.
     """
     def __init__(self, latent_dim, hidden_dim, output_dim, nb_hidden = 1, type = 'straight'):
         super(Decoder, self).__init__()
@@ -109,7 +109,9 @@ class Autoencoder(nn.Module):
 
 
 def get_overview(coder):
-    ## Retrieve the number of nodes in each layer
+    '''
+    Retrieve the number of nodes in each layer.
+    '''
     input_nodes = coder.layer_in.in_features
     hidden_nodes = list()
     for layer in coder.hidden:
@@ -127,6 +129,9 @@ def get_overview(coder):
     return (input_nodes, hidden_nodes, output_nodes), (input_params,hidden_params,output_params)
 
 def print_overview(coder):
+    '''
+    Print the overview of the given coder.
+    '''
     (input_nodes, hidden_nodes, output_nodes), (input_params,hidden_params,output_params) = get_overview(coder)
     total_params = input_params + output_params
     print(str(coder.name)+':')
@@ -152,6 +157,9 @@ def overview(model):
     return
     
 def build(input_dim, hidden_dim, latent_dim,output_dim, nb_hidden, type, DEVICE):
+    '''
+    Build an autoencoder, given the input, output and latent dimensions.
+    '''
     encoder = Encoder( input_dim, hidden_dim, latent_dim, nb_hidden=nb_hidden, type = type)
     decoder = Decoder(latent_dim, hidden_dim, output_dim, nb_hidden=nb_hidden, type = type)
     model = Autoencoder(Encoder=encoder, Decoder=decoder).to(DEVICE)  
