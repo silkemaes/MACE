@@ -45,10 +45,13 @@ def plot_loss(train, test, log = True, show = True):
 
     ax1.legend(loc = 'upper right')
     
+    plt.tight_layout()
+
     if show == True:
         plt.show()
 
-    return
+
+    return fig
 
 def plot_compare(real, preds, models, molecs, spec, scale = 'norm'):
 

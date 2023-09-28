@@ -33,6 +33,7 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
     - losses
     '''    
     overall_loss = 0
+    status = 0
 
     for i, (n,p,t) in enumerate(data_loader):
 
@@ -44,11 +45,10 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
 
         n = torch.swapaxes(n,1,2)
 
-        n_hat, status = model(n[:,0,:],p,t)        
+        n_hat, modstatus = model(n[:,0,:],p,t)        
 
-        if status.item() == 4:
-            print('ERROR: neuralODE could not be solved!')
-            break
+        if modstatus.item() == 4:
+            status += modstatus.item()
 
         ## Calculate losses
         loss  = loss_function(n,n_hat)
@@ -59,13 +59,14 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
         loss.backward()
         optimizer.step()
 
-    return (overall_loss)/(i+1)  ## save losses
+    return (overall_loss)/(i+1), status  ## save losses
 
 
 
 def validate_one_epoch(test_loader, model, DEVICE):
 
     overall_loss = 0
+    # status = 0
 
     with torch.no_grad():
         for i, (n,p,t) in enumerate(test_loader):
@@ -79,9 +80,8 @@ def validate_one_epoch(test_loader, model, DEVICE):
 
             n_hat, status = model(n[:,0,:],p,t)         ## output van het autoecoder model
 
-            if status.item() == 4:
-                print('ERROR: neuralODE could not be solved!')
-                break
+            # if status.item() == 4:
+            #     status += 4
 
             ## Calculate losses
             loss  = loss_function(n,n_hat)
@@ -95,6 +95,7 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log
 
     loss_train_all = []
     loss_test_all  = []
+    status_all = []
 
     print('Model:         ')
     print('learning rate: '+str(lr))
@@ -104,9 +105,10 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log
         ## Training
         
         model.train()
-
-        train_loss = train_one_epoch(data_loader, model, DEVICE, optimizer)
+        print('')
+        train_loss, status = train_one_epoch(data_loader, model, DEVICE, optimizer)
         loss_train_all.append(train_loss)  ## save losses
+        status_all.append(status%4)
 
         ## Validating
         # print('\n>>> Validating model...')
@@ -115,13 +117,13 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = False, log
         test_loss = validate_one_epoch(test_loader, model, DEVICE)
         loss_test_all.append(test_loss)
         
-        print("Epoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss, end="\r")
+        print("\nEpoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss, end="\r")
     print('\n \tDONE!')
 
     if plot == True:
         plotting.plot_loss(loss_train_all, loss_test_all, log = log, show = show)
 
-    return loss_train_all, loss_test_all
+    return loss_train_all, loss_test_all, status_all
 
 
 def test(model, test_loader, DEVICE):
@@ -142,7 +144,7 @@ def test(model, test_loader, DEVICE):
             n_hat, status = model(n[:,0,:],p,t)         ## output van het autoecoder model
 
             if status.item() == 4:
-                print('ERROR: neuralODE could not be solved!')
+                print('ERROR: neuralODE could not be solved!',i)
                 break
 
             ## Calculate losses

@@ -23,18 +23,18 @@ from tqdm import tqdm
 cuda   = False
 DEVICE = torch.device("cuda" if cuda else "cpu")
 batch_size = 100
-epochs = 100
+epochs = 10
 
 kwargs = {'num_workers': 1, 'pin_memory': True} 
 
 ## -------------------------------------------------------------------------
 
-dir = '/lhome/silkem/MACE/MACE/train_data_C/'
+dir = '/STER/silkem/MACE/data/train_data_C/'
 
 train, data_loader, test_loader = ds.get_dataset(dir, batch_size, kwargs, plot = False)
 
 ## Set up training hyperparams
-lrs = ['1e-4', '3e-4', '1e-3', '3e-3', '1e-2', '3e-2', '1e-1']                   ## learning rate
+lrs = ['1e-4']#, '3e-4', '1e-3', '3e-3', '1e-2', '3e-2', '1e-1']                   ## learning rate
 
 ## Set up architecture hyperparams
 input_dim  = train.df.shape[1]
@@ -47,7 +47,7 @@ type = 'decr'
 name = 'model4'
 
 ## make dir for output
-path = '/lhome/silkem/MACE/MACE/ae-models/learning-rate/'+name+'/'
+path = '/STER/silkem/MACE/ae-models/learning-rate/'+name+'/'
 utils.makeOutputDir(path)
 
 
@@ -60,6 +60,7 @@ for lr in tqdm(lrs):
     
     loss_train_all, loss_test_all = tr.Train(model, float(lr), data_loader, test_loader, epochs, DEVICE, plot = True, show = False)
 
+    print(model.state_dict)
     plt.savefig(     path+'/ae-lr'+str(lr)+'.png')
     torch.save(model,path+'/ae-lr'+str(lr)+'.pl')
 

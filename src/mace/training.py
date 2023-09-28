@@ -2,8 +2,10 @@
 import sys
 import torch
 import json
+import numpy            as np
 import datetime         as dt
 from time             import time
+import matplotlib.pyplot as plt
 
 
 ## import own functions
@@ -12,22 +14,43 @@ import dataset      as ds
 import train        as tr
 import neuralODE    as nODE
 import utils        as utils
+import plotting     as pl
 
 start = time()
-
-
-## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
-epochs = 50
-lr = 1e-2
-z_dim = 10
-dirname = 'C-short-dtime'
-
-
-## ---------------------------------------
 name = dt.datetime.now()
 path = '/STER/silkem/MACE/models/'+str(name)
 
+## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
+epochs = 1
+lr = 1.
+z_dim = 10
+dirname = 'C-short-dtime'
+
+print('------------------------------')
+print('')
+print('Training:')
+print('Name:', name)
+print('------------------------------')
+print('      # epochs:', epochs)
+print(' learning rate:', lr)
+print('# z dimensions:', z_dim)
+print('    sample dir:',dirname)
+print('')
+
+## ---------------------------------------
+
 utils.makeOutputDir(path)
+
+metadata = {'traindir'  : dirname,
+            'lr'        : lr,
+            'epochs'    : epochs,
+            'z_dim'     : z_dim,
+            'done'      : 'false'
+}
+
+json_object = json.dumps(metadata, indent=4)
+with open(path+"/meta.json", "w") as outfile:
+    outfile.write(json_object)
 
 ## Set up PyTorch 
 cuda   = False
@@ -41,11 +64,8 @@ train, data_loader, test_loader = ds.get_data(dirname = dirname, batch_size=batc
 model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=466, DEVICE = DEVICE)
 
 tic = time()
-loss_train_all, loss_test_all = tr.train(model, lr, data_loader, test_loader, epochs, DEVICE)
-n_test, n_test_hat, tstep, loss = tr.test(model, test_loader, DEVICE)
-
-
-torch.save(model,path+'/nn.pl')
+loss_train_all, loss_test_all, status = tr.train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = True, show = False)
+print('\n\tTraining done!')
 
 toc = time()
 train_time = toc-tic
@@ -58,16 +78,28 @@ metadata = {'traindir'  : dirname,
             'lr'        : lr,
             'epochs'    : epochs,
             'z_dim'     : z_dim,
-            'train_time'    : train_time,
-            'overhead'      : overhead_time,
-            'samples'       : len(train),
-            'mins'          : train.mins,
-            'maxs'          : train.maxs,
-            'cutoff_abs'    : train.cutoff
+            'train_time': train_time,
+            'overhead'  : overhead_time,
+            'samples'   : len(train),
+            'cutoff_abs': train.cutoff,
+            'done'      : 'true'
 }
 
+min_max = np.stack((train.mins, train.maxs), axis=1)
+losses = np.stack((np.array(loss_train_all), np.array(loss_test_all)), axis = 1)
 
 json_object = json.dumps(metadata, indent=4)
 with open(path+"/meta.json", "w") as outfile:
     outfile.write(json_object)
+
+## Saving all files
+np.save(path+'/minmax', min_max) 
+np.save(path+'/status', np.array(status))
+np.save(path+'/losses', losses)
+plt.savefig(path+'/mse.png')
+torch.save(model.state_dict(),path+'/nn.pt')
+
+print('** ALL DONE! in [min]', round((toc-tic)/60,2))
+
+
 
