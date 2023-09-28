@@ -77,9 +77,11 @@ class Data(Dataset):
         self.Av_max = self.meta['Av_max']
         self.dt_min = 2.235616584465647
         self.dt_max = 908602.5520318691
+        self.n_min = np.log(cutoff)
+        self.n_max = np.log(0.85e-1)    ## initial abundance He
 
-        self.mins = np.array([self.logρ_min, self.logT_min, self.logδ_min, self.Av_min, self.dt_min])
-        self.maxs = np.array([self.logρ_max, self.logT_max, self.logδ_max, self.Av_max, self.dt_max])
+        self.mins = np.array([self.logρ_min, self.logT_min, self.logδ_min, self.Av_min, self.dt_min, self.n_min])
+        self.maxs = np.array([self.logρ_max, self.logT_max, self.logδ_max, self.Av_max, self.dt_max, self.n_max])
 
         self.cutoff = cutoff
         self.fraction = fraction
@@ -128,7 +130,7 @@ class Data(Dataset):
         trans_n = np.clip(mod.n, self.cutoff, None)
         trans_n = np.log10(trans_n)
         # print(trans_n)
-        trans_n = Data.normalise(trans_n, trans_n.min(), trans_n.max())
+        trans_n = Data.normalise(trans_n, self.n_min, self.n_max)       ## max boundary = rel. abundance of He
 
         ## timesteps
         ## normaliseren? eens nadenken: JA! op dezelfde manier
