@@ -21,10 +21,11 @@ name = dt.datetime.now()
 path = '/STER/silkem/MACE/models/'+str(name)
 
 ## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
-epochs = 1
-lr = 1.
+epochs = 20
+lr = 1.e-3
 z_dim = 10
-dirname = 'C-short-dtime'
+# dirname = 'C-short-dtime'
+dirname = 'new'
 
 print('------------------------------')
 print('')
@@ -88,10 +89,6 @@ metadata = {'traindir'  : dirname,
 min_max = np.stack((train.mins, train.maxs), axis=1)
 losses = np.stack((np.array(loss_train_all), np.array(loss_test_all)), axis = 1)
 
-json_object = json.dumps(metadata, indent=4)
-with open(path+"/meta.json", "w") as outfile:
-    outfile.write(json_object)
-
 ## Saving all files
 np.save(path+'/minmax', min_max) 
 np.save(path+'/status', np.array(status))
@@ -99,7 +96,11 @@ np.save(path+'/losses', losses)
 plt.savefig(path+'/mse.png')
 torch.save(model.state_dict(),path+'/nn.pt')
 
-print('** ALL DONE! in [min]', round((toc-tic)/60,2))
+json_object = json.dumps(metadata, indent=4)
+with open(path+"/meta.json", "w") as outfile:
+    outfile.write(json_object)
+
+print('** ',name,' ALL DONE! in [min]', round((toc-tic)/60,2))
 
 
 

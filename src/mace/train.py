@@ -43,23 +43,30 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer):
         p = p.to(DEVICE) 
         t = t.to(DEVICE)
 
-        n = torch.swapaxes(n,1,2)
+        if t[-1,-1].item() < 0.011003478870511375:    ## only use data with small dt
 
-        n_hat, modstatus = model(n[:,0,:],p,t)        
+            n = torch.swapaxes(n,1,2)
 
-        if modstatus.item() == 4:
-            status += modstatus.item()
+            n_hat, modstatus = model(n[:,0,:],p,t)        
 
-        ## Calculate losses
-        loss  = loss_function(n,n_hat)
-        overall_loss += loss.item()
+            if modstatus.item() == 4:
+                # print('stat4')
+                status += modstatus.item()
 
-        ## Backpropagation
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+            ## Calculate losses
+            loss  = loss_function(n,n_hat)
+            overall_loss += loss.item()
+
+            ## Backpropagation
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+    
+        else:           ## else: skip this data
+            continue
 
     return (overall_loss)/(i+1), status  ## save losses
+            
 
 
 
@@ -70,7 +77,7 @@ def validate_one_epoch(test_loader, model, DEVICE):
 
     with torch.no_grad():
         for i, (n,p,t) in enumerate(test_loader):
-            print('\tbatch',i+1,'/',len(test_loader),end="\r")
+            # print('\tbatch',i+1,'/',len(test_loader),end="\r")
 
             n     = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
             p     = p.to(DEVICE) 
