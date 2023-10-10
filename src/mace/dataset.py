@@ -77,8 +77,8 @@ class Data(Dataset):
         self.Av_max = self.meta['Av_max']
         self.dt_min = 2.235616584465647
         self.dt_max = 908602.5520318691
-        self.n_min = np.log(cutoff)
-        self.n_max = np.log(0.85e-1)    ## initial abundance He
+        self.n_min = np.log10(cutoff)
+        self.n_max = np.log10(0.85e-1)    ## initial abundance He
 
         self.mins = np.array([self.logρ_min, self.logT_min, self.logδ_min, self.Av_min, self.dt_min, self.n_min])
         self.maxs = np.array([self.logρ_max, self.logT_max, self.logδ_max, self.Av_max, self.dt_max, self.n_max])
