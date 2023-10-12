@@ -21,9 +21,10 @@ name = dt.datetime.now()
 path = '/STER/silkem/MACE/models/'+str(name)
 
 ## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
-lr = 1.e-2
+lr = 1.e-3
 epochs = 20
-z_dim = 25
+z_dim = 10
+loss_type = 'rel'
 dirname = 'C-short-dtime'
 # dirname = 'new'
 
@@ -36,6 +37,7 @@ print('      # epochs:', epochs)
 print(' learning rate:', lr)
 print('# z dimensions:', z_dim)
 print('    sample dir:',dirname)
+print('     loss type:',loss_type)
 print('')
 
 ## ---------------------------------------
@@ -46,6 +48,7 @@ metadata = {'traindir'  : dirname,
             'lr'        : lr,
             'epochs'    : epochs,
             'z_dim'     : z_dim,
+            'loss'      : loss_type,
             'done'      : 'false'
 }
 
@@ -65,7 +68,7 @@ train, data_loader, test_loader = ds.get_data(dirname = dirname, batch_size=batc
 model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=466, DEVICE = DEVICE)
 
 tic = time()
-loss_train_all, loss_test_all, status = tr.train(model, lr, data_loader, test_loader, epochs, DEVICE, plot = True, show = False)
+loss_train_all, loss_test_all, status = tr.train(model, lr, data_loader, test_loader, epochs, DEVICE, loss_type,plot = True, show = False)
 print('\n\tTraining done!')
 
 toc = time()
@@ -79,6 +82,7 @@ metadata = {'traindir'  : dirname,
             'lr'        : lr,
             'epochs'    : epochs,
             'z_dim'     : z_dim,
+            'loss'      : loss_type,
             'train_time': train_time,
             'overhead'  : overhead_time,
             'samples'   : len(train),
