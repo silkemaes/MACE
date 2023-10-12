@@ -21,11 +21,11 @@ name = dt.datetime.now()
 path = '/STER/silkem/MACE/models/'+str(name)
 
 ## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
+lr = 1.e-2
 epochs = 20
-lr = 1.e-3
-z_dim = 10
-# dirname = 'C-short-dtime'
-dirname = 'new'
+z_dim = 25
+dirname = 'C-short-dtime'
+# dirname = 'new'
 
 print('------------------------------')
 print('')

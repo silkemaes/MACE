@@ -125,7 +125,6 @@ class Solver(nn.Module):
         self.encoder = ae.Encoder(input_dim=input_ae_dim, hidden_dim=hidden_ae_dim, latent_dim=z_dim       )
         self.decoder = ae.Decoder(latent_dim=z_dim      , hidden_dim=hidden_ae_dim, output_dim=input_ae_dim)
 
-        self.g = G(p_dim=p_dim, z_dim=z_dim)
 
     def forward(self, n_0, p, tstep):
         z_0 = self.encoder(n_0)
