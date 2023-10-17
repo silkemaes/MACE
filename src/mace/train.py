@@ -1,4 +1,5 @@
 import numpy    as np
+from time               import time
 
 import torch
 import torch.nn          as nn
@@ -113,17 +114,22 @@ def validate_one_epoch(test_loader, model, DEVICE, loss_type):
             n     = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
             p     = p.to(DEVICE) 
             t     = t.to(DEVICE)
+
+            if t[-1,-1].item() < 0.011003478870511375:
             
-            n = torch.swapaxes(n,1,2)
+                n = torch.swapaxes(n,1,2)
 
-            n_hat, status = model(n[:,0,:],p,t)         ## output van het autoecoder model
+                n_hat, status = model(n[:,0,:],p,t)         ## output van het autoecoder model
 
-            # if status.item() == 4:
-            #     status += 4
+                # if status.item() == 4:
+                #     status += 4
 
-            ## Calculate losses
-            loss  = loss_function(n,n_hat,loss_type)
-            overall_loss += loss.item()
+                ## Calculate losses
+                loss  = loss_function(n,n_hat,loss_type)
+                overall_loss += loss.item()
+
+            else:           ## else: skip this data
+                continue
 
             return (overall_loss)/(i+1)  ## save losses
 
@@ -166,32 +172,42 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, loss_type,plot = 
 
 def test(model, test_loader, DEVICE, loss_type):
     overall_loss = 0
+    mace_time = list()
 
     print('\n>>> Testing model...')
-    count_nan = 0
+
     with torch.no_grad():
         for i, (n,p,t) in enumerate(test_loader):
-            print('\tbatch',i+1,'/',len(test_loader),', # nan',count_nan,end="\r")
+            print('\tbatch',i+1,'/',len(test_loader),end="\r")
 
             n     = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
             p     = p.to(DEVICE) 
             t     = t.to(DEVICE)
+
+            if t[-1,-1].item() < 0.011003478870511375:
             
-            n = torch.swapaxes(n,1,2)
+                n = torch.swapaxes(n,1,2)
 
-            n_hat, status = model(n[:,0,:],p,t)         ## output van het autoecoder model
+                tic = time()
+                n_hat, status = model(n[:,0,:],p,t)         ## output van het autoecoder model
+                toc = time()
 
-            if status.item() == 4:
-                print('ERROR: neuralODE could not be solved!',i)
-                break
+                if status.item() == 4:
+                    print('ERROR: neuralODE could not be solved!',i)
+                    # break
 
-            ## Calculate losses
-            loss  = loss_function(n,n_hat, loss_type)
-            overall_loss += loss.item()
+                ## Calculate losses
+                loss  = loss_function(n,n_hat, loss_type)
+                overall_loss += loss.item()
 
-            break
+                solve_time = toc-tic
+                mace_time.append(solve_time)
+
+            else:           ## else: skip this data
+                mace_time.append(0)
+
             
     loss = (overall_loss)/(i+1)
     print('\nTest loss:',loss)
 
-    return n, n_hat, t, loss
+    return n, n_hat, t, loss, mace_time

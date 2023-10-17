@@ -29,15 +29,7 @@ class ChemTorchMod():
         self.tstep  = np.load(outpath+dirname+'/'+dir+'/tstep.npy').astype(np.float32) # type: ignore
         input       = np.load(outpath+dirname+'/'+dir+'/input.npy').astype(np.float32) # type: ignore
         self.p      = input[0:-1]
-
-        # ## log10 from rho, T and delta
-        # for i in range(3):
-        #     self.p[i]  = np.log10(input[i])
-        # self.p[3] = input[3]
-
-        ## Clip & log10
-        # self.n = np.clip(self.n, cutoff, None)
-        # self.n = np.log10(self.n)
+        self.tictoc = np.load(outpath+dirname+'/'+dir+'/tictoc.npy').astype(np.float32) # type: ignore
 
     def __len__(self):
         return len(self.tstep)
@@ -139,6 +131,13 @@ class Data(Dataset):
 
         return torch.from_numpy(trans_n), torch.from_numpy(trans_p), torch.from_numpy(trans_tstep)
 
+    def tictoc(self,i):
+        idx = self.rand_idx[i]
+
+        mod = ChemTorchMod(self.dirname,self.dirs[idx])
+
+        return mod.tictoc[0]
+
 
 def get_dirs(dirname):
     outpath = '/STER/silkem/ChemTorch/out/'
@@ -161,7 +160,7 @@ def get_data(dirname, batch_size, kwargs, plot = False, scale = 'norm'):
     data_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=True ,  **kwargs)
     test_loader = DataLoader(dataset=test , batch_size=1 , shuffle=False,  **kwargs)
 
-    return train, data_loader, test_loader
+    return train, test, data_loader, test_loader
 
 
 
