@@ -1,0 +1,11 @@
+{
+    "traindir": "C-short-dtime",
+    "lr": 0.1,
+    "epochs": 20,
+    "z_dim": 10,
+    "train_time": 38165.656599760056,
+    "overhead": 0.26058077812194824,
+    "samples": 9493,
+    "cutoff_abs": 1e-20,
+    "done": "true"
+}
