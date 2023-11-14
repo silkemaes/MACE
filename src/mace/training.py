@@ -23,8 +23,8 @@ path = '/STER/silkem/MACE/models/'+str(name)
 ## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
 lr = 1.e-3
 epochs = 20
-z_dim = 10
-loss_type = 'rel'
+z_dim = 24
+loss_type = 'mse'
 dirname = 'C-short-dtime'
 # dirname = 'new'
 
@@ -64,7 +64,7 @@ batch_size = 1 ## if not 1, dan kan er geen tensor van gemaakt worden
 kwargs = {'num_workers': 1, 'pin_memory': True} 
 
 
-train, data_loader, test_loader = ds.get_data(dirname = dirname, batch_size=batch_size, kwargs=kwargs, plot = True, scale = None)
+train, test, data_loader, test_loader = ds.get_data(dirname = dirname, batch_size=batch_size, kwargs=kwargs, plot = True, scale = None)
 model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=466, DEVICE = DEVICE)
 
 tic = time()
