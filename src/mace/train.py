@@ -13,34 +13,41 @@ import plotting
 
 
 def mse_loss(x, x_hat):
-    loss = nn.functional.mse_loss(x_hat, x)
+    '''
+    Return the mean squared loss per x_i.
+    '''
+    loss = nn.functional.mse_loss(x_hat, x, reduction='none')
     return loss
 
 def rel_loss(x,x_hat):
+    '''
+    Return the relative loss per x_i.
+    The relative loss is given by ((x_hat-x_0+eps**2)/(x-x_0+eps))**2, 
+        where eps makes sure we don't devide by 0.
+    '''
     len   = x.shape[1]
     x_0   = x[:,0,:]
     x_hat =x_hat[:,1:,:]
     x = x[:,1:,:]
     eps = 1e-4
     loss  = ((x_hat-x_0+eps**2)/(x-x_0+eps))**2
-    return loss.mean()
+    return loss
 
-def combi_loss(x,x_hat):
-    mse = mse_loss(x,x_hat)
-    rel = rel_loss(x,x_hat)/1.e6
-    # print('losses',mse,rel,mse+rel)
-    return mse+rel
+def combi_loss(x,x_hat, factor=1):
+    mse = mse_loss(x,x_hat)/max(mse_loss(x,x_hat))
+    rel = rel_loss(x,x_hat)/max(rel_loss(x,x_hat))/factor
+    return mse,rel
 
-def loss_function(x,x_hat,type):
+def loss_function(x,x_hat,type, factor = 1):
     if type == 'mse':
         return mse_loss(x,x_hat)
     if type == 'rel': 
         return rel_loss(x,x_hat)
     if type == 'combi':
-        return combi_loss(x,x_hat)
+        return combi_loss(x,x_hat, factor)
 
 
-def train_one_epoch(data_loader, model, DEVICE, optimizer, loss_type):
+def train_one_epoch(data_loader, model, DEVICE, optimizer, loss_type, factor = 1):
     '''
     Function to train 1 epoch.
 
@@ -84,20 +91,25 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer, loss_type):
                 status += modstatus.item()
 
             ## Calculate losses
-            loss  = loss_function(n,n_hat, loss_type)
-            # print(loss)
-            # print(type(loss))
-            overall_loss += loss.item()
+            loss  = loss_function(n,n_hat, loss_type, factor = factor)
+            if type == 'combi':
+                mse_loss = loss[0]
+                rel_loss = loss[1]
+                tot_loss = mse_loss + rel_loss
+            else:
+                tot_loss = loss
+
+            overall_loss += tot_loss.mean.item()
 
             ## Backpropagation
             optimizer.zero_grad()
-            loss.backward()
+            tot_loss.backward()
             optimizer.step()
     
         else:           ## else: skip this data
             continue
 
-    return (overall_loss)/(i+1), status  ## save losses
+    return (overall_loss)/(i+1), loss, status  ## save losses
             
 
 
@@ -150,7 +162,7 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, loss_type,plot = 
         
         model.train()
         print('')
-        train_loss, status = train_one_epoch(data_loader, model, DEVICE, optimizer, loss_type)
+        train_loss, all_losses, status = train_one_epoch(data_loader, model, DEVICE, optimizer, loss_type)
         loss_train_all.append(train_loss)  ## save losses
         status_all.append(status%4)
 
