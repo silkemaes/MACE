@@ -1,6 +1,7 @@
 import numpy             as np
 import matplotlib.pyplot as plt
 import matplotlib        as mpl
+import matplotlib.lines     as mlines
 
 ## own scripts
 import utils
@@ -24,26 +25,60 @@ def plot_hist(df):
     return
 
 def plot_loss(train, test, log = True, show = True):
+
+        #     trainstats['total loss']        = loss_train_all
+        # trainstats['total mse loss']    = train_mse_loss_all
+        # trainstats['total rel loss']    = train_rel_loss_all
+        # trainstats['idv mse loss']      = train_idv_mse_loss_all
+        # trainstats['idv rel loss']      = train_idv_rel_loss_all
+        # trainstats['status']            = train_status_all
+
+
     fig = plt.figure(figsize = (9,3))
     ax1 = fig.add_subplot((111))
 
     lw = 0.5
 
-    ax1.plot(train, ls = '-'    , c='k', lw = lw)
-    ax1.plot(train, ls = None, marker = '.', c='royalblue', label = 'train')
+    ## ------------- TRAINING ------------
+    ## total loss
+    # ax1.plot(train['total loss'], ls = '-'    , c='k', lw = lw)
+    ax1.plot(train['total loss'], ls = '-', marker = '.', lw = lw, c='navy')
+    ## mse loss
+    # ax1.plot(train['total mse loss'], ls = '-'    , c='k', lw = lw)
+    ax1.plot(train['total mse loss'], ls = '-', marker = '.', lw = lw, c='royalblue')
+    ## rel loss
+    # ax1.plot(train['total rel loss'], ls = '-'    , c='k', lw = lw)
+    ax1.plot(train['total rel loss'], ls = '-', marker = '.', lw = lw, c='lightsteelblue')
 
-    ax1.plot(test, ls = '-'    , c='k', lw = lw)
-    ax1.plot(test, ls = None, marker = '.', c='firebrick', label = 'test')
+    ## ------------ VALIDATING -----------
+    ## total loss
+    # ax1.plot(test['total loss'], ls = '-'    , c='k', lw = lw)
+    ax1.plot(test['total loss'], ls = '-', marker = '.', lw = lw, c='maroon')
+    ## mse loss
+    # ax1.plot(test['total mse loss'], ls = '-'    , c='k', lw = lw)
+    ax1.plot(test['total mse loss'], ls = '-', marker = '.', lw = lw, c='firebrick')
+    ## rel loss
+    # ax1.plot(test['total rel loss'], ls = '-'    , c='k', lw = lw)
+    ax1.plot(test['total rel loss'], ls = '-', marker = '.', lw = lw, c='lightcoral')
+
+    ## ------------ legend ----------------
+    lw = 4
+    l_train = mlines.Line2D([],[], color = 'blue', ls = '-' , label='train',lw = lw, alpha = 1)
+    l_test  = mlines.Line2D([],[], color = 'red' , ls = '-' , label='test' ,lw = lw, alpha = 1)
+    l_tot   = mlines.Line2D([],[], color = 'k'   , ls = '-' , label='total',lw = lw, alpha = 1)
+    l_mse   = mlines.Line2D([],[], color = 'grey'     , ls = '-' , label='mse',lw = lw, alpha = 1)
+    l_rel   = mlines.Line2D([],[], color = 'lightgrey', ls = '-' , label='rel',lw = lw, alpha = 1)
+    handles = [l_train, l_test, l_tot, l_mse, l_rel]
 
     if log == True:
         ax1.set_yscale('log') 
 
     ax1.set_xlabel('epoch')
-    ax1.set_ylabel('MSE')
+    ax1.set_ylabel('loss')
 
     ax1.grid(True, linestyle = '--', linewidth = 0.2)
 
-    ax1.legend(loc = 'upper right')
+    ax1.legend(handles=handles,loc = 'upper right')
     
     plt.tight_layout()
 
@@ -52,6 +87,10 @@ def plot_loss(train, test, log = True, show = True):
 
 
     return fig
+
+
+
+
 
 def plot_compare(real, preds, models, molecs, spec, scale = 'norm'):
 
