@@ -27,7 +27,7 @@ def rel_loss(x,x_hat):
     '''
     len   = x.shape[1]
     x_0   = x[:,0,:]
-    x_hat =x_hat[:,1:,:]
+    x_hat = x_hat[:,1:,:]
     x = x[:,1:,:]
     eps = 1e-4
     loss  = ((x_hat-x_0+eps**2)/(x-x_0+eps))**2
@@ -164,7 +164,7 @@ def validate_one_epoch(test_loader, model, DEVICE, f_mse, f_rel):
             return (overall_loss)/(i+1), overall_mse_loss/(i+1), overall_rel_loss/(i+1), idv_mse_loss/(i+1), idv_rel_loss/(i+1), status  ## save losseses
 
 
-def train(model, lr, data_loader, test_loader, epochs, DEVICE, f_mse, f_rel,plot = False, log = True, show = True):
+def train(model, lr, data_loader, test_loader, epochs, DEVICE, f_mse, f_rel, plot = False, log = True, show = True):
     optimizer = Adam(model.parameters(), lr=lr)
 
     ## initialise lists for statistics of training
@@ -214,7 +214,7 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, f_mse, f_rel,plot
         # print('\n>>> Validating model...')
         model.eval() ## zelfde als torch.no_grad
 
-        test_loss, test_mse_loss, test_rel_loss, test_idv_mse_loss, test_idv_rel_loss, status = validate_one_epoch(data_loader, model, DEVICE, f_mse, f_rel)
+        test_loss, test_mse_loss, test_rel_loss, test_idv_mse_loss, test_idv_rel_loss, status = validate_one_epoch(test_loader, model, DEVICE, f_mse, f_rel)
         ## save losses & status
         loss_test_all.append(test_loss)  
         test_mse_loss_all.append(test_mse_loss)
@@ -242,10 +242,12 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, f_mse, f_rel,plot
 
 
 
-def test(model, test_loader, DEVICE, loss_type):
-    overall_loss = 0
-    mace_time = list()
+def test(model, test_loader, DEVICE, f_mse, f_rel):
 
+    mace_time = list()
+    overall_loss = 0
+    idv_mse_loss = []
+    idv_rel_loss = []
     print('\n>>> Testing model...')
 
     with torch.no_grad():
@@ -269,8 +271,16 @@ def test(model, test_loader, DEVICE, loss_type):
                     # break
 
                 ## Calculate losses
-                loss  = loss_function(n,n_hat, loss_type)
-                overall_loss += loss.item()
+                mse_loss, rel_loss  = loss_function(n,n_hat,f_mse, f_rel)
+
+                loss = mse_loss + rel_loss
+
+                ## overall summed loss of test set
+                overall_loss     += loss.mean.item()
+
+                ## individual losses of test set
+                idv_mse_loss.append(mse_loss.detach().cpu().numpy())
+                idv_rel_loss.append(rel_loss.detach().cpu().numpy())
 
                 solve_time = toc-tic
                 mace_time.append(solve_time)
@@ -278,8 +288,7 @@ def test(model, test_loader, DEVICE, loss_type):
             else:           ## else: skip this data
                 mace_time.append(0)
 
-            
-    loss = (overall_loss)/(i+1)
-    print('\nTest loss:',loss)
 
-    return n, n_hat, t, loss, mace_time
+    print('\nTest loss:',(overall_loss)/(i+1))
+
+    return n, n_hat, t, (overall_loss)/(i+1),idv_mse_loss,idv_rel_loss, mace_time
