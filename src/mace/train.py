@@ -33,21 +33,26 @@ def rel_loss(x,x_hat):
     loss  = ((x_hat-x_0+eps**2)/(x-x_0+eps))**2
     return loss
 
-def combi_loss(x,x_hat, factor=1):
-    mse = mse_loss(x,x_hat)/max(mse_loss(x,x_hat))
-    rel = rel_loss(x,x_hat)/max(rel_loss(x,x_hat))/factor
+def loss_function(x,x_hat, f_mse = 1, f_rel = 1):
+    '''
+    Get the MSE loss and the relative loss, normalised to the maximum lossvalue.
+        - f_mse and f_rel are scaling factors, put to 0 if you want to exclude one of both losses.
+    Returns the MSE loss per species, and the relative loss per species.
+    '''
+    mse = (mse_loss(x,x_hat)/max(mse_loss(x,x_hat))) * f_mse
+    rel = (rel_loss(x,x_hat)/max(rel_loss(x,x_hat))) * f_rel
     return mse,rel
 
-def loss_function(x,x_hat,type, factor = 1):
-    if type == 'mse':
-        return mse_loss(x,x_hat)
-    if type == 'rel': 
-        return rel_loss(x,x_hat)
-    if type == 'combi':
-        return combi_loss(x,x_hat, factor)
+# def loss_function(x,x_hat,type, factor = 1):
+#     if type == 'mse':
+#         return mse_loss(x,x_hat)
+#     if type == 'rel': 
+#         return rel_loss(x,x_hat)
+#     if type == 'combi':
+#         return combi_loss(x,x_hat, factor)
 
 
-def train_one_epoch(data_loader, model, DEVICE, optimizer, loss_type, factor = 1):
+def train_one_epoch(data_loader, model, DEVICE, optimizer, f_mse=1, f_rel=1):
     '''
     Function to train 1 epoch.
 
@@ -69,6 +74,10 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer, loss_type, factor = 1
     - losses
     '''    
     overall_loss = 0
+    overall_mse_loss = 0
+    overall_rel_loss = 0
+    idv_mse_loss = torch.zeros(466)
+    idv_rel_loss = torch.zeros(466)
     status = 0
 
     for i, (n,p,t) in enumerate(data_loader):
@@ -83,41 +92,43 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer, loss_type, factor = 1
 
             n = torch.swapaxes(n,1,2)
 
-            n_hat, modstatus = model(n[:,0,:],p,t)      
-            # print(n[:,0,:])  
+            n_hat, modstatus = model(n[:,0,:],p,t)       
 
             if modstatus.item() == 4:
-                # print('stat4')
                 status += modstatus.item()
 
             ## Calculate losses
-            loss  = loss_function(n,n_hat, loss_type, factor = factor)
-            if type == 'combi':
-                mse_loss = loss[0]
-                rel_loss = loss[1]
-                tot_loss = mse_loss + rel_loss
-            else:
-                tot_loss = loss
+            mse_loss, rel_loss  = loss_function(n,n_hat,f_mse, f_rel)
 
-            overall_loss += tot_loss.mean.item()
+            loss = mse_loss + rel_loss
+
+            overall_loss     += loss.mean.item()
+            overall_mse_loss += mse_loss.mean.item()
+            overall_rel_loss += rel_loss.mean.item()
+            idv_mse_loss += mse_loss
+            idv_rel_loss += rel_loss
 
             ## Backpropagation
             optimizer.zero_grad()
-            tot_loss.backward()
+            loss.mean.backward()
             optimizer.step()
     
         else:           ## else: skip this data
             continue
 
-    return (overall_loss)/(i+1), loss, status  ## save losses
+    return (overall_loss)/(i+1), overall_mse_loss/(i+1), overall_rel_loss/(i+1), idv_mse_loss/(i+1), idv_rel_loss/(i+1), status  ## save losses
             
 
 
 
-def validate_one_epoch(test_loader, model, DEVICE, loss_type):
+def validate_one_epoch(test_loader, model, DEVICE, f_mse, f_rel):
 
     overall_loss = 0
-    # status = 0
+    overall_mse_loss = 0
+    overall_rel_loss = 0
+    idv_mse_loss = torch.zeros(466)
+    idv_rel_loss = torch.zeros(466)
+    status = 0
 
     with torch.no_grad():
         for i, (n,p,t) in enumerate(test_loader):
@@ -131,27 +142,47 @@ def validate_one_epoch(test_loader, model, DEVICE, loss_type):
             
                 n = torch.swapaxes(n,1,2)
 
-                n_hat, status = model(n[:,0,:],p,t)         ## output van het autoecoder model
+                n_hat, modstatus = model(n[:,0,:],p,t)         ## output van het autoecoder model
 
-                # if status.item() == 4:
-                #     status += 4
+                if modstatus.item() == 4:
+                    status += modstatus.item()
 
                 ## Calculate losses
-                loss  = loss_function(n,n_hat,loss_type)
-                overall_loss += loss.item()
+                mse_loss, rel_loss  = loss_function(n,n_hat,f_mse, f_rel)
+
+                loss = mse_loss + rel_loss
+
+                overall_loss     += loss.mean.item()
+                overall_mse_loss += mse_loss.mean.item()
+                overall_rel_loss += rel_loss.mean.item()
+                idv_mse_loss += mse_loss
+                idv_rel_loss += rel_loss
 
             else:           ## else: skip this data
                 continue
 
-            return (overall_loss)/(i+1)  ## save losses
+            return (overall_loss)/(i+1), overall_mse_loss/(i+1), overall_rel_loss/(i+1), idv_mse_loss/(i+1), idv_rel_loss/(i+1), status  ## save losseses
 
 
-def train(model, lr, data_loader, test_loader, epochs, DEVICE, loss_type,plot = False, log = True, show = True):
+def train(model, lr, data_loader, test_loader, epochs, DEVICE, f_mse, f_rel,plot = False, log = True, show = True):
     optimizer = Adam(model.parameters(), lr=lr)
 
+    ## initialise lists for statistics of training
     loss_train_all = []
+    train_mse_loss_all = []
+    train_rel_loss_all = []
+    train_idv_mse_loss_all = []
+    train_idv_rel_loss_all = []
+    train_status_all = []
+
+    ## initialise lists for statistics of validating
     loss_test_all  = []
-    status_all = []
+    test_mse_loss_all = []
+    test_rel_loss_all = []
+    test_idv_mse_loss_all = []
+    test_idv_rel_loss_all = []
+    test_status_all = []
+    
 
     print('Model:         ')
     print('learning rate: '+str(lr))
@@ -162,24 +193,53 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, loss_type,plot = 
         
         model.train()
         print('')
-        train_loss, all_losses, status = train_one_epoch(data_loader, model, DEVICE, optimizer, loss_type)
-        loss_train_all.append(train_loss)  ## save losses
-        status_all.append(status%4)
+        train_loss, train_mse_loss, train_rel_loss, train_idv_mse_loss, train_idv_rel_loss, status = train_one_epoch(data_loader, model, DEVICE, optimizer, f_mse, f_rel)
+        ## save losses & status
+        loss_train_all.append(train_loss)  
+        train_mse_loss_all.append(train_mse_loss)
+        train_rel_loss_all.append(train_rel_loss)
+        train_idv_mse_loss_all.append(train_idv_mse_loss.detach().cpu().numpy())
+        train_idv_rel_loss_all.append(train_idv_rel_loss.detach().cpu().numpy())
+        train_status_all.append(status%4)
+
+        trainstats = dict()
+        trainstats['total loss']        = loss_train_all
+        trainstats['total mse loss']    = train_mse_loss_all
+        trainstats['total rel loss']    = train_rel_loss_all
+        trainstats['idv mse loss']      = train_idv_mse_loss_all
+        trainstats['idv rel loss']      = train_idv_rel_loss_all
+        trainstats['status']            = train_status_all
 
         ## Validating
         # print('\n>>> Validating model...')
         model.eval() ## zelfde als torch.no_grad
 
-        test_loss = validate_one_epoch(test_loader, model, DEVICE, loss_type)
-        loss_test_all.append(test_loss)
+        test_loss, test_mse_loss, test_rel_loss, test_idv_mse_loss, test_idv_rel_loss, status = validate_one_epoch(data_loader, model, DEVICE, f_mse, f_rel)
+        ## save losses & status
+        loss_test_all.append(test_loss)  
+        test_mse_loss_all.append(test_mse_loss)
+        test_rel_loss_all.append(test_rel_loss)
+        test_idv_mse_loss_all.append(test_idv_mse_loss.detach().cpu().numpy())
+        test_idv_rel_loss_all.append(test_idv_rel_loss.detach().cpu().numpy())
+        test_status_all.append(status%4)
+
+        teststats = dict()
+        teststats['total loss']        = loss_test_all
+        teststats['total mse loss']    = test_mse_loss_all
+        teststats['total rel loss']    = test_rel_loss_all
+        teststats['idv mse loss']      = test_idv_mse_loss_all
+        teststats['idv rel loss']      = test_idv_rel_loss_all
+        teststats['status']            = test_status_all
         
         print("\nEpoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss, end="\r")
     print('\n \tDONE!')
 
     if plot == True:
-        plotting.plot_loss(loss_train_all, loss_test_all, log = log, show = show)
+        plotting.plot_loss(trainstats, teststats, log = log, show = show)
 
-    return loss_train_all, loss_test_all, status_all
+    return trainstats, teststats
+
+
 
 
 def test(model, test_loader, DEVICE, loss_type):
