@@ -27,8 +27,8 @@ def rel_loss(x,x_hat):
     '''
     len   = x.shape[1]
     x_0   = x[:,0,:]
-    x_hat = x_hat[:,1:,:]
-    x = x[:,1:,:]
+    # x_hat = x_hat[:,1:,:]
+    # x = x[:,1:,:]
     eps = 1e-4
     loss  = ((x_hat-x_0+eps**2)/(x-x_0+eps))**2
     return loss
@@ -102,15 +102,16 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer, f_mse=1, f_rel=1):
 
             loss = mse_loss + rel_loss
 
-            overall_loss     += loss.mean.item()
-            overall_mse_loss += mse_loss.mean.item()
-            overall_rel_loss += rel_loss.mean.item()
-            idv_mse_loss += mse_loss
-            idv_rel_loss += rel_loss
+            overall_loss += loss.mean().item()
+            overall_mse_loss += mse_loss.mean().item()
+            overall_rel_loss += rel_loss.mean().item()
+            idv_mse_loss += mse_loss[:,-1,:].view(-1)       ## only take the loss on the final abundances 
+            idv_rel_loss += rel_loss[:,-1,:].view(-1)
+
 
             ## Backpropagation
             optimizer.zero_grad()
-            loss.mean.backward()
+            loss.mean().backward()
             optimizer.step()
     
         else:           ## else: skip this data
@@ -152,11 +153,11 @@ def validate_one_epoch(test_loader, model, DEVICE, f_mse, f_rel):
 
                 loss = mse_loss + rel_loss
 
-                overall_loss     += loss.mean.item()
-                overall_mse_loss += mse_loss.mean.item()
-                overall_rel_loss += rel_loss.mean.item()
-                idv_mse_loss += mse_loss
-                idv_rel_loss += rel_loss
+                overall_loss     += loss.mean().item()
+                overall_mse_loss += mse_loss.mean().item()
+                overall_rel_loss += rel_loss.mean().item()
+                idv_mse_loss += mse_loss[:,-1,:].view(-1) 
+                idv_rel_loss += rel_loss[:,-1,:].view(-1) 
 
             else:           ## else: skip this data
                 continue
@@ -276,11 +277,11 @@ def test(model, test_loader, DEVICE, f_mse, f_rel):
                 loss = mse_loss + rel_loss
 
                 ## overall summed loss of test set
-                overall_loss     += loss.mean.item()
+                overall_loss     += loss.mean().item()
 
                 ## individual losses of test set
-                idv_mse_loss.append(mse_loss.detach().cpu().numpy())
-                idv_rel_loss.append(rel_loss.detach().cpu().numpy())
+                idv_mse_loss.append(mse_loss[:,-1,:].view(-1) .detach().cpu().numpy())
+                idv_rel_loss.append(rel_loss[:,-1,:].view(-1) .detach().cpu().numpy())
 
                 solve_time = toc-tic
                 mace_time.append(solve_time)
