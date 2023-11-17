@@ -16,7 +16,8 @@ def mse_loss(x, x_hat):
     '''
     Return the mean squared loss per x_i.
     '''
-    loss = nn.functional.mse_loss(x_hat, x, reduction='none')
+    # loss = nn.functional.mse_loss(x_hat, x, reduction='none')
+    loss = (x-x_hat)**2
     return loss
 
 def rel_loss(x,x_hat):
@@ -29,8 +30,9 @@ def rel_loss(x,x_hat):
     x_0   = x[:,0,:]
     # x_hat = x_hat[:,1:,:]
     # x = x[:,1:,:]
-    eps = 1e-4
-    loss  = ((x_hat-x_0+eps**2)/(x-x_0+eps))**2
+    eps = 1e-25
+    # loss  = ((x_hat-x_0+eps**2)/(x-x_0+eps))**2
+    loss  = ((x-x_0)/(x_hat-x_0))**2
     return loss
 
 def loss_function(x,x_hat, f_mse = 1, f_rel = 1):
@@ -39,8 +41,16 @@ def loss_function(x,x_hat, f_mse = 1, f_rel = 1):
         - f_mse and f_rel are scaling factors, put to 0 if you want to exclude one of both losses.
     Returns the MSE loss per species, and the relative loss per species.
     '''
-    mse = (mse_loss(x,x_hat)/max(mse_loss(x,x_hat))) * f_mse
-    rel = (rel_loss(x,x_hat)/max(rel_loss(x,x_hat))) * f_rel
+    mse = (mse_loss(x,x_hat))#/max(mse_loss(x,x_hat))) * f_mse
+    rel = (rel_loss(x,x_hat))#/max(rel_loss(x,x_hat))) * f_rel
+
+    # if mse.max() == 0 or rel.max() == 0:
+    #     print('\n\nbecomes nan')
+    # mse = mse/mse.max()* f_mse
+    # rel = rel/rel.max()* f_rel
+    # print('mse',mse.shape, mse)
+    # print('rel',rel.shape, rel)
+    # print('------------')
     return mse,rel
 
 # def loss_function(x,x_hat,type, factor = 1):
@@ -116,6 +126,8 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer, f_mse=1, f_rel=1):
     
         else:           ## else: skip this data
             continue
+
+        # break
 
     return (overall_loss)/(i+1), overall_mse_loss/(i+1), overall_rel_loss/(i+1), idv_mse_loss/(i+1), idv_rel_loss/(i+1), status  ## save losses
             

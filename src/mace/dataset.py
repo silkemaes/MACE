@@ -157,7 +157,7 @@ def get_data(dirname, batch_size, kwargs, plot = False, scale = 'norm'):
     print('# testing samples: ',len(test) )
     print('            ratio: ',np.round(len(test)/(len(train)+len(test)),2))
 
-    data_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=True ,  **kwargs)
+    data_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=False ,  **kwargs)
     test_loader = DataLoader(dataset=test , batch_size=1 , shuffle=False,  **kwargs)
 
     return train, test, data_loader, test_loader
