@@ -9,14 +9,13 @@ from torch.optim         import Adam
 ## own scripts
 import dataset  as ds
 import plotting  
-# import tqdm 
+
 
 
 def mse_loss(x, x_hat):
     '''
     Return the mean squared loss per x_i.
     '''
-    # loss = nn.functional.mse_loss(x_hat, x, reduction='none')
     loss = (x-x_hat)**2
     return loss
 
@@ -26,43 +25,28 @@ def rel_loss(x,x_hat):
     The relative loss is given by ((x_hat-x_0+eps**2)/(x-x_0+eps))**2, 
         where eps makes sure we don't devide by 0.
     '''
-    len   = x.shape[1]
     x_0   = x[:,0,:]
-    # x_hat = x_hat[:,1:,:]
-    # x = x[:,1:,:]
-    eps = 1e-25
-    # loss  = ((x_hat-x_0+eps**2)/(x-x_0+eps))**2
-    loss  = ((x-x_0)/(x_hat-x_0))**2
+    eps = 1e-10
+    loss  = ((torch.abs(x_hat-x_0)+eps**2)/(torch.abs(x-x_0)+eps))**2     ## absolute waarden nemen rond x, zodat het niet nog 0 kan worden
     return loss
 
-def loss_function(x,x_hat, f_mse = 1, f_rel = 1):
+def loss_function(x,x_hat, norm_mse=1, norm_rel=1,f_mse = 1, f_rel = 1):
     '''
     Get the MSE loss and the relative loss, normalised to the maximum lossvalue.
         - f_mse and f_rel are scaling factors, put to 0 if you want to exclude one of both losses.
     Returns the MSE loss per species, and the relative loss per species.
     '''
-    mse = (mse_loss(x,x_hat))#/max(mse_loss(x,x_hat))) * f_mse
-    rel = (rel_loss(x,x_hat))#/max(rel_loss(x,x_hat))) * f_rel
+    mse = (mse_loss(x,x_hat))
+    rel = (rel_loss(x,x_hat))
 
-    # if mse.max() == 0 or rel.max() == 0:
-    #     print('\n\nbecomes nan')
-    # mse = mse/mse.max()* f_mse
-    # rel = rel/rel.max()* f_rel
-    # print('mse',mse.shape, mse)
-    # print('rel',rel.shape, rel)
-    # print('------------')
+    mse = mse/norm_mse* f_mse
+    rel = rel/norm_rel* f_rel
+
     return mse,rel
 
-# def loss_function(x,x_hat,type, factor = 1):
-#     if type == 'mse':
-#         return mse_loss(x,x_hat)
-#     if type == 'rel': 
-#         return rel_loss(x,x_hat)
-#     if type == 'combi':
-#         return combi_loss(x,x_hat, factor)
 
 
-def train_one_epoch(data_loader, model, DEVICE, optimizer, f_mse=1, f_rel=1):
+def train_one_epoch(data_loader, model, DEVICE, optimizer, norm_mse, norm_rel,f_mse, f_rel):
     '''
     Function to train 1 epoch.
 
@@ -93,6 +77,8 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer, f_mse=1, f_rel=1):
     for i, (n,p,t) in enumerate(data_loader):
 
         print('\tbatch',i+1,'/',len(data_loader),end="\r")
+
+        # while i < 500:
         
         n = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
         p = p.to(DEVICE) 
@@ -108,11 +94,11 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer, f_mse=1, f_rel=1):
                 status += modstatus.item()
 
             ## Calculate losses
-            mse_loss, rel_loss  = loss_function(n,n_hat,f_mse, f_rel)
+            mse_loss, rel_loss  = loss_function(n,n_hat,norm_mse, norm_rel,f_mse, f_rel)
 
-            loss = mse_loss + rel_loss
+            loss = mse_loss.mean() + rel_loss.mean()
 
-            overall_loss += loss.mean().item()
+            overall_loss += loss.item()
             overall_mse_loss += mse_loss.mean().item()
             overall_rel_loss += rel_loss.mean().item()
             idv_mse_loss += mse_loss[:,-1,:].view(-1)       ## only take the loss on the final abundances 
@@ -121,7 +107,7 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer, f_mse=1, f_rel=1):
 
             ## Backpropagation
             optimizer.zero_grad()
-            loss.mean().backward()
+            loss.backward()
             optimizer.step()
     
         else:           ## else: skip this data
@@ -134,7 +120,7 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer, f_mse=1, f_rel=1):
 
 
 
-def validate_one_epoch(test_loader, model, DEVICE, f_mse, f_rel):
+def validate_one_epoch(test_loader, model, DEVICE, norm_mse, norm_rel,f_mse, f_rel):
 
     overall_loss = 0
     overall_mse_loss = 0
@@ -145,7 +131,8 @@ def validate_one_epoch(test_loader, model, DEVICE, f_mse, f_rel):
 
     with torch.no_grad():
         for i, (n,p,t) in enumerate(test_loader):
-            # print('\tbatch',i+1,'/',len(test_loader),end="\r")
+            # while i < 200:
+            print('\tbatch',i+1,'/',len(test_loader),end="\r")
 
             n     = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
             p     = p.to(DEVICE) 
@@ -161,11 +148,11 @@ def validate_one_epoch(test_loader, model, DEVICE, f_mse, f_rel):
                     status += modstatus.item()
 
                 ## Calculate losses
-                mse_loss, rel_loss  = loss_function(n,n_hat,f_mse, f_rel)
+                mse_loss, rel_loss  = loss_function(n,n_hat,norm_mse, norm_rel,f_mse, f_rel)
 
-                loss = mse_loss + rel_loss
+                loss = mse_loss.mean() + rel_loss.mean()
 
-                overall_loss     += loss.mean().item()
+                overall_loss     += loss.item()
                 overall_mse_loss += mse_loss.mean().item()
                 overall_rel_loss += rel_loss.mean().item()
                 idv_mse_loss += mse_loss[:,-1,:].view(-1) 
@@ -174,13 +161,15 @@ def validate_one_epoch(test_loader, model, DEVICE, f_mse, f_rel):
             else:           ## else: skip this data
                 continue
 
-            return (overall_loss)/(i+1), overall_mse_loss/(i+1), overall_rel_loss/(i+1), idv_mse_loss/(i+1), idv_rel_loss/(i+1), status  ## save losseses
+        return (overall_loss)/(i+1), overall_mse_loss/(i+1), overall_rel_loss/(i+1), idv_mse_loss/(i+1), idv_rel_loss/(i+1), status  ## save losseses
 
 
-def train(model, lr, data_loader, test_loader, epochs, DEVICE, f_mse, f_rel, plot = False, log = True, show = True):
+
+def train(model, lr, data_loader, test_loader, epochs, DEVICE, norm_mse, norm_rel,f_mse, f_rel, plot = False, log = True, show = True):
     optimizer = Adam(model.parameters(), lr=lr)
 
     ## initialise lists for statistics of training
+    trainstats = dict()
     loss_train_all = []
     train_mse_loss_all = []
     train_rel_loss_all = []
@@ -189,6 +178,7 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, f_mse, f_rel, plo
     train_status_all = []
 
     ## initialise lists for statistics of validating
+    teststats = dict()
     loss_test_all  = []
     test_mse_loss_all = []
     test_rel_loss_all = []
@@ -206,7 +196,7 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, f_mse, f_rel, plo
         
         model.train()
         print('')
-        train_loss, train_mse_loss, train_rel_loss, train_idv_mse_loss, train_idv_rel_loss, status = train_one_epoch(data_loader, model, DEVICE, optimizer, f_mse, f_rel)
+        train_loss, train_mse_loss, train_rel_loss, train_idv_mse_loss, train_idv_rel_loss, status = train_one_epoch(data_loader, model, DEVICE, optimizer, norm_mse, norm_rel,f_mse, f_rel)
         ## save losses & status
         loss_train_all.append(train_loss)  
         train_mse_loss_all.append(train_mse_loss)
@@ -215,7 +205,7 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, f_mse, f_rel, plo
         train_idv_rel_loss_all.append(train_idv_rel_loss.detach().cpu().numpy())
         train_status_all.append(status%4)
 
-        trainstats = dict()
+        
         trainstats['total loss']        = loss_train_all
         trainstats['total mse loss']    = train_mse_loss_all
         trainstats['total rel loss']    = train_rel_loss_all
@@ -227,7 +217,7 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, f_mse, f_rel, plo
         # print('\n>>> Validating model...')
         model.eval() ## zelfde als torch.no_grad
 
-        test_loss, test_mse_loss, test_rel_loss, test_idv_mse_loss, test_idv_rel_loss, status = validate_one_epoch(test_loader, model, DEVICE, f_mse, f_rel)
+        test_loss, test_mse_loss, test_rel_loss, test_idv_mse_loss, test_idv_rel_loss, status = validate_one_epoch(test_loader, model, DEVICE, norm_mse, norm_rel,f_mse, f_rel)
         ## save losses & status
         loss_test_all.append(test_loss)  
         test_mse_loss_all.append(test_mse_loss)
@@ -236,7 +226,6 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, f_mse, f_rel, plo
         test_idv_rel_loss_all.append(test_idv_rel_loss.detach().cpu().numpy())
         test_status_all.append(status%4)
 
-        teststats = dict()
         teststats['total loss']        = loss_test_all
         teststats['total mse loss']    = test_mse_loss_all
         teststats['total rel loss']    = test_rel_loss_all
@@ -286,10 +275,10 @@ def test(model, test_loader, DEVICE, f_mse, f_rel):
                 ## Calculate losses
                 mse_loss, rel_loss  = loss_function(n,n_hat,f_mse, f_rel)
 
-                loss = mse_loss + rel_loss
+                loss = mse_loss.mean() + rel_loss.mean()
 
                 ## overall summed loss of test set
-                overall_loss     += loss.mean().item()
+                overall_loss     += loss.item()
 
                 ## individual losses of test set
                 idv_mse_loss.append(mse_loss[:,-1,:].view(-1) .detach().cpu().numpy())

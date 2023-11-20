@@ -54,6 +54,9 @@ class Data(Dataset):
         self.dirs = listdir(outpath+self.dirname+'/')
         self.dirs.remove('meta.json')
 
+        ## ONLY FOR TESTING
+        self.dirs = self.dirs[0:1000]
+
         # Opening JSON file
         with open(outpath+self.dirname+'/meta.json', 'r') as file:
             # Reading from json file
@@ -154,8 +157,8 @@ def get_data(dirname, batch_size, kwargs, plot = False, scale = 'norm'):
     print('------------------------------')
     print('total # of samples:',len(train)+len(test))
     print('# training samples:',len(train))
-    print('# testing samples: ',len(test) )
-    print('            ratio: ',np.round(len(test)/(len(train)+len(test)),2))
+    print('#  testing samples:',len(test) )
+    print('             ratio:',np.round(len(test)/(len(train)+len(test)),2))
 
     data_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=False ,  **kwargs)
     test_loader = DataLoader(dataset=test , batch_size=1 , shuffle=False,  **kwargs)

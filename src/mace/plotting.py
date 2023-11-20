@@ -34,32 +34,27 @@ def plot_loss(train, test, log = True, show = True):
         # trainstats['status']            = train_status_all
 
 
-    fig = plt.figure(figsize = (9,3))
+    fig = plt.figure(figsize = (6,2.5))
     ax1 = fig.add_subplot((111))
 
-    lw = 0.5
+    lw = 1
+    a = 0.7
 
     ## ------------- TRAINING ------------
     ## total loss
-    # ax1.plot(train['total loss'], ls = '-'    , c='k', lw = lw)
-    ax1.plot(train['total loss'], ls = '-', marker = '.', lw = lw, c='navy')
+    ax1.plot(train['total loss'    ], ls = '-', marker = '.', lw = lw, c='navy')
     ## mse loss
-    # ax1.plot(train['total mse loss'], ls = '-'    , c='k', lw = lw)
-    ax1.plot(train['total mse loss'], ls = '-', marker = '.', lw = lw, c='royalblue')
+    ax1.plot(train['total mse loss'], ls = '-', marker = '.', lw = lw, c='royalblue', alpha = a)
     ## rel loss
-    # ax1.plot(train['total rel loss'], ls = '-'    , c='k', lw = lw)
-    ax1.plot(train['total rel loss'], ls = '-', marker = '.', lw = lw, c='lightsteelblue')
+    ax1.plot(train['total rel loss'], ls = '-', marker = '.', lw = lw, c='lightsteelblue', alpha = a)
 
     ## ------------ VALIDATING -----------
     ## total loss
-    # ax1.plot(test['total loss'], ls = '-'    , c='k', lw = lw)
-    ax1.plot(test['total loss'], ls = '-', marker = '.', lw = lw, c='maroon')
+    ax1.plot(test['total loss'    ], ls = '-', marker = '.', lw = lw, c='maroon')
     ## mse loss
-    # ax1.plot(test['total mse loss'], ls = '-'    , c='k', lw = lw)
-    ax1.plot(test['total mse loss'], ls = '-', marker = '.', lw = lw, c='firebrick')
+    ax1.plot(test['total mse loss'], ls = '-', marker = '.', lw = lw, c='firebrick', alpha = a)
     ## rel loss
-    # ax1.plot(test['total rel loss'], ls = '-'    , c='k', lw = lw)
-    ax1.plot(test['total rel loss'], ls = '-', marker = '.', lw = lw, c='lightcoral')
+    ax1.plot(test['total rel loss'], ls = '-', marker = '.', lw = lw, c='lightcoral', alpha = a)
 
     ## ------------ legend ----------------
     lw = 4
