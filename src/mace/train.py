@@ -206,11 +206,11 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, norm_mse, norm_re
         train_status_all.append(status%4)
 
         
-        trainstats['total loss']        = loss_train_all
-        trainstats['total mse loss']    = train_mse_loss_all
-        trainstats['total rel loss']    = train_rel_loss_all
-        trainstats['idv mse loss']      = train_idv_mse_loss_all
-        trainstats['idv rel loss']      = train_idv_rel_loss_all
+        trainstats['total_loss']        = loss_train_all
+        trainstats['total_mse_loss']    = train_mse_loss_all
+        trainstats['total_rel_loss']    = train_rel_loss_all
+        trainstats['idv_mse_loss']      = train_idv_mse_loss_all
+        trainstats['idv_rel_loss']      = train_idv_rel_loss_all
         trainstats['status']            = train_status_all
 
         ## Validating
@@ -226,11 +226,11 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, norm_mse, norm_re
         test_idv_rel_loss_all.append(test_idv_rel_loss.detach().cpu().numpy())
         test_status_all.append(status%4)
 
-        teststats['total loss']        = loss_test_all
-        teststats['total mse loss']    = test_mse_loss_all
-        teststats['total rel loss']    = test_rel_loss_all
-        teststats['idv mse loss']      = test_idv_mse_loss_all
-        teststats['idv rel loss']      = test_idv_rel_loss_all
+        teststats['total_loss']        = loss_test_all
+        teststats['total_mse_loss']    = test_mse_loss_all
+        teststats['total_rel_loss']    = test_rel_loss_all
+        teststats['idv_mse_loss']      = test_idv_mse_loss_all
+        teststats['idv_rel_loss']      = test_idv_rel_loss_all
         teststats['status']            = test_status_all
         
         print("\nEpoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss, end="\r")
