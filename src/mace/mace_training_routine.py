@@ -24,8 +24,9 @@ path = '/STER/silkem/MACE/models/'+str(name)
 lr = 1.e-3
 tot_epochs = 80
 z_dim = 10
-dirname = 'C-short-dtime'
+# dirname = 'C-short-dtime'
 # dirname = 'new'
+dirname = 'easy-mace2'
 
 print('------------------------------')
 print('')
@@ -97,7 +98,7 @@ f_mse = 100
 f_rel = 100
 n_epochs = tot_epochs - n_epochs
 tic = time()
-trainstats3, teststats3 = tr.train(model, lr, data_loader, test_loader, epochs = n_epochs, DEVICE= DEVICE, norm_mse= norm_mse, norm_rel=norm_rel, f_mse=f_mse, f_rel=f_rel, plot = False, log = True, show = True)
+trainstats3, teststats3 = tr.train(model, lr, data_loader, test_loader, epochs = n_epochs, DEVICE= DEVICE, norm_mse= norm_mse, norm_rel=norm_rel, f_mse=f_mse, f_rel=f_rel, plot = False, log = True, show = False)
 toc = time()
 train_time3 = toc-tic
 
@@ -107,28 +108,34 @@ train_time = train_time1+train_time2+train_time3
 
 
 ## -------------- STACKING LOSSES THE DATA --------------------
+utils.makeOutputDir(path+'/train')
+utils.makeOutputDir(path+'/test')
 
 stats_train = dict()
 for key in trainstats1:
     arr1 = np.array([trainstats1[key]])
     arr2 = np.array([trainstats2[key]])
     arr3 = np.array([trainstats2[key]])
-    stats_train[key] = np.concatenate((arr1,arr2, arr3), axis=1)[0]
+    loss = np.concatenate((arr1,arr2, arr3), axis=1)[0]
+    np.save(path+'/train/'+key,loss)
+    stats_train[key] = loss
 
+stats_test = dict()
+for key in teststats1:
+    arr1 = np.array([teststats1[key]])
+    arr2 = np.array([teststats2[key]])
+    arr3 = np.array([teststats2[key]])
+    loss = np.concatenate((arr1,arr2, arr3), axis=1)[0]
+    np.save(path+'/test/'+key,loss)
+    stats_test[key] = loss
 
-## vanaf hier nog aanpassen!!
 
 min_max = np.stack((train.mins, train.maxs), axis=1)
-losses = np.stack((np.array(loss_train_all), np.array(loss_test_all)), axis = 1)
-
-## Saving all files
 np.save(path+'/minmax', min_max) 
-np.save(path+'/status', np.array(status))
-np.save(path+'/losses', losses)
-plt.savefig(path+'/mse.png')
 torch.save(model.state_dict(),path+'/nn.pt')
 
-
+fig_loss = pl.plot_loss(stats_train, stats_test)
+plt.savefig(path+'/loss.png')
 
 stop = time()
 

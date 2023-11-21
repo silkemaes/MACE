@@ -1,0 +1,11 @@
+{
+    "traindir": "easy-mace2",
+    "lr": 0.001,
+    "epochs": 80,
+    "z_dim": 10,
+    "train_time": 460.3148443698883,
+    "overhead": 2.2155373096466064,
+    "samples": 350,
+    "cutoff_abs": 1e-20,
+    "done": "true"
+}
