@@ -2,10 +2,15 @@
 import sys
 import torch
 import json
-import numpy            as np
-import datetime         as dt
-from time             import time
-import matplotlib.pyplot as plt
+import numpy                as np
+import datetime             as dt
+from time                   import time
+import matplotlib.pyplot    as plt
+# import matplotlib           as mpl
+from matplotlib          import rcParams
+rcParams.update({'figure.dpi': 200})
+# mpl.rcParams.update({'font.size': 10})
+# plt.rcParams['figure.dpi'] = 200
 
 
 ## import own functions
@@ -23,10 +28,10 @@ path = '/STER/silkem/MACE/models/'+str(name)
 ## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
 lr = 1.e-3
 tot_epochs = 80
-z_dim = 10
-# dirname = 'C-short-dtime'
+z_dim = 24
+dirname = 'C-short-dtime'
 # dirname = 'new'
-dirname = 'easy-mace2'
+# dirname = 'easy-mace2'
 
 print('------------------------------')
 print('')
