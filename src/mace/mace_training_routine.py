@@ -29,9 +29,9 @@ path = '/STER/silkem/MACE/models/'+str(name)
 lr = 1.e-3
 tot_epochs = 80
 z_dim = 24
-dirname = 'C-short-dtime'
+# dirname = 'C-short-dtime'
 # dirname = 'new'
-# dirname = 'easy-mace2'
+dirname = 'easy-mace2'
 
 print('------------------------------')
 print('')
