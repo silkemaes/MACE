@@ -55,7 +55,7 @@ class Data(Dataset):
         self.dirs.remove('meta.json')
 
         ## ONLY FOR TESTING
-        self.dirs = self.dirs[0:50]
+        # self.dirs = self.dirs[0:50]
 
         # Opening JSON file
         with open(outpath+self.dirname+'/meta.json', 'r') as file:
@@ -70,11 +70,11 @@ class Data(Dataset):
         self.logδ_max = np.log10(self.meta['delta_max'])
         self.Av_min = self.meta['Av_min']
         self.Av_max = self.meta['Av_max']
-        # self.dt_min = 2.235616584465647
-        self.dt_min = 0
-        self.dt_max = 908602.5520318691
-        # self.dt_fract = 0.2     ## for a latent dim of 10
-        self.dt_fract = 0.1     ## for a latent dim of 25
+        # # self.dt_min = 2.235616584465647
+        # self.dt_min = 0
+        # self.dt_max = 908602.5520318691
+        self.dt_fract = 0.2     ## for a latent dim of 10
+        # self.dt_fract = 0.1     ## for a latent dim of 25
         self.n_min = np.log10(cutoff)
         self.n_max = np.log10(0.85e-1)    ## initial abundance He
 
@@ -127,18 +127,14 @@ class Data(Dataset):
         # print("abs")
         trans_n = np.clip(mod.n, self.cutoff, None)
         trans_n = np.log10(trans_n)
-        # print(trans_n)
         trans_n = Data.normalise(trans_n, self.n_min, self.n_max)       ## max boundary = rel. abundance of He
 
         ## timesteps
-        ## normaliseren? eens nadenken: JA! op dezelfde manier
+        ## normaliseren? eens nadenken: JA! --> herschalen
         trans_tstep = mod.tstep
-        # print('t_real', mod.tstep)
-        # print('t_normalised', np.array(Data.normalise(trans_tstep, self.dt_min, self.dt_max)))
-        # trans_tstep = Data.normalise(trans_tstep, self.dt_min, self.dt_max)
-        # trans_tstep = trans_tstep/trans_tstep[-1] * self.dt_fract
-        trans_tstep = trans_tstep/(1.e4) * self.dt_fract
-        # print(trans_tstep)
+        trans_tstep = trans_tstep/trans_tstep[-1] * self.dt_fract
+        # trans_tstep = trans_tstep/(1.e4) * self.dt_fract
+
 
         return torch.from_numpy(trans_n), torch.from_numpy(trans_p), torch.from_numpy(trans_tstep)
 

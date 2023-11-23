@@ -28,7 +28,7 @@ path = '/STER/silkem/MACE/models/'+str(name)
 ## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
 lr = 1.e-3
 tot_epochs = 80
-z_dim = 24
+z_dim = 25
 # dirname = 'C-short-dtime'
 # dirname = 'new'
 dirname = 'easy-mace2'
@@ -41,7 +41,7 @@ print('------------------------------')
 print('      # epochs:', tot_epochs)
 print(' learning rate:', lr)
 print('# z dimensions:', z_dim)
-print('    sample dir:',dirname)
+print('    sample dir:', dirname)
 print('')
 
 ## --------------------------------------- SET UP ------------------
@@ -150,6 +150,7 @@ metadata = {'traindir'  : dirname,
             'lr'        : lr,
             'epochs'    : tot_epochs,
             'z_dim'     : z_dim,
+            'dt_fract'  : train.dt_fract,
             'train_time': train_time,
             'overhead'  : overhead_time,
             'samples'   : len(train),

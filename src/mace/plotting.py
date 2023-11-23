@@ -2,6 +2,10 @@ import numpy             as np
 import matplotlib.pyplot as plt
 import matplotlib        as mpl
 import matplotlib.lines     as mlines
+from matplotlib          import rcParams
+rcParams.update({'figure.dpi': 200})
+mpl.rcParams.update({'font.size': 10})
+plt.rcParams['figure.dpi'] = 150
 
 ## own scripts
 import utils
@@ -26,7 +30,7 @@ def plot_hist(df):
 
 def plot_loss(train, test, log = True, show = True):
 
-    fig = plt.figure(figsize = (20,13))
+    fig = plt.figure(figsize = (10,4))
     ax1 = fig.add_subplot((111))
 
     lw = 1

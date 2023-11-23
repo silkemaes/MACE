@@ -2,12 +2,9 @@ import numpy    as np
 from time               import time
 
 import torch
-import torch.nn          as nn
-from torch.utils.data    import DataLoader
 from torch.optim         import Adam
 
 ## own scripts
-import dataset  as ds
 import plotting  
 
 
@@ -106,7 +103,7 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer, norm_mse, norm_rel,f_
 
 
         ## Backpropagation
-        print(loss)
+        # print(loss)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
