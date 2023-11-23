@@ -1,0 +1,7 @@
+{
+    "traindir": "easy-mace2",
+    "lr": 0.001,
+    "epochs": 80,
+    "z_dim": 10,
+    "done": "false"
+}
