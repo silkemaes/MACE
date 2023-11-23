@@ -3,5 +3,9 @@
     "lr": 0.001,
     "epochs": 80,
     "z_dim": 24,
-    "done": "false"
+    "train_time": 2692.8847670555115,
+    "overhead": 37.57482123374939,
+    "samples": 4638,
+    "cutoff_abs": 1e-20,
+    "done": "true"
 }

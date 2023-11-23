@@ -55,7 +55,7 @@ class Data(Dataset):
         self.dirs.remove('meta.json')
 
         ## ONLY FOR TESTING
-        # self.dirs = self.dirs[0:500]
+        self.dirs = self.dirs[0:50]
 
         # Opening JSON file
         with open(outpath+self.dirname+'/meta.json', 'r') as file:
@@ -71,7 +71,8 @@ class Data(Dataset):
         self.Av_min = self.meta['Av_min']
         self.Av_max = self.meta['Av_max']
         # self.dt_min = 2.235616584465647
-        # self.dt_max = 908602.5520318691
+        self.dt_min = 0
+        self.dt_max = 908602.5520318691
         # self.dt_fract = 0.2     ## for a latent dim of 10
         self.dt_fract = 0.1     ## for a latent dim of 25
         self.n_min = np.log10(cutoff)
@@ -132,7 +133,12 @@ class Data(Dataset):
         ## timesteps
         ## normaliseren? eens nadenken: JA! op dezelfde manier
         trans_tstep = mod.tstep
-        trans_tstep = trans_tstep/trans_tstep[-1] * self.dt_fract
+        # print('t_real', mod.tstep)
+        # print('t_normalised', np.array(Data.normalise(trans_tstep, self.dt_min, self.dt_max)))
+        # trans_tstep = Data.normalise(trans_tstep, self.dt_min, self.dt_max)
+        # trans_tstep = trans_tstep/trans_tstep[-1] * self.dt_fract
+        trans_tstep = trans_tstep/(1.e4) * self.dt_fract
+        # print(trans_tstep)
 
         return torch.from_numpy(trans_n), torch.from_numpy(trans_p), torch.from_numpy(trans_tstep)
 

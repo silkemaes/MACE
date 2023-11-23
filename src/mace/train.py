@@ -84,34 +84,35 @@ def train_one_epoch(data_loader, model, DEVICE, optimizer, norm_mse, norm_rel,f_
         p = p.to(DEVICE) 
         t = t.to(DEVICE)
 
-        if t[-1,-1].item() < 0.011003478870511375:    ## only use data with small dt
+        # if t[-1,-1].item() < 0.011003478870511375:    ## only use data with small dt
 
-            n = torch.swapaxes(n,1,2)
+        n = torch.swapaxes(n,1,2)
 
-            n_hat, modstatus = model(n[:,0,:],p,t)       
+        n_hat, modstatus = model(n[:,0,:],p,t)       
 
-            if modstatus.item() == 4:
-                status += modstatus.item()
+        if modstatus.item() == 4:
+            status += modstatus.item()
 
-            ## Calculate losses
-            mse_loss, rel_loss  = loss_function(n,n_hat,norm_mse, norm_rel,f_mse, f_rel)
+        ## Calculate losses
+        mse_loss, rel_loss  = loss_function(n,n_hat,norm_mse, norm_rel,f_mse, f_rel)
 
-            loss = mse_loss.mean() + rel_loss.mean()
+        loss = mse_loss.mean() + rel_loss.mean()
 
-            overall_loss += loss.item()
-            overall_mse_loss += mse_loss.mean().item()
-            overall_rel_loss += rel_loss.mean().item()
-            idv_mse_loss += mse_loss[:,-1,:].view(-1)       ## only take the loss on the final abundances 
-            idv_rel_loss += rel_loss[:,-1,:].view(-1)
+        overall_loss += loss.item()
+        overall_mse_loss += mse_loss.mean().item()
+        overall_rel_loss += rel_loss.mean().item()
+        idv_mse_loss += mse_loss[:,-1,:].view(-1)       ## only take the loss on the final abundances 
+        idv_rel_loss += rel_loss[:,-1,:].view(-1)
 
 
-            ## Backpropagation
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+        ## Backpropagation
+        print(loss)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
     
-        else:           ## else: skip this data
-            continue
+        # else:           ## else: skip this data
+        #     continue
 
         # break
 
@@ -138,28 +139,28 @@ def validate_one_epoch(test_loader, model, DEVICE, norm_mse, norm_rel,f_mse, f_r
             p     = p.to(DEVICE) 
             t     = t.to(DEVICE)
 
-            if t[-1,-1].item() < 0.011003478870511375:
+            # if t[-1,-1].item() < 0.011003478870511375:
             
-                n = torch.swapaxes(n,1,2)
+            n = torch.swapaxes(n,1,2)
 
-                n_hat, modstatus = model(n[:,0,:],p,t)         ## output van het autoecoder model
+            n_hat, modstatus = model(n[:,0,:],p,t)         ## output van het autoecoder model
 
-                if modstatus.item() == 4:
-                    status += modstatus.item()
+            if modstatus.item() == 4:
+                status += modstatus.item()
 
-                ## Calculate losses
-                mse_loss, rel_loss  = loss_function(n,n_hat,norm_mse, norm_rel,f_mse, f_rel)
+            ## Calculate losses
+            mse_loss, rel_loss  = loss_function(n,n_hat,norm_mse, norm_rel,f_mse, f_rel)
 
-                loss = mse_loss.mean() + rel_loss.mean()
+            loss = mse_loss.mean() + rel_loss.mean()
 
-                overall_loss     += loss.item()
-                overall_mse_loss += mse_loss.mean().item()
-                overall_rel_loss += rel_loss.mean().item()
-                idv_mse_loss += mse_loss[:,-1,:].view(-1) 
-                idv_rel_loss += rel_loss[:,-1,:].view(-1) 
+            overall_loss     += loss.item()
+            overall_mse_loss += mse_loss.mean().item()
+            overall_rel_loss += rel_loss.mean().item()
+            idv_mse_loss += mse_loss[:,-1,:].view(-1) 
+            idv_rel_loss += rel_loss[:,-1,:].view(-1) 
 
-            else:           ## else: skip this data
-                continue
+        # else:           ## else: skip this data
+        #     continue
 
         return (overall_loss)/(i+1), overall_mse_loss/(i+1), overall_rel_loss/(i+1), idv_mse_loss/(i+1), idv_rel_loss/(i+1), status  ## save losseses
 
@@ -260,35 +261,35 @@ def test(model, test_loader, DEVICE, f_mse, f_rel):
             p     = p.to(DEVICE) 
             t     = t.to(DEVICE)
 
-            if t[-1,-1].item() < 0.011003478870511375:
+            # if t[-1,-1].item() < 0.011003478870511375:
             
-                n = torch.swapaxes(n,1,2)
+            n = torch.swapaxes(n,1,2)
 
-                tic = time()
-                n_hat, status = model(n[:,0,:],p,t)         ## output van het autoecoder model
-                toc = time()
+            tic = time()
+            n_hat, status = model(n[:,0,:],p,t)         ## output van het autoecoder model
+            toc = time()
 
-                if status.item() == 4:
-                    print('ERROR: neuralODE could not be solved!',i)
-                    # break
+            if status.item() == 4:
+                print('ERROR: neuralODE could not be solved!',i)
+                # break
 
-                ## Calculate losses
-                mse_loss, rel_loss  = loss_function(n,n_hat,f_mse, f_rel)
+            ## Calculate losses
+            mse_loss, rel_loss  = loss_function(n,n_hat,f_mse, f_rel)
 
-                loss = mse_loss.mean() + rel_loss.mean()
+            loss = mse_loss.mean() + rel_loss.mean()
 
-                ## overall summed loss of test set
-                overall_loss     += loss.item()
+            ## overall summed loss of test set
+            overall_loss     += loss.item()
 
-                ## individual losses of test set
-                idv_mse_loss.append(mse_loss[:,-1,:].view(-1) .detach().cpu().numpy())
-                idv_rel_loss.append(rel_loss[:,-1,:].view(-1) .detach().cpu().numpy())
+            ## individual losses of test set
+            idv_mse_loss.append(mse_loss[:,-1,:].view(-1) .detach().cpu().numpy())
+            idv_rel_loss.append(rel_loss[:,-1,:].view(-1) .detach().cpu().numpy())
 
-                solve_time = toc-tic
-                mace_time.append(solve_time)
+            solve_time = toc-tic
+            mace_time.append(solve_time)
 
-            else:           ## else: skip this data
-                mace_time.append(0)
+        else:           ## else: skip this data
+            mace_time.append(0)
 
 
     print('\nTest loss:',(overall_loss)/(i+1))
