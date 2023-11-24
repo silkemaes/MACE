@@ -73,8 +73,8 @@ class Data(Dataset):
         # # self.dt_min = 2.235616584465647
         # self.dt_min = 0
         # self.dt_max = 908602.5520318691
-        self.dt_fract = 0.2     ## for a latent dim of 10
-        # self.dt_fract = 0.1     ## for a latent dim of 25
+        # self.dt_fract = 0.2     ## for a latent dim of 10
+        self.dt_fract = 0.1     ## for a latent dim of 25
         self.n_min = np.log10(cutoff)
         self.n_max = np.log10(0.85e-1)    ## initial abundance He
 
