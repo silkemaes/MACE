@@ -24,6 +24,8 @@ class ChemTorchMod():
     '''
     def __init__(self, dirname, dir=None):
         outpath = '/STER/silkem/ChemTorch/out/'
+
+        self.dir = dirname+'/'+dir
         
         self.n      = np.load(outpath+dirname+'/'+dir+'/abundances.npy')[:,1:].astype(np.float32)    # type: ignore ## want n_0 dubbel
         self.tstep  = np.load(outpath+dirname+'/'+dir+'/tstep.npy').astype(np.float32) # type: ignore
@@ -47,7 +49,7 @@ class Data(Dataset):
 
         This idx is used in the __getitem()__ function.
     '''
-    def __init__(self, dirname, train=True, fraction=0.7, cutoff = 1e-20, scale = 'norm'):
+    def __init__(self, dirname, dt_fract, train=True, fraction=0.7, cutoff = 1e-20, scale = 'norm'):
 
         outpath = '/STER/silkem/ChemTorch/out/'
         self.dirname = dirname
@@ -55,7 +57,7 @@ class Data(Dataset):
         self.dirs.remove('meta.json')
 
         ## ONLY FOR TESTING
-        # self.dirs = self.dirs[0:50]
+        self.dirs = self.dirs[0:100]
 
         # Opening JSON file
         with open(outpath+self.dirname+'/meta.json', 'r') as file:
@@ -70,11 +72,7 @@ class Data(Dataset):
         self.logδ_max = np.log10(self.meta['delta_max'])
         self.Av_min = self.meta['Av_min']
         self.Av_max = self.meta['Av_max']
-        # # self.dt_min = 2.235616584465647
-        # self.dt_min = 0
-        # self.dt_max = 908602.5520318691
-        # self.dt_fract = 0.2     ## for a latent dim of 10
-        self.dt_fract = 0.1     ## for a latent dim of 25
+        self.dt_fract = dt_fract     
         self.n_min = np.log10(cutoff)
         self.n_max = np.log10(0.85e-1)    ## initial abundance He
 
@@ -85,7 +83,7 @@ class Data(Dataset):
         self.fraction = fraction
         self.train = train
 
-        np.random.seed(0)
+        # np.random.seed(0)
         rand_idx = np.random.permutation(len(self.dirs))
         N = int(self.fraction*len(self.dirs))
         if self.train:
@@ -124,7 +122,6 @@ class Data(Dataset):
         trans_p[3] = Data.normalise(mod.p[3], self.mins[3], self.maxs[3])
 
         ## abundances
-        # print("abs")
         trans_n = np.clip(mod.n, self.cutoff, None)
         trans_n = np.log10(trans_n)
         trans_n = Data.normalise(trans_n, self.n_min, self.n_max)       ## max boundary = rel. abundance of He
@@ -144,6 +141,19 @@ class Data(Dataset):
         mod = ChemTorchMod(self.dirname,self.dirs[idx])
 
         return mod.tictoc[0]
+    
+    def get_test(self,i):
+
+        idx = self.rand_idx[i] 
+
+        mod = ChemTorchMod(self.dirname,self.dirs[idx])
+
+        n_trans, p_trans, t_trans = self[i]
+
+        print(n_trans.shape, p_trans.shape, t_trans.shape)
+
+        return n_trans.view(1,n_trans.shape[0],-1), p_trans.view(1,-1), t_trans.view(1,-1), mod
+
 
 
 def get_dirs(dirname):
@@ -152,10 +162,10 @@ def get_dirs(dirname):
 
 
 
-def get_data(dirname, batch_size, kwargs, plot = False, scale = 'norm'):
+def get_data(dirname, dt_fract,batch_size, kwargs):
     ## Make PyTorch dataset
-    train = Data(dirname)
-    test  = Data(dirname, train = False)
+    train = Data(dirname, dt_fract=dt_fract)
+    test  = Data(dirname, dt_fract=dt_fract, train = False)
     
     print('Dataset:')
     print('------------------------------')
@@ -169,6 +179,19 @@ def get_data(dirname, batch_size, kwargs, plot = False, scale = 'norm'):
 
     return train, test, data_loader, test_loader
 
+
+
+def get_test_data(dirname, dt_fract):
+    dataset = Data(dirname, dt_fract=dt_fract)
+    idx = np.random.randint(0,len(dataset))
+
+    print(idx)
+
+    n_in,p_in,t_in, Chempy_mod = dataset.get_test(idx)
+
+    input = n_in, p_in, t_in
+
+    return input, dataset, Chempy_mod
 
 
 

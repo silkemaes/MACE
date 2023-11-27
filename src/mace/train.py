@@ -22,6 +22,7 @@ def rel_loss(x,x_hat):
     The relative loss is given by ((x_hat-x_0+eps**2)/(x-x_0+eps))**2, 
         where eps makes sure we don't devide by 0.
     '''
+
     x_0   = x[:,0,:]
     eps = 1e-10
     loss  = ((torch.abs(x_hat-x_0)+eps**2)/(torch.abs(x-x_0)+eps))**2     ## absolute waarden nemen rond x, zodat het niet nog 0 kan worden
@@ -163,7 +164,7 @@ def validate_one_epoch(test_loader, model, DEVICE, norm_mse, norm_rel,f_mse, f_r
 
 
 
-def train(model, lr, data_loader, test_loader, epochs, DEVICE, norm_mse, norm_rel,f_mse, f_rel, plot = False, log = True, show = True):
+def train(model, lr, data_loader, test_loader, path, epochs, DEVICE, norm_mse, norm_rel,f_mse, f_rel, plot = False, log = True, show = True):
     optimizer = Adam(model.parameters(), lr=lr)
 
     ## initialise lists for statistics of training
@@ -230,6 +231,9 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, norm_mse, norm_re
         teststats['idv_mse_loss']      = test_idv_mse_loss_all
         teststats['idv_rel_loss']      = test_idv_rel_loss_all
         teststats['status']            = test_status_all
+
+        if epoch%10 == 0:
+            torch.save(model.state_dict(),path+'nn/nn_'+str(epoch/10)+'.pt')
         
         print("\nEpoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss, end="\r")
     print('\n \tDONE!')
@@ -242,7 +246,7 @@ def train(model, lr, data_loader, test_loader, epochs, DEVICE, norm_mse, norm_re
 
 
 
-def test(model, test_loader, DEVICE, f_mse, f_rel):
+def test(model, input,  f_mse, f_rel):
 
     mace_time = list()
     overall_loss = 0
@@ -250,45 +254,37 @@ def test(model, test_loader, DEVICE, f_mse, f_rel):
     idv_rel_loss = []
     print('\n>>> Testing model...')
 
-    with torch.no_grad():
-        for i, (n,p,t) in enumerate(test_loader):
-            print('\tbatch',i+1,'/',len(test_loader),end="\r")
+    model.eval()
+    n     = input[0]
+    p     = input[1]
+    t     = input[2]
 
-            n     = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
-            p     = p.to(DEVICE) 
-            t     = t.to(DEVICE)
+    n = torch.swapaxes(n,1,2)
 
-            # if t[-1,-1].item() < 0.011003478870511375:
-            
-            n = torch.swapaxes(n,1,2)
+    tic = time()
+    n_hat, status = model(n[:,0,:],p,t)         ## output van het autoecoder model
+    toc = time()
 
-            tic = time()
-            n_hat, status = model(n[:,0,:],p,t)         ## output van het autoecoder model
-            toc = time()
+    if status.item() == 4:
+        print('ERROR: neuralODE could not be solved!')
+        # break
 
-            if status.item() == 4:
-                print('ERROR: neuralODE could not be solved!',i)
-                # break
+    ## Calculate losses
+    mse_loss, rel_loss  = loss_function(n,n_hat,f_mse, f_rel)
 
-            ## Calculate losses
-            mse_loss, rel_loss  = loss_function(n,n_hat,f_mse, f_rel)
+    loss = mse_loss.mean() + rel_loss.mean()
 
-            loss = mse_loss.mean() + rel_loss.mean()
+    ## overall summed loss of test set
+    overall_loss     += loss.item()
 
-            ## overall summed loss of test set
-            overall_loss     += loss.item()
+    ## individual losses of test set
+    idv_mse_loss.append(mse_loss[:,-1,:].view(-1) .detach().cpu().numpy())
+    idv_rel_loss.append(rel_loss[:,-1,:].view(-1) .detach().cpu().numpy())
 
-            ## individual losses of test set
-            idv_mse_loss.append(mse_loss[:,-1,:].view(-1) .detach().cpu().numpy())
-            idv_rel_loss.append(rel_loss[:,-1,:].view(-1) .detach().cpu().numpy())
-
-            solve_time = toc-tic
-            mace_time.append(solve_time)
-
-        else:           ## else: skip this data
-            mace_time.append(0)
+    solve_time = toc-tic
+    mace_time.append(solve_time)
 
 
-    print('\nTest loss:',(overall_loss)/(i+1))
+    print('\nTest loss:',(overall_loss))
 
-    return n, n_hat, t, (overall_loss)/(i+1),idv_mse_loss,idv_rel_loss, mace_time
+    return n, n_hat, t, (overall_loss),idv_mse_loss,idv_rel_loss, mace_time
