@@ -32,7 +32,7 @@ z_dim = 25
 dt_fract = 0.1
 # dirname = 'C-short-dtime'
 # dirname = 'new'
-dirname = 'easy-mace3'
+dirname = 'easy-mace2'
 
 print('------------------------------')
 print('')
