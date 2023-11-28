@@ -202,7 +202,7 @@ def train(model, lr, data_loader, test_loader, path, epochs, DEVICE, norm_mse, n
         train_rel_loss_all.append(train_rel_loss)
         train_idv_mse_loss_all.append(train_idv_mse_loss.detach().cpu().numpy())
         train_idv_rel_loss_all.append(train_idv_rel_loss.detach().cpu().numpy())
-        train_status_all.append(status%4)
+        train_status_all.append(status/4)
 
         
         trainstats['total_loss']        = loss_train_all
@@ -223,7 +223,7 @@ def train(model, lr, data_loader, test_loader, path, epochs, DEVICE, norm_mse, n
         test_rel_loss_all.append(test_rel_loss)
         test_idv_mse_loss_all.append(test_idv_mse_loss.detach().cpu().numpy())
         test_idv_rel_loss_all.append(test_idv_rel_loss.detach().cpu().numpy())
-        test_status_all.append(status%4)
+        test_status_all.append(status/4)
 
         teststats['total_loss']        = loss_test_all
         teststats['total_mse_loss']    = test_mse_loss_all
@@ -232,8 +232,8 @@ def train(model, lr, data_loader, test_loader, path, epochs, DEVICE, norm_mse, n
         teststats['idv_rel_loss']      = test_idv_rel_loss_all
         teststats['status']            = test_status_all
 
-        if epoch%10 == 0:
-            torch.save(model.state_dict(),path+'nn/nn_'+str(epoch/10)+'.pt')
+        if epoch%10 == 0 and path != None:
+            torch.save(model.state_dict(),path+'/nn/nn_'+str(epoch/10)+'.pt')
         
         print("\nEpoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss, end="\r")
     print('\n \tDONE!')
@@ -252,7 +252,7 @@ def test(model, input,  f_mse, f_rel):
     overall_loss = 0
     idv_mse_loss = []
     idv_rel_loss = []
-    print('\n>>> Testing model...')
+    print('>>> Testing model...')
 
     model.eval()
     n     = input[0]
@@ -285,6 +285,7 @@ def test(model, input,  f_mse, f_rel):
     mace_time.append(solve_time)
 
 
-    print('\nTest loss:',(overall_loss))
+    print('\nTest loss       :',(overall_loss))
+    print('\nSolving time [s]:', solve_time)
 
-    return n, n_hat, t, (overall_loss),idv_mse_loss,idv_rel_loss, mace_time
+    return n, n_hat, t, overall_loss,np.array(idv_mse_loss),np.array(idv_rel_loss), mace_time

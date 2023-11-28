@@ -29,9 +29,10 @@ path = '/STER/silkem/MACE/models/'+str(name)
 lr = 1.e-3
 tot_epochs = 80
 z_dim = 25
+dt_fract = 0.1
 # dirname = 'C-short-dtime'
 # dirname = 'new'
-dirname = 'easy-mace2'
+dirname = 'easy-mace3'
 
 print('------------------------------')
 print('')
@@ -47,6 +48,7 @@ print('')
 ## --------------------------------------- SET UP ------------------
 
 utils.makeOutputDir(path)
+utils.makeOutputDir(path+'/nn')
 
 metadata = {'traindir'  : dirname,
             'lr'        : lr,
@@ -67,7 +69,7 @@ batch_size = 1 ## if not 1, dan kan er geen tensor van gemaakt worden
 kwargs = {'num_workers': 1, 'pin_memory': True} 
 
 ## Load train & test data sets 
-train, test, data_loader, test_loader = ds.get_data(dirname = dirname, batch_size=batch_size, kwargs=kwargs, plot = True, scale = None)
+train, test, data_loader, test_loader = ds.get_data(dirname = dirname,dt_fract=dt_fract, batch_size=batch_size, kwargs=kwargs)
 ## Make model
 model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=466, DEVICE = DEVICE)
 
@@ -81,7 +83,7 @@ f_mse = 1
 f_rel = 1
 n_epochs_un = 5
 tic = time()
-trainstats1, teststats1 = tr.train(model, lr, data_loader, test_loader, epochs = n_epochs_un, DEVICE= DEVICE, norm_mse= norm_mse, norm_rel=norm_rel, f_mse=f_mse, f_rel=f_rel, plot = False, log = True, show = True)
+trainstats1, teststats1 = tr.train(model, lr, data_loader, test_loader,path, epochs = n_epochs_un, DEVICE= DEVICE, norm_mse= norm_mse, norm_rel=norm_rel, f_mse=f_mse, f_rel=f_rel, plot = False, log = True, show = True)
 toc = time()
 train_time1 = toc-tic
 
@@ -92,7 +94,7 @@ f_mse = 1
 f_rel = 1
 n_epochs = 50 - n_epochs_un
 tic = time()
-trainstats2, teststats2 = tr.train(model, lr, data_loader, test_loader, epochs = n_epochs, DEVICE= DEVICE, norm_mse= norm_mse, norm_rel=norm_rel, f_mse=f_mse, f_rel=f_rel, plot = False, log = True, show = True)
+trainstats2, teststats2 = tr.train(model, lr, data_loader, test_loader,path, epochs = n_epochs, DEVICE= DEVICE, norm_mse= norm_mse, norm_rel=norm_rel, f_mse=f_mse, f_rel=f_rel, plot = False, log = True, show = True)
 toc = time()
 train_time2 = toc-tic
 
@@ -103,7 +105,7 @@ f_mse = 100
 f_rel = 100
 n_epochs = tot_epochs - n_epochs
 tic = time()
-trainstats3, teststats3 = tr.train(model, lr, data_loader, test_loader, epochs = n_epochs, DEVICE= DEVICE, norm_mse= norm_mse, norm_rel=norm_rel, f_mse=f_mse, f_rel=f_rel, plot = False, log = True, show = False)
+trainstats3, teststats3 = tr.train(model, lr, data_loader, test_loader, path, epochs = n_epochs, DEVICE= DEVICE, norm_mse= norm_mse, norm_rel=norm_rel, f_mse=f_mse, f_rel=f_rel, plot = False, log = True, show = False)
 toc = time()
 train_time3 = toc-tic
 
@@ -137,7 +139,8 @@ for key in teststats1:
 
 min_max = np.stack((train.mins, train.maxs), axis=1)
 np.save(path+'/minmax', min_max) 
-torch.save(model.state_dict(),path+'/nn.pt')
+
+torch.save(model.state_dict(),path+'/nn/nn.pt')
 
 fig_loss = pl.plot_loss(stats_train, stats_test)
 plt.savefig(path+'/loss.png')
@@ -155,7 +158,9 @@ metadata = {'traindir'  : dirname,
             'overhead'  : overhead_time,
             'samples'   : len(train),
             'cutoff_abs': train.cutoff,
-            'done'      : 'true'
+            'done'      : 'true',
+            'norm_mse'  : norm_mse,
+            'norm_rel'  : norm_rel
 }
 
 json_object = json.dumps(metadata, indent=4)
