@@ -29,12 +29,13 @@ class Encoder(nn.Module):
         self.layer_out = nn.Linear(hidden_dim, latent_dim)
         
         self.LeakyReLU = nn.LeakyReLU(0.2)
+        self.Tanh = nn.Tanh()
         
     def forward(self, x):
         h = self.LeakyReLU(self.layer_in(x))
         for layer in self.hidden:
             h = self.LeakyReLU(layer(h))
-        h = self.LeakyReLU(self.layer_out(h))
+        h = self.Tanh(self.layer_out(h))
         return h
 
 
