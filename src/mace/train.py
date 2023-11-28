@@ -233,7 +233,7 @@ def train(model, lr, data_loader, test_loader, path, epochs, DEVICE, norm_mse, n
         teststats['status']            = test_status_all
 
         if epoch%10 == 0 and path != None:
-            torch.save(model.state_dict(),path+'/nn/nn_'+str(epoch/10)+'.pt')
+            torch.save(model.state_dict(),path+'/nn/nn_'+str(int(epoch/10))+'.pt')
         
         print("\nEpoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss, end="\r")
     print('\n \tDONE!')
