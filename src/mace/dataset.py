@@ -72,12 +72,13 @@ class Data(Dataset):
         self.logδ_max = np.log10(self.meta['delta_max'])
         self.Av_min = self.meta['Av_min']
         self.Av_max = self.meta['Av_max']
+        self.tmax   = self.meta['tmax']
         self.dt_fract = dt_fract     
         self.n_min = np.log10(cutoff)
         self.n_max = np.log10(0.85e-1)    ## initial abundance He
 
         self.mins = np.array([self.logρ_min, self.logT_min, self.logδ_min, self.Av_min, self.n_min, self.dt_fract])
-        self.maxs = np.array([self.logρ_max, self.logT_max, self.logδ_max, self.Av_max, self.n_max, self.dt_fract])
+        self.maxs = np.array([self.logρ_max, self.logT_max, self.logδ_max, self.Av_max, self.n_max, self.tmax])
 
         self.cutoff = cutoff
         self.fraction = fraction
@@ -129,8 +130,8 @@ class Data(Dataset):
         ## timesteps
         ## normaliseren? eens nadenken: JA! --> herschalen
         trans_tstep = mod.tstep
-        trans_tstep = trans_tstep/trans_tstep[-1] * self.dt_fract
-        # trans_tstep = trans_tstep/(1.e4) * self.dt_fract
+        trans_tstep = trans_tstep/self.tmax * self.dt_fract             ## scale to [0,1] and multiply with dt_fract
+ 
 
 
         return torch.from_numpy(trans_n), torch.from_numpy(trans_p), torch.from_numpy(trans_tstep)
