@@ -122,6 +122,9 @@ class Solver(nn.Module):
     def __init__(self, p_dim, z_dim, DEVICE,  n_dim=466, g_nn = False, atol = 1e-5, rtol = 1e-2):
         super(Solver, self).__init__()
 
+        self.status_train = list()
+        self.status_test = list()
+
         self.z_dim = z_dim
         self.n_dim = n_dim
         self.DEVICE = DEVICE
@@ -148,6 +151,17 @@ class Solver(nn.Module):
         self.encoder = ae.Encoder(input_dim=input_ae_dim, hidden_dim=hidden_ae_dim, latent_dim=z_dim)
         self.decoder = ae.Decoder(latent_dim=z_dim      , hidden_dim=hidden_ae_dim, output_dim=n_dim)
 
+    def set_status(self, status, type):
+        if type == 'train':
+            self.status_train.append(status)
+        elif type == 'test':
+            self.status_test.append(status)
+
+    def get_status(self, type):
+        if type == 'train':
+            return np.array(self.status_train)
+        elif type == 'test':
+            return np.array(self.status_test)
 
 
     def forward(self, n_0, p, tstep):

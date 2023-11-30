@@ -28,41 +28,46 @@ def plot_hist(df):
 
     return
 
-def plot_loss(train, test, log = True, show = True):
+
+def plot_loss(train, test, log = True, ylim = False, show = False):
 
     fig = plt.figure(figsize = (10,4))
     ax1 = fig.add_subplot((111))
 
     lw = 1
-    a = 0.5
+    a = 0.8
 
     ## ------------- TRAINING ------------
     ## total loss
-    ax1.plot(train['total_loss'    ], ls = '-', marker = '.', lw = lw, c='navy')
+    ax1.plot(train.get_tot_loss(), ls = '-', marker = 'None', lw = lw, c='navy')
     ## mse loss
-    ax1.plot(train['total_mse_loss'], ls = '-', marker = '.', lw = lw, c='royalblue', alpha = a)
+    ax1.plot(train.get_loss('mse'), ls = '-', marker = 'x', lw = lw, c='royalblue', alpha = a)
     ## rel loss
-    ax1.plot(train['total_rel_loss'], ls = '-', marker = '.', lw = lw, c='lightsteelblue', alpha = a)
+    ax1.plot(train.get_loss('evo'), ls = '--', marker = '.', lw = lw, c='lightsteelblue', alpha = a)
 
     ## ------------ VALIDATING -----------
     ## total loss
-    ax1.plot(test['total_loss'    ], ls = '-', marker = '.', lw = lw, c='maroon')
+    ax1.plot(test.get_tot_loss(), ls = '-', marker = 'None', lw = lw, c='maroon')
     ## mse loss
-    ax1.plot(test['total_mse_loss'], ls = '-', marker = '.', lw = lw, c='firebrick', alpha = a)
+    ax1.plot(test.get_loss('mse'), ls = '-', marker = 'x', lw = lw, c='firebrick', alpha = a)
     ## rel loss
-    ax1.plot(test['total_rel_loss'], ls = '-', marker = '.', lw = lw, c='lightcoral', alpha = a)
+    ax1.plot(test.get_loss('evo'), ls = '--', marker = '.', lw = lw, c='lightcoral', alpha = a)
 
     ## ------------ legend ----------------
-    lw = 4
+    lw2 = 4
     l_train = mlines.Line2D([],[], color = 'blue', ls = '-' , label='train',lw = lw, alpha = 1)
     l_test  = mlines.Line2D([],[], color = 'red' , ls = '-' , label='test' ,lw = lw, alpha = 1)
     l_tot   = mlines.Line2D([],[], color = 'k'   , ls = '-' , label='total',lw = lw, alpha = 1)
-    l_mse   = mlines.Line2D([],[], color = 'grey'     , ls = '-' , label='mse',lw = lw, alpha = 1)
-    l_rel   = mlines.Line2D([],[], color = 'lightgrey', ls = '-' , label='rel',lw = lw, alpha = 1)
+    l_mse   = mlines.Line2D([],[], color = 'grey'     , ls = '-' , marker = 'x',label='mse',lw = lw, alpha = 1)
+    l_rel   = mlines.Line2D([],[], color = 'lightgrey', ls = '--' ,marker = '.', label='rel',lw = lw, alpha = 1)
     handles = [l_train, l_test, l_tot, l_mse, l_rel]
 
+    ## ------------ settings --------------
     if log == True:
         ax1.set_yscale('log') 
+
+    if ylim == True:
+        ax1.set_ylim([1e-2,1e0])
 
     ax1.set_xlabel('epoch')
     ax1.set_ylabel('loss')
@@ -78,6 +83,8 @@ def plot_loss(train, test, log = True, show = True):
 
 
     return fig
+
+
 
 
 

@@ -57,7 +57,7 @@ class Data(Dataset):
         self.dirs.remove('meta.json')
 
         ## ONLY FOR TESTING
-        # self.dirs = self.dirs[0:100]
+        self.dirs = self.dirs[0:100]
 
         # Opening JSON file
         with open(outpath+self.dirname+'/meta.json', 'r') as file:

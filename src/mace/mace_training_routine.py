@@ -20,19 +20,26 @@ import train        as tr
 import neuralODE    as nODE
 import utils        as utils
 import plotting     as pl
+import loss
 
 start = time()
 name = dt.datetime.now()
-path = '/STER/silkem/MACE/models/'+str(name)
+path = '/STER/silkem/MACE/models/test_'+str(name)
 
+
+## ================================================== INPUT ========
 ## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
+
 lr = 1.e-3
-tot_epochs = 80
-z_dim = 25
-dt_fract = 0.1
+tot_epochs = 10
+nb_epochs  = 5
+z_dim = 10
+dt_fract = 0.2
 # dirname = 'C-short-dtime'
 # dirname = 'new'
 dirname = 'easy-mace2'
+
+## ================================================== INPUT ========
 
 print('------------------------------')
 print('')
@@ -68,6 +75,8 @@ batch_size = 1 ## if not 1, dan kan er geen tensor van gemaakt worden
 
 kwargs = {'num_workers': 1, 'pin_memory': True} 
 
+
+
 ## Load train & test data sets 
 train, test, data_loader, test_loader = ds.get_data(dirname = dirname,dt_fract=dt_fract, batch_size=batch_size, kwargs=kwargs)
 ## Make model
@@ -77,35 +86,52 @@ model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=466, DEVICE = DEVICE)
 ## --------------------------------------- TRAINING ----------------
 
 ## ------------- PART 1: unnormalised losses 
-norm_mse = 1
-norm_rel = 1
-f_mse = 1
-f_rel = 1
-n_epochs_un = 5
+norm = {'mse' : 1,
+        'rel' : 1,
+        'evo' : 1}
+
+fract = {'mse' : 1, 
+         'rel' : 1,
+         'evo' : 1}
+
+
+## Make loss objects
+trainloss = loss.Loss(norm, fract)
+testloss  = loss.Loss(norm, fract)
+
 tic = time()
-trainstats1, teststats1 = tr.train(model, lr, data_loader, test_loader,path, epochs = n_epochs_un, DEVICE= DEVICE, norm_mse= norm_mse, norm_rel=norm_rel, f_mse=f_mse, f_rel=f_rel, plot = False, log = True, show = True)
+trainloss, testloss = tr.train(model, lr, data_loader, test_loader,path, end_epochs = 2, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, plot = False, log = True, show = True)
 toc = time()
 train_time1 = toc-tic
 
-## ------------- PART 2: normalised losses 
-norm_mse = np.mean(trainstats1['total_mse_loss'])
-norm_rel = np.mean(trainstats1['total_rel_loss'])
-f_mse = 1
-f_rel = 1
-n_epochs = 50 - n_epochs_un
+## ------------- PART 2: normalised losses, but reinitialise model
+model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=466, DEVICE = DEVICE)
+
+norm = {'mse' : 1,
+        'rel' : 1,
+        'evo' : 1}
+
+trainloss.change_norm({'mse' :np.mean(trainloss.get_loss('mse')),
+                       'rel' :np.mean(trainloss.get_loss('rel')),
+                       'evo' :np.mean(trainloss.get_loss('evo'))})  
+testloss.change_norm({'mse' :np.mean(testloss.get_loss('mse')),
+                        'rel' :np.mean(testloss.get_loss('rel')),
+                        'evo' :np.mean(testloss.get_loss('evo'))})
+
 tic = time()
-trainstats2, teststats2 = tr.train(model, lr, data_loader, test_loader,path, epochs = n_epochs, DEVICE= DEVICE, norm_mse= norm_mse, norm_rel=norm_rel, f_mse=f_mse, f_rel=f_rel, plot = False, log = True, show = True)
+trainloss, testloss = tr.train(model, lr, data_loader, test_loader,path, end_epochs = nb_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=2, plot = False, log = True, show = True)
 toc = time()
 train_time2 = toc-tic
 
 ## ------------- PART 3: increase losses with factor & train further
-# norm_mse = np.mean(trainstats1['total_mse_loss'])
-# norm_rel = np.mean(trainstats1['total_rel_loss'])
-f_mse = 100
-f_rel = 100
-n_epochs = tot_epochs - n_epochs
+fract = {'mse' : 100, 
+         'rel' : 100,
+         'evo' : 100}
+trainloss.change_fract(fract)
+testloss.change_fract(fract)
+
 tic = time()
-trainstats3, teststats3 = tr.train(model, lr, data_loader, test_loader, path, epochs = n_epochs, DEVICE= DEVICE, norm_mse= norm_mse, norm_rel=norm_rel, f_mse=f_mse, f_rel=f_rel, plot = False, log = True, show = False)
+trainloss, testloss = tr.train(model, lr, data_loader, test_loader, path, end_epochs = tot_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=5, plot = False, log = True, show = False)
 toc = time()
 train_time3 = toc-tic
 
@@ -115,26 +141,12 @@ train_time = train_time1+train_time2+train_time3
 
 
 ## -------------- STACKING LOSSES THE DATA --------------------
-utils.makeOutputDir(path+'/train')
-utils.makeOutputDir(path+'/test')
+trainpath = path+'/train'
+testpath  = path+'/test'
 
-stats_train = dict()
-for key in trainstats1:
-    arr1 = np.array([trainstats1[key]])
-    arr2 = np.array([trainstats2[key]])
-    arr3 = np.array([trainstats2[key]])
-    loss = np.concatenate((arr1,arr2, arr3), axis=1)[0]
-    np.save(path+'/train/'+key,loss)
-    stats_train[key] = loss
+trainloss.save(trainpath)
+testloss.save(testpath)
 
-stats_test = dict()
-for key in teststats1:
-    arr1 = np.array([teststats1[key]])
-    arr2 = np.array([teststats2[key]])
-    arr3 = np.array([teststats2[key]])
-    loss = np.concatenate((arr1,arr2, arr3), axis=1)[0]
-    np.save(path+'/test/'+key,loss)
-    stats_test[key] = loss
 
 
 min_max = np.stack((train.mins, train.maxs), axis=1)
@@ -142,7 +154,7 @@ np.save(path+'/minmax', min_max)
 
 torch.save(model.state_dict(),path+'/nn/nn.pt')
 
-fig_loss = pl.plot_loss(stats_train, stats_test)
+fig_loss = pl.plot_loss(trainloss, testloss, show = True)
 plt.savefig(path+'/loss.png')
 
 stop = time()
@@ -154,13 +166,14 @@ metadata = {'traindir'  : dirname,
             'epochs'    : tot_epochs,
             'z_dim'     : z_dim,
             'dt_fract'  : train.dt_fract,
+            'tmax'      : train.tmax,
             'train_time': train_time,
             'overhead'  : overhead_time,
             'samples'   : len(train),
             'cutoff_abs': train.cutoff,
             'done'      : 'true',
-            'norm_mse'  : norm_mse,
-            'norm_rel'  : norm_rel
+            'norm'      : norm,
+            'fract'     : fract
 }
 
 json_object = json.dumps(metadata, indent=4)
