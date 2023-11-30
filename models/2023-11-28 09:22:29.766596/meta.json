@@ -3,5 +3,12 @@
     "lr": 0.0001,
     "epochs": 80,
     "z_dim": 10,
-    "done": "false"
+    "dt_fract": 0.2,
+    "train_time": 92035.78708338737,
+    "overhead": 4.663225889205933,
+    "samples": 20775,
+    "cutoff_abs": 1e-20,
+    "done": "true",
+    "norm_mse": 0.00028209311822706944,
+    "norm_rel": 1.6468341797567952e+16
 }
