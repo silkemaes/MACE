@@ -52,14 +52,16 @@ def train_one_epoch(data_loader, model, loss_obj, DEVICE, optimizer):
 
         n = torch.swapaxes(n,1,2)
 
-        n_hat, modstatus = model(n[:,0,:],p,t)       
+        n_hat, modstatus = model(n[:,0,:],p,t)      
+
+        # for i in range(len(n[:,0,:][0])):
+        #     print(n[:,0,:][0][i].item())
 
         if modstatus is not None and modstatus.item() == 4:
             status += modstatus.item()
 
         ## Calculate losses
         mse_loss, rel_loss, evo_loss  = loss_function(loss_obj, n, n_hat)
-        # print(i,mse_loss)
 
         ## hier nog iets met opties doen welk type loss je wil gebruiken
         loss = get_loss(mse_loss, rel_loss, evo_loss, loss_obj.type)
@@ -154,7 +156,6 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
         ## save status
         model.set_status(status/4, 'train')
 
-        
         ## Validating
 
         print('\n')
@@ -173,8 +174,8 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
         model.set_status(status/4, 'test')
         
         ## save model
-        if epoch%10 == 0 and path != None:
-            torch.save(model.state_dict(),path+'/nn/nn'+str(int(end_epochs/10))+'.pt')
+        if (start_epochs+epoch)%10 == 0 and path != None:
+            torch.save(model.state_dict(),path+'/nn/nn'+str(int((start_epochs+epoch)/10))+'.pt')
         
         print("\nEpoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss)
     print('\n \tDONE!')

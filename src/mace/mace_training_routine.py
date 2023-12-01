@@ -37,12 +37,12 @@ lr = 1.e-3
 tot_epochs = 100
 nb_epochs  = 50
 ini_epochs = 5
-losstype = 'mse_evo'
+losstype = 'evo_rel'
 z_dim = 10
 dt_fract = 0.2
 # dirname = 'C-short-dtime'
 # dirname = 'new'
-dirname = 'easy-mace2'
+dirname = 'easy-mace3'
 
 ## ================================================== INPUT ========
 

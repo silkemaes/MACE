@@ -148,7 +148,8 @@ def rel_loss(x, x_hat):
     '''
     Return the relative mean squared loss (REL) per x_i.
     '''
-    loss = (x_hat/x -1 )**2
+    eps = 1e-10
+    loss = (x_hat/(x+eps) - 1)**2    
     return loss
 
 def evo_loss(x,x_hat):
