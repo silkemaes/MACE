@@ -22,17 +22,22 @@ import utils        as utils
 import plotting     as pl
 import loss
 
+
+torch.multiprocessing.set_sharing_strategy('file_system')
+
 start = time()
 name = dt.datetime.now()
-path = '/STER/silkem/MACE/models/test_'+str(name)
+path = '/STER/silkem/MACE/models/'+str(name)
 
 
 ## ================================================== INPUT ========
 ## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
 
 lr = 1.e-3
-tot_epochs = 10
-nb_epochs  = 5
+tot_epochs = 100
+nb_epochs  = 50
+ini_epochs = 5
+losstype = 'mse_evo'
 z_dim = 10
 dt_fract = 0.2
 # dirname = 'C-short-dtime'
@@ -50,6 +55,7 @@ print('      # epochs:', tot_epochs)
 print(' learning rate:', lr)
 print('# z dimensions:', z_dim)
 print('    sample dir:', dirname)
+print('     loss type:', losstype)
 print('')
 
 ## --------------------------------------- SET UP ------------------
@@ -61,7 +67,8 @@ metadata = {'traindir'  : dirname,
             'lr'        : lr,
             'epochs'    : tot_epochs,
             'z_dim'     : z_dim,
-            'done'      : 'false'
+            'done'      : 'false',
+            'losstype'  : losstype
 }
 
 json_object = json.dumps(metadata, indent=4)
@@ -74,7 +81,6 @@ DEVICE = torch.device("cuda" if cuda else "cpu")
 batch_size = 1 ## if not 1, dan kan er geen tensor van gemaakt worden
 
 kwargs = {'num_workers': 1, 'pin_memory': True} 
-
 
 
 ## Load train & test data sets 
@@ -99,8 +105,11 @@ fract = {'mse' : 1,
 trainloss = loss.Loss(norm, fract)
 testloss  = loss.Loss(norm, fract)
 
+trainloss.set_losstype(losstype)
+testloss.set_losstype(losstype)
+
 tic = time()
-trainloss, testloss = tr.train(model, lr, data_loader, test_loader,path, end_epochs = 2, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, plot = False, log = True, show = True)
+trainloss, testloss = tr.train(model, lr, data_loader, test_loader,path, end_epochs = ini_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, plot = False, log = True, show = True)
 toc = time()
 train_time1 = toc-tic
 
@@ -115,11 +124,11 @@ trainloss.change_norm({'mse' :np.mean(trainloss.get_loss('mse')),
                        'rel' :np.mean(trainloss.get_loss('rel')),
                        'evo' :np.mean(trainloss.get_loss('evo'))})  
 testloss.change_norm({'mse' :np.mean(testloss.get_loss('mse')),
-                        'rel' :np.mean(testloss.get_loss('rel')),
-                        'evo' :np.mean(testloss.get_loss('evo'))})
+                      'rel' :np.mean(testloss.get_loss('rel')),
+                      'evo' :np.mean(testloss.get_loss('evo'))})
 
 tic = time()
-trainloss, testloss = tr.train(model, lr, data_loader, test_loader,path, end_epochs = nb_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=2, plot = False, log = True, show = True)
+trainloss, testloss = tr.train(model, lr, data_loader, test_loader,path, end_epochs = nb_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=ini_epochs, plot = False, log = True, show = True)
 toc = time()
 train_time2 = toc-tic
 
@@ -131,7 +140,7 @@ trainloss.change_fract(fract)
 testloss.change_fract(fract)
 
 tic = time()
-trainloss, testloss = tr.train(model, lr, data_loader, test_loader, path, end_epochs = tot_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=5, plot = False, log = True, show = False)
+trainloss, testloss = tr.train(model, lr, data_loader, test_loader, path, end_epochs = tot_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=nb_epochs, plot = False, log = True, show = False)
 toc = time()
 train_time3 = toc-tic
 
@@ -173,7 +182,8 @@ metadata = {'traindir'  : dirname,
             'cutoff_abs': train.cutoff,
             'done'      : 'true',
             'norm'      : norm,
-            'fract'     : fract
+            'fract'     : fract,
+            'losstype'  : 'mse, evo'
 }
 
 json_object = json.dumps(metadata, indent=4)

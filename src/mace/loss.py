@@ -4,9 +4,14 @@ import utils
 
 class Loss():
     def __init__(self, norm, fract):
+        '''
+        Initialise the loss object, which will contain the losses for each epoch. 
+
+        norm:       dict with normalisation factors for each loss
+        fract:      dict with factors to multiply each loss with
+        '''
         self.norm  = norm
         self.fract = fract
-
 
         self.tot = list()
 
@@ -18,19 +23,48 @@ class Loss():
         self.rel_idv = list()
         self.evo_idv = list()
 
+    def set_losstype(self, losstype):
+        '''
+        Set the type of loss used.
+            losstype:   string with the type of loss used
+                - 'mse':                            mean squared error
+                - 'rel':                            relative change in abundance
+                - 'evo':                            relative evolution
+                - 'mse_rel' or 'rel_mse':           mse + rel
+                - 'mse_evo' or 'evo_rel':           mse + evo
+                - 'rel_evo' or 'evo_rel':           rel + evo
+                - 'mse_rel_evo' or permulations:    mse + rel + evo
+        '''
+        self.type = losstype
+
     def change_norm(self, norm):
+        '''
+        Change the normalisation factors for the losses.
+        '''
         self.norm = norm
 
     def change_fract(self, fract):
+        '''
+        Change the factors to multiply the losses with.
+        '''
         self.fract = fract
 
-    def set_tot_loss(self,loss):    
+    def set_tot_loss(self,loss):   
+        '''
+        Set the total loss for the epoch.
+        ''' 
         self.tot.append(loss)
 
     def get_tot_loss(self):   
+        '''
+        Get the total loss for the epoch.
+        '''
         return np.array(self.tot)
     
     def set_loss(self,loss,type):
+        '''
+        Set the loss for the epoch.
+        '''
         if type == 'mse':
             self.mse.append(loss)
         elif type == 'rel':
@@ -39,6 +73,9 @@ class Loss():
             self.evo.append(loss)
         
     def get_loss(self,type):
+        '''
+        Get the loss for the epoch.
+        '''
         if type == 'mse':
             return np.array(self.mse)
         elif type == 'rel':
@@ -67,19 +104,36 @@ class Loss():
         
     def get_all_idv_losses(self):
         return self.get_idv_loss('mse'), self.get_idv_loss('rel'), self.get_idv_loss('evo')
-    
+
 
     def save(self, path):
+        '''
+        Save the losses to a .npy file in the given path.
+        '''
         utils.makeOutputDir(path)
-        np.save(path+'/tot.npy',self.get_tot_loss())
-        np.save(path+'/mse.npy',self.get_loss('mse'))
-        np.save(path+'/rel.npy',self.get_loss('rel'))
-        np.save(path+'/evo.npy',self.get_loss('evo'))
-        np.save(path+'/mse_idv.npy',self.get_idv_loss('mse'))
-        np.save(path+'/rel_idv.npy',self.get_idv_loss('rel'))
-        np.save(path+'/evo_idv.npy',self.get_idv_loss('evo'))  
-
-    
+        
+        tot_loss = self.get_tot_loss()
+        mse_loss = self.get_loss('mse')
+        rel_loss = self.get_loss('rel')
+        evo_loss = self.get_loss('evo')
+        mse_idv_loss = self.get_idv_loss('mse')
+        rel_idv_loss = self.get_idv_loss('rel')
+        evo_idv_loss = self.get_idv_loss('evo')
+        
+        if tot_loss is not None:
+            np.save(path+'/tot.npy', tot_loss)
+        if mse_loss is not None:
+            np.save(path+'/mse.npy', mse_loss)
+        if rel_loss is not None:
+            np.save(path+'/rel.npy', rel_loss)
+        if evo_loss is not None:
+            np.save(path+'/evo.npy', evo_loss)
+        if mse_idv_loss is not None:
+            np.save(path+'/mse_idv.npy', mse_idv_loss)
+        if rel_idv_loss is not None:
+            np.save(path+'/rel_idv.npy', rel_idv_loss)
+        if evo_idv_loss is not None:
+            np.save(path+'/evo_idv.npy', evo_idv_loss)
 
     
 
@@ -124,3 +178,31 @@ def loss_function(loss_obj, x,x_hat):
     evo = evo/loss_obj.norm['evo']* loss_obj.fract['evo']
 
     return mse, rel, evo
+
+def get_loss(mse, rel, evo, type):
+    mse = mse.mean()
+    rel = rel.mean()
+    evo = evo.mean()
+
+    ## only 1 type of loss
+    if type == 'mse':
+        return mse
+    if type =='rel':
+        return rel
+    if type =='evo':
+        return evo
+    
+    ## 2 types of losses
+    if type =='mse_rel' or type == 'rel_mse':
+        return mse+rel
+    if type =='rel_evo' or type == 'evo_rel':
+        return rel+evo
+    if type =='mse_evo' or type == 'evo_mse':
+        return mse+evo
+
+    ## 3 types of losses
+    if type =='mse_rel_evo' or type == 'mse_evo_rel' or type == 'rel_mse_evo' or type == 'rel_evo_mse' or type == 'evo_mse_rel' or type == 'evo_rel_mse':
+        return mse+rel+evo
+
+
+    

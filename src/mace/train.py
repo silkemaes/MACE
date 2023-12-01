@@ -6,7 +6,7 @@ from torch.optim  import Adam
 
 ## own scripts
 import plotting 
-from loss import loss_function
+from loss import loss_function, get_loss
 
 
 
@@ -54,21 +54,21 @@ def train_one_epoch(data_loader, model, loss_obj, DEVICE, optimizer):
 
         n_hat, modstatus = model(n[:,0,:],p,t)       
 
-        if modstatus.item() == 4:
+        if modstatus is not None and modstatus.item() == 4:
             status += modstatus.item()
 
         ## Calculate losses
-        mse_loss, rel_loss, evo_loss  = loss_function(loss_obj, n,n_hat)
+        mse_loss, rel_loss, evo_loss  = loss_function(loss_obj, n, n_hat)
         # print(i,mse_loss)
 
         ## hier nog iets met opties doen welk type loss je wil gebruiken
-        loss = mse_loss.mean() + evo_loss.mean() #+ rel_loss.mean() 
+        loss = get_loss(mse_loss, rel_loss, evo_loss, loss_obj.type)
 
         overall_loss += loss.item()
         overall_mse_loss += mse_loss.mean().item()
         overall_evo_loss += evo_loss.mean().item()
         overall_rel_loss += rel_loss.mean().item()
-        idv_mse_loss += mse_loss[:,-1,:].view(-1)       ## only take the loss on the final abundances 
+        idv_mse_loss += mse_loss[:,-1,:].view(-1)       ## only take the loss on the final abundances (last timestep)
         idv_rel_loss += rel_loss[:,-1,:].view(-1)
         idv_evo_loss += evo_loss[:,-1,:].view(-1)
 
@@ -113,7 +113,7 @@ def validate_one_epoch(test_loader, model, loss_obj, DEVICE):
             ## Calculate losses
             mse_loss, rel_loss, evo_loss  = loss_function(loss_obj,n,n_hat)
 
-            loss = mse_loss.mean() + evo_loss.mean() #+ rel_loss.mean() 
+            loss = get_loss(mse_loss, rel_loss, evo_loss, loss_obj.type)
 
             overall_loss     += loss.item()
             overall_mse_loss += mse_loss.mean().item()
@@ -176,7 +176,7 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
         if epoch%10 == 0 and path != None:
             torch.save(model.state_dict(),path+'/nn/nn'+str(int(end_epochs/10))+'.pt')
         
-        print("\nEpoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss, end="\r")
+        print("\nEpoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss)
     print('\n \tDONE!')
 
     if plot == True:
