@@ -71,6 +71,14 @@ class Loss():
             self.rel.append(loss)
         elif type == 'evo':
             self.evo.append(loss)
+
+    def set_idv_loss(self,loss,type):
+        if type == 'mse':
+            self.mse_idv.append(loss)
+        elif type == 'rel':
+            self.rel_idv.append(loss)
+        elif type == 'evo':
+            self.evo_idv.append(loss)
         
     def get_loss(self,type):
         '''
@@ -85,14 +93,6 @@ class Loss():
     
     def get_all_losses(self):
         return self.get_loss('mse'), self.get_loss('rel'), self.get_loss('evo')
-    
-    def set_idv_loss(self,loss,type):
-        if type == 'mse':
-            self.mse_idv.append(loss)
-        elif type == 'rel':
-            self.rel_idv.append(loss)
-        elif type == 'evo':
-            self.evo_idv.append(loss)
         
     def get_idv_loss(self,type):
         if type == 'mse':
@@ -204,6 +204,123 @@ def get_loss(mse, rel, evo, type):
     ## 3 types of losses
     if type =='mse_rel_evo' or type == 'mse_evo_rel' or type == 'rel_mse_evo' or type == 'rel_evo_mse' or type == 'evo_mse_rel' or type == 'evo_rel_mse':
         return mse+rel+evo
+
+
+class Loss_analyse():
+    def __init__(self):
+        '''
+        Initialise the loss object, used for analysing a trained model
+        '''
+    
+    def set_norm(self, norm):
+        '''
+        Set the normalisation factors for the losses.
+        '''
+        self.norm = norm
+
+    def set_fract(self, fract):
+        '''
+        Set the factors to multiply the losses with.
+        '''
+        self.fract = fract
+
+    def set_losstype(self, losstype):
+        '''
+        Set the type of loss used.
+            losstype:   string with the type of loss used
+                - 'mse':                            mean squared error
+                - 'rel':                            relative change in abundance
+                - 'evo':                            relative evolution
+                - 'mse_rel' or 'rel_mse':           mse + rel
+                - 'mse_evo' or 'evo_rel':           mse + evo
+                - 'rel_evo' or 'evo_rel':           rel + evo
+                - 'mse_rel_evo' or permulations:    mse + rel + evo
+        '''
+        self.type = losstype
+
+    def get_losstype(self):
+        return self.type
+
+    def set_tot_loss(self,loss):   
+        '''
+        Set the total loss for the epoch.
+        ''' 
+        self.tot = loss
+
+    def get_tot_loss(self):   
+        '''
+        Get the total loss for the epoch.
+        '''
+        return self.tot
+    
+    def set_loss(self,loss,type):
+        '''
+        Set the loss for the epoch.
+        '''
+        if type == 'mse':
+            self.mse = loss
+        elif type == 'rel':
+            self.rel = loss
+        elif type == 'evo':
+            self.evo = loss 
+
+    def set_idv_loss(self,loss,type):
+        if type == 'mse':
+            self.mse_idv = loss
+        elif type == 'rel':
+            self.rel_idv = loss
+        elif type == 'evo':
+            self.evo_idv = loss 
+        
+    def get_loss(self,type):
+        '''
+        Get the loss for the epoch.
+        '''
+        if type == 'mse':
+            return self.mse
+        elif type == 'rel':
+            return self.rel
+        elif type == 'evo':
+            return self.evo 
+    
+    def get_all_losses(self):
+        return self.get_loss('mse'), self.get_loss('rel'), self.get_loss('evo')
+        
+    def get_idv_loss(self,type):
+        if type == 'mse':
+            return self.mse_idv
+        elif type == 'rel':
+            return self.rel_idv
+        elif type == 'evo':
+            return self.evo_idv
+        
+    def get_all_idv_losses(self):
+        return self.get_idv_loss('mse'), self.get_idv_loss('rel'), self.get_idv_loss('evo')
+
+    def load(self, loc, type, meta):
+        '''
+        Load the losses from a .npy file in the given path.
+        '''
+        self.set_loss(np.load(loc+type+'/mse.npy'), 'mse')
+        self.set_loss(np.load(loc+type+'/rel.npy'), 'rel')
+        self.set_loss(np.load(loc+type+'/evo.npy'), 'evo')
+        self.set_tot_loss(np.load(loc+type+'/tot.npy'))
+
+        self.set_idv_loss(np.load(loc+type+'/mse_idv.npy'), 'mse')
+        self.set_idv_loss(np.load(loc+type+'/rel_idv.npy'), 'rel')
+        self.set_idv_loss(np.load(loc+type+'/evo_idv.npy'), 'evo')
+
+        self.set_norm(meta['norm'])
+        self.set_fract(meta['fract'])
+
+        self.set_losstype(meta['losstype'])
+
+        return
+
+    
+
+    
+
 
 
     
