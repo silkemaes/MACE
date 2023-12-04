@@ -49,7 +49,7 @@ class Data(Dataset):
 
         This idx is used in the __getitem()__ function.
     '''
-    def __init__(self, dirname, dt_fract, train=True, fraction=0.7, cutoff = 1e-20, scale = 'norm'):
+    def __init__(self, dirname, dt_fract, train=True, fraction=0.7, cutoff = 1e-20, perc = False):
 
         outpath = '/STER/silkem/ChemTorch/out/'
         self.dirname = dirname
@@ -57,7 +57,8 @@ class Data(Dataset):
         self.dirs.remove('meta.json')
 
         ## ONLY FOR TESTING
-        # self.dirs = self.dirs[0:100]
+        if perc == True:
+            self.dirs = self.dirs[0:100]
 
         # Opening JSON file
         with open(outpath+self.dirname+'/meta.json', 'r') as file:
@@ -84,7 +85,7 @@ class Data(Dataset):
         self.fraction = fraction
         self.train = train
 
-        # np.random.seed(0)
+        np.random.seed(0)
         rand_idx = np.random.permutation(len(self.dirs))
         N = int(self.fraction*len(self.dirs))
         if self.train:
@@ -163,10 +164,10 @@ def get_dirs(dirname):
 
 
 
-def get_data(dirname, dt_fract,batch_size, kwargs):
+def get_data(dirname, dt_fract,batch_size, kwargs, perc = False):
     ## Make PyTorch dataset
-    train = Data(dirname, dt_fract=dt_fract)
-    test  = Data(dirname, dt_fract=dt_fract, train = False)
+    train = Data(dirname, dt_fract=dt_fract, perc = perc)
+    test  = Data(dirname, dt_fract=dt_fract, train = False, perc = perc)
     
     print('Dataset:')
     print('------------------------------')

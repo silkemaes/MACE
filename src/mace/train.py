@@ -192,8 +192,6 @@ def test(model, input,  loss_obj):
 
     losses = Loss(None,None)
 
-    model.eval()
-
     mace_time = list()
     overall_loss = 0
     idv_mse_loss = []
