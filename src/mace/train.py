@@ -6,7 +6,7 @@ from torch.optim  import Adam
 
 ## own scripts
 import plotting 
-from loss import loss_function, get_loss
+from loss import loss_function, get_loss, Loss
 
 
 
@@ -175,7 +175,7 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
         
         ## save model
         if (start_epochs+epoch)%10 == 0 and path != None:
-            torch.save(model.state_dict(),path+'/nn/nn'+str(int((start_epochs+epoch)/10))+'.pt')
+            torch.save(model.state_dict(),path+'/nn/nn'+str(int((epoch)/10))+'.pt')
         
         print("\nEpoch", epoch + 1, "complete!", "\tAverage loss train: ", train_loss, "\tAverage loss test: ", test_loss)
     print('\n \tDONE!')
@@ -183,12 +183,16 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
     if plot == True:
         plotting.plot_loss(trainloss, testloss, log = log, show = show)
 
-    return trainloss, testloss
+    return optimizer
 
 
 
 
-def test(model, input,  f_mse, f_rel):
+def test(model, input,  loss_obj):
+
+    losses = Loss(None,None)
+
+    model.eval()
 
     mace_time = list()
     overall_loss = 0
@@ -212,16 +216,22 @@ def test(model, input,  f_mse, f_rel):
         # break
 
     ## Calculate losses
-    mse_loss, rel_loss  = loss_function(n,n_hat,f_mse, f_rel)
+    mse_loss, rel_loss, evo_loss  = loss_function(loss_obj,n,n_hat)
 
-    loss = mse_loss.mean() + rel_loss.mean()
+    loss = get_loss(mse_loss, rel_loss, evo_loss, loss_obj.type)
 
     ## overall summed loss of test set
     overall_loss     += loss.item()
 
     ## individual losses of test set
-    idv_mse_loss.append(mse_loss[:,-1,:].view(-1) .detach().cpu().numpy())
-    idv_rel_loss.append(rel_loss[:,-1,:].view(-1) .detach().cpu().numpy())
+    losses.set_idv_loss(mse_loss[:,-1,:].view(-1) .detach().cpu().numpy(), 'mse')
+    losses.set_idv_loss(rel_loss[:,-1,:].view(-1) .detach().cpu().numpy(), 'rel')
+    losses.set_idv_loss(evo_loss[:,-1,:].view(-1) .detach().cpu().numpy(), 'evo')
+
+    losses.set_tot_loss(overall_loss)
+    losses.set_loss(mse_loss.mean().item(),'mse')
+    losses.set_loss(rel_loss.mean().item(),'rel')
+    losses.set_loss(evo_loss.mean().item(),'evo')
 
     solve_time = toc-tic
     mace_time.append(solve_time)
@@ -230,4 +240,4 @@ def test(model, input,  f_mse, f_rel):
     print('\nTest loss       :',(overall_loss))
     print('\nSolving time [s]:', solve_time)
 
-    return n, n_hat, t, overall_loss,np.array(idv_mse_loss),np.array(idv_rel_loss), mace_time
+    return n, n_hat, t, losses, mace_time
