@@ -36,31 +36,51 @@ def plot_loss(train, test, log = True, ylim = False, show = False):
 
     lw = 1
     a = 0.8
-
-    ## ------------- TRAINING ------------
-    ## total loss
-    ax1.plot(train.get_tot_loss(), ls = '-', marker = 'None', lw = lw, c='navy')
-    ## mse loss
-    ax1.plot(train.get_loss('mse'), ls = '-', marker = 'x', lw = lw, c='royalblue', alpha = a)
-    ## rel loss
-    ax1.plot(train.get_loss('evo'), ls = '--', marker = '.', lw = lw, c='lightsteelblue', alpha = a)
-
-    ## ------------ VALIDATING -----------
-    ## total loss
-    ax1.plot(test.get_tot_loss(), ls = '-', marker = 'None', lw = lw, c='maroon')
-    ## mse loss
-    ax1.plot(test.get_loss('mse'), ls = '-', marker = 'x', lw = lw, c='firebrick', alpha = a)
-    ## rel loss
-    ax1.plot(test.get_loss('evo'), ls = '--', marker = '.', lw = lw, c='lightcoral', alpha = a)
-
-    ## ------------ legend ----------------
     lw2 = 4
-    l_train = mlines.Line2D([],[], color = 'blue', ls = '-' , label='train',lw = lw, alpha = 1)
-    l_test  = mlines.Line2D([],[], color = 'red' , ls = '-' , label='test' ,lw = lw, alpha = 1)
+    ## ------------ legend ----------------
+
+    l_train = mlines.Line2D([],[], color = 'grey', ls = '-' , marker = '.', label='train',lw = lw, alpha = 1)
+    l_test  = mlines.Line2D([],[], color = 'grey', ls = '--', marker = 'x', label='test' ,lw = lw, alpha = 1)
     l_tot   = mlines.Line2D([],[], color = 'k'   , ls = '-' , label='total',lw = lw, alpha = 1)
-    l_mse   = mlines.Line2D([],[], color = 'grey'     , ls = '-' , marker = 'x',label='mse',lw = lw, alpha = 1)
-    l_rel   = mlines.Line2D([],[], color = 'lightgrey', ls = '--' ,marker = '.', label='rel',lw = lw, alpha = 1)
-    handles = [l_train, l_test, l_tot, l_mse, l_rel]
+    
+    handles = [l_train, l_test, l_tot]
+
+    ## ------------- TOTAL ------------
+    ax1.plot(test.get_tot_loss(), ls = '--', marker = 'None', lw = lw, c='k')
+    ax1.plot(train.get_tot_loss(), ls = '-', marker = 'None', lw = lw, c='k')
+
+    ## ------------- MSE -------------
+    if (train.type == 'mse' 
+        or train.type == 'mse_evo' or train.type == 'evo_mse' 
+        or train.type == 'mse_rel' or train.type == 'rel_mse'
+        or train.type == 'mse_rel_evo' or train.type == 'mse_evo_rel' or train.type == 'rel_mse_evo' or train.type == 'rel_evo_mse' or train.type == 'evo_mse_rel' or train.type == 'evo_rel_mse'):
+
+        ax1.plot(test.get_loss('mse'), ls = '--', marker = 'x', lw = lw, c='firebrick', alpha = a)
+        ax1.plot(train.get_loss('mse'), ls = '-', marker = '.', lw = lw, c='firebrick', alpha = a)
+        l_mse   = mlines.Line2D([],[], color = 'firebrick', ls = '-',label='mse',lw = lw2, alpha = 1)
+        handles.append(l_mse)
+    
+    ## ------------- REL -------------
+    if (train.type == 'rel'
+        or train.type == 'rel_evo' or train.type == 'evo_rel'
+        or train.type == 'rel_mse' or train.type == 'mse_rel'
+        or train.type == 'rel_mse_evo' or train.type == 'rel_evo_mse' or train.type == 'mse_rel_evo' or train.type == 'mse_evo_rel' or train.type == 'evo_rel_mse' or train.type == 'evo_mse_rel'):
+
+        ax1.plot(test.get_loss('rel'), ls = '--', marker = 'x', lw = lw, c='royalblue', alpha = a)
+        ax1.plot(train.get_loss('rel'), ls = '-', marker = '.', lw = lw, c='royalblue', alpha = a)
+        l_rel = mlines.Line2D([],[], color = 'royalblue', ls = '-', label='rel',lw = lw2, alpha = 1)
+        handles.append(l_rel)
+
+    ## ------------- EVO -------------
+    if (train.type == 'evo'
+        or train.type == 'evo_rel' or train.type == 'rel_evo'
+        or train.type == 'evo_mse' or train.type == 'mse_evo'
+        or train.type == 'evo_mse_rel' or train.type == 'evo_rel_mse' or train.type == 'mse_evo_rel' or train.type == 'mse_rel_evo' or train.type == 'rel_evo_mse' or train.type == 'rel_mse_evo'):
+
+        ax1.plot(test.get_loss('evo'), ls = '--', marker = 'x', lw = lw, c='goldenrod', alpha = a)
+        ax1.plot(train.get_loss('evo'), ls = '-', marker = '.', lw = lw, c='goldenrod', alpha = a)
+        l_evo = mlines.Line2D([],[], color = 'goldenrod', ls = '-', label='evo',lw = lw2, alpha = 1)
+        handles.append(l_evo)
 
     ## ------------ settings --------------
     if log == True:
