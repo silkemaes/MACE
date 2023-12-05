@@ -29,6 +29,22 @@ start = time()
 name = dt.datetime.now()
 path = '/STER/silkem/MACE/models/test'+str(name)
 
+dt_fracts = {1 : 0.597,
+             2 : 0.482,
+             3 : 0.374,
+             4 : 0.377,
+             5 : 0.33,
+             8 : 0.213,
+             10: 0.147,
+             12: 0.154,
+             20: 0.099,
+             25: 0.076,
+             32: 0.062,
+             48: 0.043,
+             64: 0.033,
+             128: 0.017
+}
+
 
 ## ================================================== INPUT ========
 ## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
@@ -39,7 +55,7 @@ nb_epochs  = 30
 ini_epochs = 3
 losstype = 'mse_rel_evo'
 z_dim = 10
-dt_fract = 0.167
+dt_fract = dt_fracts[z_dim]
 # dirname = 'C-short-dtime'
 # dirname = 'new'
 dirname = 'easy-mace3'
