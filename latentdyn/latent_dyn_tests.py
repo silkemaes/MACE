@@ -225,6 +225,7 @@ cuda   = False
 DEVICE = torch.device("cuda" if cuda else "cpu")
 
 n_latents = [1, 2, 3, 4, 5, 8, 10, 12, 16, 20, 25, 32, 48, 64, 128]
+n_latents = [5, 8, 10, 12, 16, 20, 25, 32, 48, 64, 128]
 # n_latents = [25]
 n_batch  = 20000
 dt = 1.e-3
