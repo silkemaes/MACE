@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import sys
 
 '''
 Makes the output directory - if nessecary.
@@ -28,3 +29,24 @@ def get_files_in(path):
         locs.append(file)
     
     return locs
+
+
+def unscale(x, min, max):
+
+    unscaled = x*np.abs(max-min)+min
+
+    return unscaled
+
+
+sys.path.append('/STER/silkem/ChemTorch/src')
+import rates as rate
+
+def get_specs():
+    specs, parnt, convs = rate.read_specs_file('C', 16)
+    specs_dict = dict()
+    idx_specs  = dict()
+    for i in range(len(specs)):
+        specs_dict[specs[i]] = i
+        idx_specs[i] = specs[i]
+
+    return specs_dict, idx_specs

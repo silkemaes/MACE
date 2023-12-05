@@ -10,6 +10,7 @@ plt.rcParams['figure.dpi'] = 150
 ## own scripts
 import utils
 
+specs_dict, idx_specs = utils.get_specs()
 
 
 def plot_hist(df):
@@ -29,7 +30,7 @@ def plot_hist(df):
     return
 
 
-def plot_loss(train, test, log = True, ylim = False, show = False):
+def plot_loss(train, test, log = True, ylim = False, limits = None, show = False):
 
     fig = plt.figure(figsize = (10,4))
     ax1 = fig.add_subplot((111))
@@ -87,14 +88,17 @@ def plot_loss(train, test, log = True, ylim = False, show = False):
         ax1.set_yscale('log') 
 
     if ylim == True:
-        ax1.set_ylim([1e-2,1e0])
+        if limits == None:
+            ax1.set_ylim([1e-2,1e0])
+        else:
+            ax1.set_ylim(limits)
 
     ax1.set_xlabel('epoch')
     ax1.set_ylabel('loss')
 
     ax1.grid(True, linestyle = '--', linewidth = 0.2)
 
-    ax1.legend(handles=handles,loc = 'upper right')
+    ax1.legend(handles=handles,loc = 'lower right')
     
     plt.tight_layout()
 
@@ -105,8 +109,133 @@ def plot_loss(train, test, log = True, ylim = False, show = False):
     return fig
 
 
+def get_evo(n, n_hat):
+    cutoff = 1e-20
+    nmin = np.log10(cutoff)
+    nmax = np.log10(0.85e-1)
+
+    n_un = 10**utils.unscale(n,nmin, nmax).detach().numpy()
+    nhat_un = 10**utils.unscale(n_hat,nmin, nmax).detach().numpy()
+
+    Δn_un = np.abs((n_un[0][-1]-n_un[0][0]))
+    Δnhat_un = np.abs((nhat_un[0][-1]-nhat_un[0][0]))
+
+    for i in range(len(Δn_un)):
+        if Δn_un[i] == 0:
+            Δn_un[i] = 1e-30
+
+    limits = [5e-32,1e-4]
+
+    return Δn_un, Δnhat_un, limits
+
+def get_abs(n,n_hat):
+    cutoff = 1e-20
+    nmin = np.log10(cutoff)
+    nmax = np.log10(0.85e-1)
+
+    n_un = 10**utils.unscale(n,nmin, nmax)
+    nhat_un = 10**utils.unscale(n_hat,nmin, nmax).detach().numpy()
+
+    return n_un, nhat_un
 
 
+def plot_mse(n, n_hat,ax1, color, alpha, title = None):
+    n, n_hat = get_abs(n, n_hat)
+
+    x = np.linspace(1e-20,1e-2,100)
+
+    i=-1
+    ax1.scatter(n[0][i],n_hat[0][i],marker = 'o', color = color, alpha = alpha, label = title) # type: ignore
+
+    ax1.plot(x,x, '--k', lw = 0.5)
+    ax1.set_xscale('log')
+    ax1.set_yscale('log')
+
+    ax1.set_xlabel('real abundance')
+    ax1.set_ylabel('predicted abundance')
+
+    ax1.grid(True, linestyle = '--', linewidth = 0.2)
+
+    ax1.legend(fontsize = 10)
+
+    return
+
+def plot_evo(n, n_hat,ax1, color, alpha, title = None):
+    Δn, Δnhat, limits = get_evo(n, n_hat)
+
+    ax1.scatter(Δn,Δnhat,marker = 'o', color = color, alpha = alpha, label = title) # type: ignore
+
+    x = np.linspace(1e-30,1e-5,100)
+    ax1.plot(x,x, '--k', lw = 0.5)
+    ax1.set_xscale('log')
+    ax1.set_yscale('log')
+    ax1.set_xlim(limits)
+    ax1.set_ylim(limits)
+
+    ax1.set_xlabel('real evolution')
+    ax1.set_ylabel('predicted evolution')
+
+    ax1.grid(True, linestyle = '--', linewidth = 0.2)
+
+    ax1.legend(fontsize = 10)
+
+    return
+
+def plot_mse_specs(n, n_hat, ax1,specs, alpha, title = None):
+    n, n_hat = get_abs(n, n_hat)
+
+    x = np.linspace(1e-20,1e-2,100)
+
+    ax1.set_title(title)
+
+    i=-1
+    for spec in specs:
+        idx = specs_dict[spec]
+        ax1.scatter(n[0][i][idx],n_hat[0][i][idx],marker = 'o', alpha = alpha, label = spec) # type: ignore
+
+    ax1.plot(x,x, '--k', lw = 0.5)
+    ax1.set_xscale('log')
+    ax1.set_yscale('log')
+    ax1.set_xlabel('real log abundance')
+    ax1.set_ylabel('predicted log abundance')
+    
+
+    ax1.grid(True, linestyle = '--', linewidth = 0.2)
+
+    ax1.legend(fontsize = 8)
+
+    return
+
+
+
+
+def plot_evo_specs(n, n_hat, ax1,specs, alpha, title = None):
+    Δn, Δnhat, limits = get_evo(n, n_hat)
+
+    for spec in specs:
+        idx = specs_dict[spec]
+        ax1.scatter(Δn[idx],Δnhat[idx],marker = 'o', alpha = alpha, label = spec) # type: ignore
+
+    x = np.linspace(1e-32,1e-5,100)
+    ax1.plot(x,x, '--k', lw = 0.5)
+    ax1.set_xscale('log')
+    ax1.set_yscale('log')
+    ax1.set_xlim(limits)
+    ax1.set_ylim(limits)
+
+    ax1.set_xlabel('real evolution')
+    ax1.set_ylabel('predicted evolution')
+
+    ax1.grid(True, linestyle = '--', linewidth = 0.2)
+
+    ax1.legend(fontsize = 8)
+
+    return
+
+
+
+
+### ----------- FOR OLD TRAINING --------------
 
 
 
