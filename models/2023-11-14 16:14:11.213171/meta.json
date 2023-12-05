@@ -1,8 +1,0 @@
-{
-    "traindir": "C-short-dtime",
-    "lr": 1e-05,
-    "epochs": 20,
-    "z_dim": 10,
-    "loss": "rel",
-    "done": "false"
-}
