@@ -58,7 +58,7 @@ class Data(Dataset):
 
         ## ONLY FOR TESTING
         if perc == True:
-            self.dirs = self.dirs[0:100]
+            self.dirs = self.dirs[0:1000]
 
         # Opening JSON file
         with open(outpath+self.dirname+'/meta.json', 'r') as file:

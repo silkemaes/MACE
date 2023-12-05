@@ -9,7 +9,8 @@ class Encoder(nn.Module):
         super(Encoder, self).__init__()
 
         self.layer_in = nn.Linear( input_dim, hidden_dim)
-        self.hidden = list()
+        self.hidden = nn.ModuleList()
+        # self.hidden = list()
 
         ## encoder with decreasing number of nodes in hidden layers (n/2)
         if type == 'decr':
@@ -52,7 +53,10 @@ class Decoder(nn.Module):
     def __init__(self, latent_dim, hidden_dim, output_dim, nb_hidden = 1, type = 'straight'):
         super(Decoder, self).__init__()
 
-        self.hidden = list()
+        self.hidden = nn.ModuleList()
+
+        # self.hidden = list()
+
         ## encoder with decreasing number of nodes in hidden layers (n/2)
         if type == 'decr':
             i = nb_hidden

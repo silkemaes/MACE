@@ -27,22 +27,23 @@ torch.multiprocessing.set_sharing_strategy('file_system')
 
 start = time()
 name = dt.datetime.now()
-path = '/STER/silkem/MACE/models/mse'+str(name)
+path = '/STER/silkem/MACE/models/test'+str(name)
 
 
 ## ================================================== INPUT ========
 ## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
 
 lr = 1.e-3
-tot_epochs = 20
-nb_epochs  = 10
-ini_epochs = 20
-losstype = 'mse'
+tot_epochs = 50
+nb_epochs  = 30
+ini_epochs = 3
+losstype = 'mse_rel_evo'
 z_dim = 10
-dt_fract = 0.2
+dt_fract = 0.167
 # dirname = 'C-short-dtime'
 # dirname = 'new'
-dirname = 'easy-mace2'
+dirname = 'easy-mace3'
+perc = False
 
 ## ================================================== INPUT ========
 
@@ -84,7 +85,7 @@ kwargs = {'num_workers': 1, 'pin_memory': True}
 
 
 ## Load train & test data sets 
-train, test, data_loader, test_loader = ds.get_data(dirname = dirname,dt_fract=dt_fract, batch_size=batch_size, kwargs=kwargs, perc = True)
+train, test, data_loader, test_loader = ds.get_data(dirname = dirname,dt_fract=dt_fract, batch_size=batch_size, kwargs=kwargs, perc = perc)
 ## Make model
 model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=466, DEVICE = DEVICE)
 
@@ -114,35 +115,35 @@ toc = time()
 train_time1 = toc-tic
 
 # ## ------------- PART 2: normalised losses, but reinitialise model
-# # model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=466, DEVICE = DEVICE)
+model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=466, DEVICE = DEVICE)
 
-# norm = {'mse' : 1, 'rel' : 1, 'evo' : 1}
+norm = {'mse' : 1, 'rel' : 1, 'evo' : 1}
 
-# trainloss.change_norm({'mse' :np.mean(trainloss.get_loss('mse')), # type: ignore
-#                        'rel' :np.mean(trainloss.get_loss('rel')), # type: ignore
-#                        'evo' :np.mean(trainloss.get_loss('evo'))})   # type: ignore
-# testloss.change_norm({'mse' :np.mean(testloss.get_loss('mse')), # type: ignore
-#                       'rel' :np.mean(testloss.get_loss('rel')), # type: ignore
-#                       'evo' :np.mean(testloss.get_loss('evo'))}) # type: ignore
+trainloss.change_norm({'mse' :np.mean(trainloss.get_loss('mse')), # type: ignore
+                       'rel' :np.mean(trainloss.get_loss('rel')), # type: ignore
+                       'evo' :np.mean(trainloss.get_loss('evo'))})   # type: ignore
+testloss.change_norm({'mse' :np.mean(testloss.get_loss('mse')), # type: ignore
+                      'rel' :np.mean(testloss.get_loss('rel')), # type: ignore
+                      'evo' :np.mean(testloss.get_loss('evo'))}) # type: ignore
 
-# tic = time()
-# tr.train(model, lr, data_loader, test_loader,path, end_epochs = nb_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=ini_epochs, plot = False, log = True, show = True)
-# toc = time()
-# train_time2 = toc-tic
+tic = time()
+tr.train(model, lr, data_loader, test_loader,path, end_epochs = nb_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=ini_epochs, plot = False, log = True, show = True)
+toc = time()
+train_time2 = toc-tic
 
-# ## ------------- PART 3: increase losses with factor & train further
-# fract = {'mse' : 100, 'rel' : 100, 'evo' : 100}
-# trainloss.change_fract(fract)
-# testloss.change_fract(fract)
+## ------------- PART 3: increase losses with factor & train further
+fract = {'mse' : 100, 'rel' : 100, 'evo' : 100}
+trainloss.change_fract(fract)
+testloss.change_fract(fract)
 
-# tic = time()
-# tr.train(model, lr, data_loader, test_loader, path, end_epochs = tot_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=nb_epochs, plot = False, log = True, show = False)
-# toc = time()
-# train_time3 = toc-tic
+tic = time()
+tr.train(model, lr, data_loader, test_loader, path, end_epochs = tot_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=nb_epochs, plot = False, log = True, show = False)
+toc = time()
+train_time3 = toc-tic
 
-# print('\n\tTraining done!')
+print('\n\tTraining done!')
 
-# train_time = train_time1+train_time2+train_time3
+train_time = train_time1+train_time2+train_time3
 
 
 ## -------------- SAVING THE DATA --------------------
@@ -169,7 +170,7 @@ plt.savefig(path+'/loss.png')
 
 stop = time()
 
-overhead_time = (stop-start)-train_time1
+overhead_time = (stop-start)-train_time
 
 metadata = {'traindir'  : dirname,
             'lr'        : lr,
@@ -177,7 +178,7 @@ metadata = {'traindir'  : dirname,
             'z_dim'     : z_dim,
             'dt_fract'  : train.dt_fract,
             'tmax'      : train.tmax,
-            'train_time': train_time1,
+            'train_time': train_time,
             'overhead'  : overhead_time,
             'samples'   : len(train),
             'cutoff_abs': train.cutoff,
@@ -202,7 +203,7 @@ print('# z dimensions:', z_dim)
 print('    sample dir:', dirname)
 print('     loss type:', losstype)
 print('')
-print('** ',name,' ALL DONE! in [min]', round((train_time1 + overhead_time)/60,2))
+print('** ',name,' ALL DONE! in [min]', round((train_time + overhead_time)/60,2))
 
 
 
