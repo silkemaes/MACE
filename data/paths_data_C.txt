@@ -11165,7 +11165,6 @@
 /lhome/silkem/CHEM/Output_nov2022/20211018_gridC_Mdot1e-5_v22-5_T_eps/models/model_2022-12-26h20-17-53/csfrac_smooth.out
 /lhome/silkem/CHEM/Output_nov2022/20211018_gridC_Mdot1e-5_v22-5_T_eps/models/model_2022-12-26h20-18-06/csfrac_smooth.out
 /lhome/silkem/CHEM/Output_nov2022/20211018_gridC_Mdot1e-5_v22-5_T_eps/models/model_2022-12-26h20-18-21/csfrac_smooth.out
-/lhome/silkem/CHEM/Output_nov2022/20211018_gridC_Mdot1e-5_v22-5_T_eps/models/model_2022-12-26h20-18-35/csfrac_smooth.out
 /lhome/silkem/CHEM/Output_nov2022/20211018_gridC_Mdot1e-5_v22-5_T_eps/models/model_2022-12-26h20-22-53/csfrac_smooth.out
 /lhome/silkem/CHEM/Output_nov2022/20211018_gridC_Mdot1e-5_v22-5_T_eps/models/model_2022-12-26h20-23-06/csfrac_smooth.out
 /lhome/silkem/CHEM/Output_nov2022/20211018_gridC_Mdot1e-5_v22-5_T_eps/models/model_2022-12-26h20-23-19/csfrac_smooth.out
@@ -16738,10 +16737,6 @@
 /lhome/silkem/CHEM/Output_nov2022/20211014_gridC_Mdot1e-7_v15_T_eps/models/model_2022-12-28h15-32-08/csfrac_smooth.out
 /lhome/silkem/CHEM/Output_nov2022/20211014_gridC_Mdot1e-7_v15_T_eps/models/model_2022-12-28h15-32-19/csfrac_smooth.out
 /lhome/silkem/CHEM/Output_nov2022/20211014_gridC_Mdot1e-7_v15_T_eps/models/model_2022-12-28h15-32-31/csfrac_smooth.out
-/lhome/silkem/CHEM/Output_nov2022/20210607_gridC_Mdot1e-8_v2-5_T_eps/models/model_2022-12-28h17-46-34/csfrac_smooth.out
-/lhome/silkem/CHEM/Output_nov2022/20210607_gridC_Mdot1e-8_v2-5_T_eps/models/model_2022-12-28h17-46-35/csfrac_smooth.out
-/lhome/silkem/CHEM/Output_nov2022/20210607_gridC_Mdot1e-8_v2-5_T_eps/models/model_2023-01-03h00-23-55/csfrac_smooth.out
-/lhome/silkem/CHEM/Output_nov2022/20210607_gridC_Mdot1e-8_v2-5_T_eps/models/model_2023-01-03h00-23-56/csfrac_smooth.out
 /lhome/silkem/CHEM/Output_nov2022/20211015_gridC_Mdot5e-7_v17-5_T_eps/models/model_2022-12-28h19-17-38/csfrac_smooth.out
 /lhome/silkem/CHEM/Output_nov2022/20211015_gridC_Mdot5e-7_v17-5_T_eps/models/model_2022-12-28h19-17-48/csfrac_smooth.out
 /lhome/silkem/CHEM/Output_nov2022/20211015_gridC_Mdot5e-7_v17-5_T_eps/models/model_2022-12-28h19-17-58/csfrac_smooth.out
@@ -18244,8 +18239,6 @@
 /lhome/silkem/CHEM/Output_nov2022/20210527_gridC_Mdot2e-5_v20_T_eps/models/model_2023-01-10h09-53-22/csfrac_smooth.out
 /lhome/silkem/CHEM/Output_nov2022/20210527_gridC_Mdot2e-5_v20_T_eps/models/model_2023-01-10h09-53-33/csfrac_smooth.out
 /lhome/silkem/CHEM/Output_nov2022/20210527_gridC_Mdot2e-5_v20_T_eps/models/model_2023-01-10h09-53-40/csfrac_smooth.out
-/lhome/silkem/CHEM/Output_nov2022/20210527_gridC_Mdot2e-5_v20_T_eps/models/model_2023-01-10h09-59-09/csfrac_smooth.out
-/lhome/silkem/CHEM/Output_nov2022/20210527_gridC_Mdot2e-5_v20_T_eps/models/model_2023-01-10h09-59-15/csfrac_smooth.out
 /lhome/silkem/CHEM/Output_nov2022/20210527_gridC_Mdot2e-5_v20_T_eps/models/model_2023-01-10h09-59-26/csfrac_smooth.out
 /lhome/silkem/CHEM/Output_nov2022/20210527_gridC_Mdot2e-5_v20_T_eps/models/model_2023-01-10h09-59-40/csfrac_smooth.out
 /lhome/silkem/CHEM/Output_nov2022/20210527_gridC_Mdot2e-5_v20_T_eps/models/model_2023-01-10h11-03-47/csfrac_smooth.out
