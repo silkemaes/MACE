@@ -117,16 +117,19 @@ def get_evo(n, n_hat):
     n_un = 10**utils.unscale(n,nmin, nmax).detach().numpy()
     nhat_un = 10**utils.unscale(n_hat,nmin, nmax).detach().numpy()
 
-    Δn_un = np.abs((n_un[0][-1]-n_un[0][0]))
-    Δnhat_un = np.abs((nhat_un[0][-1]-nhat_un[0][0]))
+    n0 = n_un[0][0]
+
+    Δn_un = np.abs((n_un[0][-1]-n0))
+    Δnhat_un = np.abs((nhat_un[0][-1]-n0))
 
     for i in range(len(Δn_un)):
         if Δn_un[i] == 0:
             Δn_un[i] = 1e-30
 
-    limits = [5e-32,1e-4]
+    limits = [5e-32,5e-4]
+    x = np.linspace(1e-32,1e-5,100)
 
-    return Δn_un, Δnhat_un, limits
+    return Δn_un, Δnhat_un, limits, x
 
 def get_abs(n,n_hat):
     cutoff = 1e-20
@@ -136,13 +139,13 @@ def get_abs(n,n_hat):
     n_un = 10**utils.unscale(n,nmin, nmax)
     nhat_un = 10**utils.unscale(n_hat,nmin, nmax).detach().numpy()
 
-    return n_un, nhat_un
+    x = np.linspace(1e-20,1e-1,100)
+
+    return n_un, nhat_un, x
 
 
 def plot_mse(n, n_hat,ax1, color, alpha, title = None):
-    n, n_hat = get_abs(n, n_hat)
-
-    x = np.linspace(1e-20,1e-2,100)
+    n, n_hat, x = get_abs(n, n_hat)
 
     i=-1
     ax1.scatter(n[0][i],n_hat[0][i],marker = 'o', color = color, alpha = alpha, label = title) # type: ignore
@@ -161,11 +164,10 @@ def plot_mse(n, n_hat,ax1, color, alpha, title = None):
     return
 
 def plot_evo(n, n_hat,ax1, color, alpha, title = None):
-    Δn, Δnhat, limits = get_evo(n, n_hat)
+    Δn, Δnhat, limits,x = get_evo(n, n_hat)
 
     ax1.scatter(Δn,Δnhat,marker = 'o', color = color, alpha = alpha, label = title) # type: ignore
 
-    x = np.linspace(1e-30,1e-5,100)
     ax1.plot(x,x, '--k', lw = 0.5)
     ax1.set_xscale('log')
     ax1.set_yscale('log')
@@ -182,9 +184,7 @@ def plot_evo(n, n_hat,ax1, color, alpha, title = None):
     return
 
 def plot_mse_specs(n, n_hat, ax1,specs, alpha, title = None):
-    n, n_hat = get_abs(n, n_hat)
-
-    x = np.linspace(1e-20,1e-2,100)
+    n, n_hat,x = get_abs(n, n_hat)
 
     ax1.set_title(title)
 
@@ -207,16 +207,13 @@ def plot_mse_specs(n, n_hat, ax1,specs, alpha, title = None):
     return
 
 
-
-
 def plot_evo_specs(n, n_hat, ax1,specs, alpha, title = None):
-    Δn, Δnhat, limits = get_evo(n, n_hat)
+    Δn, Δnhat, limits, x = get_evo(n, n_hat)
 
     for spec in specs:
         idx = specs_dict[spec]
         ax1.scatter(Δn[idx],Δnhat[idx],marker = 'o', alpha = alpha, label = spec) # type: ignore
 
-    x = np.linspace(1e-32,1e-5,100)
     ax1.plot(x,x, '--k', lw = 0.5)
     ax1.set_xscale('log')
     ax1.set_yscale('log')

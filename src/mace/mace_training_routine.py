@@ -27,7 +27,7 @@ torch.multiprocessing.set_sharing_strategy('file_system')
 
 start = time()
 name = dt.datetime.now()
-path = '/STER/silkem/MACE/models/test'+str(name)
+path = '/STER/silkem/MACE/models/'+str(name)
 
 dt_fracts = {1 : 0.597,
              2 : 0.482,
@@ -49,12 +49,12 @@ dt_fracts = {1 : 0.597,
 ## ================================================== INPUT ========
 ## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
 
-lr = 1.e-3
-tot_epochs = 50
-nb_epochs  = 30
-ini_epochs = 3
-losstype = 'mse_rel_evo'
-z_dim = 10
+lr = 1.e-4
+tot_epochs = 80
+nb_epochs  = 50
+ini_epochs = 5
+losstype = 'mse'
+z_dim = 12
 dt_fract = dt_fracts[z_dim]
 # dirname = 'C-short-dtime'
 # dirname = 'new'
