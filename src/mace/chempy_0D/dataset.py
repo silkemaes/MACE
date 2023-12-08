@@ -115,13 +115,13 @@ class Data(Dataset):
         ## physical parameters
         trans_p = np.empty_like(mod.p)
         for j in range(3):
-            trans_p[j] = normalise(np.log10(mod.p[j]), self.mins[j], self.maxs[j])
-        trans_p[3] = normalise(mod.p[3], self.mins[3], self.maxs[3])
+            trans_p[j] = utils.normalise(np.log10(mod.p[j]), self.mins[j], self.maxs[j])
+        trans_p[3] = utils.normalise(mod.p[3], self.mins[3], self.maxs[3])
 
         ## abundances
         trans_n = np.clip(mod.n, self.cutoff, None)
         trans_n = np.log10(trans_n)
-        trans_n = normalise(trans_n, self.n_min, self.n_max)       ## max boundary = rel. abundance of He
+        trans_n = utils.normalise(trans_n, self.n_min, self.n_max)       ## max boundary = rel. abundance of He
 
         ## timesteps
         ## normaliseren? eens nadenken: JA! --> herschalen

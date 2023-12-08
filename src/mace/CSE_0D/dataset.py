@@ -1,18 +1,10 @@
 
 import numpy             as np
-import os
-from os import listdir
-from datetime import datetime
-import json
 import torch
-import sys
-
 
 from torch.utils.data    import Dataset, DataLoader
 
-
 ## own scripts
-import plotting     
 import utils
 
 specs_dict, idx_specs = utils.get_specs()
@@ -47,7 +39,7 @@ class CSEdata(Dataset):
         self.logρ_max = np.log10(5009000000.0)
         self.logT_min = np.log10(10.)
         self.logT_max = np.log10(1851.0)      
-        self.logδ_min = np.log10(1.e-30)
+        self.logδ_min = np.log10(1.e-40)
         self.logδ_max = np.log10(0.9999)
         self.Av_min = np.log10(2.141e-05)
         self.Av_max = np.log10(1246.0)
@@ -84,6 +76,7 @@ class CSEdata(Dataset):
         ## physical parameters
         p_transf = np.empty_like(p)
         for j in range(p.shape[1]):
+            print(j)
             p_transf[:,j] = utils.normalise(np.log10(p[:,j]), self.mins[j], self.maxs[j])
 
         ## abundances
@@ -148,6 +141,15 @@ class CSEmod():
         self.radius, self.dens, self.temp, self.Av, self.delta = arr[:,0], arr[:,1], arr[:,2], arr[:,3], arr[:,4]
         self.time = self.radius/(self.v) 
 
+        # print(self.delta.shape, self.temp.shape)
+        for i in range(len(self.delta)):
+            # if self.temp[i] == 0.:
+            #     print('yes')
+            #     self.temp[i] = 10
+            if self.delta[i] == 0.:
+                self.delta[i] = 1.e-40
+                
+
     def __len__(self):
         return len(self.time)
 
@@ -190,9 +192,9 @@ class CSEmod():
     
     def split_in_0D(self):
         Δt = self.get_dt()
-        n_0D = self.n[:-1]
+        n_0D = self.n
         p = np.array([self.dens[:-1], self.temp[:-1], self.delta[:-1], self.Av[:-1]])
-        return Δt, n_0D, p.T
+        return Δt.astype(np.float32), n_0D.astype(np.float32), p.T.astype(np.float32)
         
 
 
@@ -244,9 +246,7 @@ def retrieve_file(dir_name):
     locs = utils.get_files_in(path)
     
     for loc in locs:
-        # print(loc[-3:-1])
         if loc[-3:-1] == 'ep':
-            # print(path+loc+'/models/')
             path_mods = utils.get_files_in(path+loc+'/models/')
             for mod in path_mods:
                 if mod[-1] != 't':

@@ -10,7 +10,6 @@ class Encoder(nn.Module):
 
         self.layer_in = nn.Linear( input_dim, hidden_dim)
         self.hidden = nn.ModuleList()
-        # self.hidden = list()
 
         ## encoder with decreasing number of nodes in hidden layers (n/2)
         if type == 'decr':
@@ -33,6 +32,7 @@ class Encoder(nn.Module):
         self.Tanh = nn.Tanh()
         
     def forward(self, x):
+
         h = self.LeakyReLU(self.layer_in(x))
         for layer in self.hidden:
             h = self.LeakyReLU(layer(h))

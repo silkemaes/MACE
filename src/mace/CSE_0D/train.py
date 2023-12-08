@@ -5,7 +5,7 @@ from torch.optim  import Adam
 
 ## own scripts
 import plotting 
-from loss import loss_function, get_loss, Loss
+from CSE_0D.loss import loss_function, get_loss, Loss
 
 
 
@@ -32,42 +32,40 @@ def train_one_epoch(data_loader, model, loss_obj, DEVICE, optimizer):
     overall_mse_loss = 0
     overall_rel_loss = 0
     overall_evo_loss = 0
-    idv_mse_loss = torch.zeros(466)
-    idv_rel_loss = torch.zeros(466)
-    idv_evo_loss = torch.zeros(466)
+    # idv_mse_loss = torch.zeros(466)
+    # idv_rel_loss = torch.zeros(466)
+    # idv_evo_loss = torch.zeros(466)
     status = 0
 
-    for i, (n,p,t) in enumerate(data_loader):
+    for i, (n,p,dt) in enumerate(data_loader):
 
-        print('\tbatch',i+1,'/',len(data_loader),end="\r")
+        # print('\tbatch',i+1,'/',len(data_loader),end="\r")
         
-        n = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
-        p = p.to(DEVICE) 
-        t = t.to(DEVICE)
+        n  = n.view(n.shape[1], n.shape[2]).to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
+        p  = p.view(p.shape[1], p.shape[2]).to(DEVICE) 
+        dt = dt.view(dt.shape[1]).to(DEVICE)
 
-        n = torch.swapaxes(n,1,2)
+        n_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
 
-        n_hat, modstatus = model(n[:,0,:],p,t)      
 
-        # for i in range(len(n[:,0,:][0])):
-        #     print(n[:,0,:][0][i].item())
-
-        if modstatus is not None and modstatus.item() == 4:
-            status += modstatus.item()
+        # print(modstatus.shape)
+        # if modstatus.item() == 4:
+        #     status += modstatus.item()
 
         ## Calculate losses
-        mse_loss, rel_loss, evo_loss  = loss_function(loss_obj, n, n_hat)
-
-        ## hier nog iets met opties doen welk type loss je wil gebruiken
+            ## n[:,1:] = abundances[1:k+1] with k=last-1; In this way we can compare if the predicted abundances are correct
+            ## the whole array n in passed along, since this is needed to compute the evo loss
+        mse_loss, rel_loss, evo_loss  = loss_function(loss_obj, n, n_hat) 
+        ## The total loss depends upon the type of losses, set in the loss_obj
         loss = get_loss(mse_loss, rel_loss, evo_loss, loss_obj.type)
 
         overall_loss += loss.item()
         overall_mse_loss += mse_loss.mean().item()
         overall_evo_loss += evo_loss.mean().item()
         overall_rel_loss += rel_loss.mean().item()
-        idv_mse_loss += mse_loss[:,-1,:].view(-1)       ## only take the loss on the final abundances (last timestep)
-        idv_rel_loss += rel_loss[:,-1,:].view(-1)
-        idv_evo_loss += evo_loss[:,-1,:].view(-1)
+        # idv_mse_loss += mse_loss[:,-1,:].view(-1)       ## only take the loss on the final abundances (last timestep)
+        # idv_rel_loss += rel_loss[:,-1,:].view(-1)
+        # idv_evo_loss += evo_loss[:,-1,:].view(-1)
 
 
         ## Backpropagation
@@ -76,7 +74,7 @@ def train_one_epoch(data_loader, model, loss_obj, DEVICE, optimizer):
         optimizer.step()
     
 
-    return (overall_loss)/(i+1), overall_mse_loss/(i+1), overall_rel_loss/(i+1), overall_evo_loss/(i+1), idv_mse_loss/(i+1), idv_rel_loss/(i+1), idv_evo_loss/(i+1), status  ## save losses
+    return (overall_loss)/(i+1), overall_mse_loss/(i+1), overall_rel_loss/(i+1), overall_evo_loss/(i+1), status#, idv_mse_loss/(i+1), idv_rel_loss/(i+1), idv_evo_loss/(i+1), status  ## save losses
              
 
 
@@ -87,40 +85,40 @@ def validate_one_epoch(test_loader, model, loss_obj, DEVICE):
     overall_mse_loss = 0
     overall_rel_loss = 0
     overall_evo_loss = 0
-    idv_mse_loss = torch.zeros(466)
-    idv_rel_loss = torch.zeros(466)
-    idv_evo_loss = torch.zeros(466)
+    # idv_mse_loss = torch.zeros(466)
+    # idv_rel_loss = torch.zeros(466)
+    # idv_evo_loss = torch.zeros(466)
     status = 0
 
     with torch.no_grad():
-        for i, (n,p,t) in enumerate(test_loader):
-            print('\tbatch',i+1,'/',len(test_loader),end="\r")
+        for i, (n,p,dt) in enumerate(test_loader):
+            # print('\tbatch',i+1,'/',len(test_loader),end="\r")
 
-            n     = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
-            p     = p.to(DEVICE) 
-            t     = t.to(DEVICE)
-           
-            n = torch.swapaxes(n,1,2)
+            n  = n.view(n.shape[1], n.shape[2]).to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
+            p  = p.view(p.shape[1], p.shape[2]).to(DEVICE) 
+            dt = dt.view(dt.shape[1]).to(DEVICE)
+    
+            n_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
 
-            n_hat, modstatus = model(n[:,0,:],p,t)         ## output van het autoecoder model
-
-            if modstatus.item() == 4:
-                status += modstatus.item()
+            # if modstatus is not None and modstatus.item() == 4:
+            #     status += modstatus.item()
 
             ## Calculate losses
-            mse_loss, rel_loss, evo_loss  = loss_function(loss_obj,n,n_hat)
-
+                ## n[:,1:] = abundances[1:k+1] with k=last-1; In this way we can compare if the predicted abundances are correct
+                ## the whole array n in passed along, since this is needed to compute the evo loss
+            mse_loss, rel_loss, evo_loss  = loss_function(loss_obj, n, n_hat) 
+            ## The total loss depends upon the type of losses, set in the loss_obj
             loss = get_loss(mse_loss, rel_loss, evo_loss, loss_obj.type)
 
             overall_loss     += loss.item()
             overall_mse_loss += mse_loss.mean().item()
             overall_rel_loss += rel_loss.mean().item()
             overall_evo_loss += evo_loss.mean().item()
-            idv_mse_loss += mse_loss[:,-1,:].view(-1) 
-            idv_rel_loss += rel_loss[:,-1,:].view(-1) 
-            idv_evo_loss += evo_loss[:,-1,:].view(-1)
+            # idv_mse_loss += mse_loss[:,-1,:].view(-1) 
+            # idv_rel_loss += rel_loss[:,-1,:].view(-1) 
+            # idv_evo_loss += evo_loss[:,-1,:].view(-1)
 
-        return (overall_loss)/(i+1), overall_mse_loss/(i+1), overall_rel_loss/(i+1),overall_evo_loss/(i+1), idv_mse_loss/(i+1), idv_rel_loss/(i+1), idv_evo_loss/(i+1), status  ## save losseses
+        return (overall_loss)/(i+1), overall_mse_loss/(i+1), overall_rel_loss/(i+1),overall_evo_loss/(i+1), status#, idv_mse_loss/(i+1), idv_rel_loss/(i+1), idv_evo_loss/(i+1), status  ## save losseses
 
   
 
@@ -139,15 +137,15 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
         
         model.train()
         print('')
-        train_loss, train_mse_loss, train_rel_loss, train_evo_loss, train_idv_mse_loss, train_idv_rel_loss, train_idv_evo_loss,status = train_one_epoch(data_loader, model, trainloss, DEVICE, optimizer)
+        train_loss, train_mse_loss, train_rel_loss, train_evo_loss, status = train_one_epoch(data_loader, model, trainloss, DEVICE, optimizer)
         ## save losses
         trainloss.set_tot_loss(train_loss)
         trainloss.set_loss(train_mse_loss,'mse')
         trainloss.set_loss(train_rel_loss,'rel')
         trainloss.set_loss(train_evo_loss, 'evo')
-        trainloss.set_idv_loss(train_idv_mse_loss.detach().cpu().numpy(),'mse')
-        trainloss.set_idv_loss(train_idv_rel_loss.detach().cpu().numpy(),'rel')
-        trainloss.set_idv_loss(train_idv_evo_loss.detach().cpu().numpy(), 'evo')
+        # trainloss.set_idv_loss(train_idv_mse_loss.detach().cpu().numpy(),'mse')
+        # trainloss.set_idv_loss(train_idv_rel_loss.detach().cpu().numpy(),'rel')
+        # trainloss.set_idv_loss(train_idv_evo_loss.detach().cpu().numpy(), 'evo')
         ## save status
         model.set_status(status/4, 'train')
 
@@ -156,15 +154,15 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
         print('\n')
         model.eval() ## zelfde als torch.no_grad
 
-        test_loss, test_mse_loss, test_rel_loss, test_evo_loss, test_idv_mse_loss, test_idv_rel_loss,test_idv_evo_loss, status = validate_one_epoch(test_loader, model, testloss, DEVICE)
+        test_loss, test_mse_loss, test_rel_loss, test_evo_loss, status = validate_one_epoch(test_loader, model, testloss, DEVICE)
         ## save losses
         testloss.set_tot_loss(test_loss)
         testloss.set_loss(test_mse_loss,'mse')
         testloss.set_loss(test_rel_loss,'rel')
         testloss.set_loss(test_evo_loss, 'evo')
-        testloss.set_idv_loss(test_idv_mse_loss.detach().cpu().numpy(),'mse')
-        testloss.set_idv_loss(test_idv_rel_loss.detach().cpu().numpy(),'rel')
-        testloss.set_idv_loss(test_idv_evo_loss.detach().cpu().numpy(), 'evo')
+        # testloss.set_idv_loss(test_idv_mse_loss.detach().cpu().numpy(),'mse')
+        # testloss.set_idv_loss(test_idv_rel_loss.detach().cpu().numpy(),'rel')
+        # testloss.set_idv_loss(test_idv_evo_loss.detach().cpu().numpy(), 'evo')
         ## save status
         model.set_status(status/4, 'test')
         

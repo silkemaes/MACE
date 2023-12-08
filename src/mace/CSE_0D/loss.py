@@ -159,7 +159,10 @@ def evo_loss(x,x_hat):
         where eps makes sure we don't devide by 0.
     '''
 
-    x_0   = x[:,0,:]
+    x_0 = x[:-1]  ## Initial abundances
+    x   = x[1:]   ## Abundances to compare with
+    ## Hence, x-x_0 gives the evolution of the abundances
+
     eps = 1e-10
     loss  = ((torch.abs(x_hat-x_0)+eps**2)/(torch.abs(x-x_0)+eps))**2     ## absolute waarden nemen rond x, zodat het niet nog 0 kan worden
     return loss
@@ -167,11 +170,11 @@ def evo_loss(x,x_hat):
 def loss_function(loss_obj, x,x_hat):
     '''
     Get the MSE loss and the relative loss, normalised to the maximum lossvalue.
-        - f_mse and f_rel are scaling factors, put to 0 if you want to exclude one of both losses.
+        - fracts are scaling factors, put to 0 if you want to exclude one of both losses.
     Returns the MSE loss per species, and the relative loss per species.
     '''
-    mse = (mse_loss(x,x_hat))
-    rel = (rel_loss(x,x_hat))
+    mse = (mse_loss(x[1:],x_hat))     ## Compare with the final abundances for that model
+    rel = (rel_loss(x[1:],x_hat))     ## Compare with the final abundances for that model
     evo = (evo_loss(x,x_hat))
 
     mse = mse/loss_obj.norm['mse']* loss_obj.fract['mse']

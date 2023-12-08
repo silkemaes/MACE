@@ -172,15 +172,15 @@ class Solver(nn.Module):
         x_0 = n_0               ## use NN version of G
         if not self.g_nn:       ## DON'T use NN version of G
             ## Ravel the abundances n_0 and physical input p to x_0
-            x_0 = torch.cat((p, n_0), axis=1) # type: ignore
+            x_0 = torch.cat((p, n_0), axis=-1) # type: ignore
 
         ## Encode x_0, returning the encoded z_0 in latent space
         z_0 = self.encoder(x_0)
-
+        
         ## Create initial value problem
         problem = to.InitialValueProblem(
-            y0     = z_0.view((1,-1)).to(self.DEVICE),  ## "view" is om met de batches om te gaan
-            t_eval = tstep.view((1,-1)).to(self.DEVICE),
+            y0     = z_0.to(self.DEVICE),  ## "view" is om met de batches om te gaan
+            t_eval = tstep.view(z_0.shape[0],-1).to(self.DEVICE),
         )
 
         ## Solve initial value problem. Details are set in the __init__() of this class.
@@ -191,7 +191,7 @@ class Solver(nn.Module):
         n_s_ravel = self.decoder(z_s)
 
         ## Reshape correctly
-        n_s = n_s_ravel.reshape(1,tstep.shape[1], self.n_dim)
+        n_s = n_s_ravel.reshape(1,tstep.shape[-1], self.n_dim)
 
         return n_s, solution.status
 
