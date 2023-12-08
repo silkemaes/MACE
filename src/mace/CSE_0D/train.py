@@ -1,4 +1,3 @@
-import numpy    as np
 from time       import time
 
 import torch
@@ -18,11 +17,7 @@ def train_one_epoch(data_loader, model, loss_obj, DEVICE, optimizer):
 
     - data_loader   = data, torchtensor
     - model         = ML architecture to be trained
-    - loss_type     = type of loss function, string
-        Options:
-            - 'mse'     : mean squared error loss
-            - 'rel'     : relative change in abundance loss
-            - 'combi'   : combination of mse & rel loss
+    - loss_obj      = object that stores the losses
 
     Method:
     1. get data

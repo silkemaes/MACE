@@ -15,12 +15,12 @@ rcParams.update({'figure.dpi': 200})
 
 ## import own functions
 sys.path.insert(1, '/STER/silkem/MACE/src/mace')
-import dataset      as ds
-import train        as tr
-import neuralODE    as nODE
-import utils        as utils
-import plotting     as pl
-import loss
+import chempy_0D.dataset    as ds
+import chempy_0D.train      as tr
+import neuralODE            as nODE
+import utils                as utils
+import plotting             as pl
+import chempy_0D.loss       as loss
 
 
 torch.multiprocessing.set_sharing_strategy('file_system')

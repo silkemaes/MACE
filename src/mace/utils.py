@@ -50,3 +50,13 @@ def get_specs():
         idx_specs[i] = specs[i]
 
     return specs_dict, idx_specs
+
+
+def normalise(x,min,max):
+        # print("Normalising")
+        norm = (x - min)*(1/np.abs( min - max ))
+        # print(x, norm)
+        return norm
+
+def generate_random_numbers(n, start, end):
+    return np.random.randint(start, end, size=n)
