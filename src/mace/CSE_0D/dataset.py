@@ -38,9 +38,10 @@ class CSEdata(Dataset):
         self.logρ_min = np.log10(0.008223)
         self.logρ_max = np.log10(5009000000.0)
         self.logT_min = np.log10(10.)
-        self.logT_max = np.log10(1851.0)      
-        self.logδ_min = np.log10(1.e-40)
-        self.logδ_max = np.log10(0.9999)
+        self.logT_max = np.log10(1851.0)   
+        y = 1.e-100   ## this number is added to delta, since it contains zeros    
+        self.logδ_min = np.log10(y)
+        self.logδ_max = np.log10(y+0.9999)
         self.Av_min = np.log10(2.141e-05)
         self.Av_max = np.log10(1246.0)
         self.dt_max = 434800000000.0
@@ -68,7 +69,6 @@ class CSEdata(Dataset):
         return len(self.path)
 
     def __getitem__(self, idx):
-
         mod = CSEmod(self.path[idx])
 
         Δt, n, p = mod.split_in_0D()
@@ -76,7 +76,7 @@ class CSEdata(Dataset):
         ## physical parameters
         p_transf = np.empty_like(p)
         for j in range(p.shape[1]):
-            print(j)
+            # print(j)
             p_transf[:,j] = utils.normalise(np.log10(p[:,j]), self.mins[j], self.maxs[j])
 
         ## abundances
@@ -123,7 +123,7 @@ class CSEmod():
     '''
     def __init__(self, path):
 
-        self.path = path[0:-17]
+        self.path = '/STER/silkem/CSEchem/' + path[34:-17]
         abs_path = 'csfrac_smooth.out'
         phys_path = 'csphyspar_smooth.out'
         self.name = path[-43:-18]
@@ -142,12 +142,12 @@ class CSEmod():
         self.time = self.radius/(self.v) 
 
         # print(self.delta.shape, self.temp.shape)
-        for i in range(len(self.delta)):
-            # if self.temp[i] == 0.:
-            #     print('yes')
-            #     self.temp[i] = 10
-            if self.delta[i] == 0.:
-                self.delta[i] = 1.e-40
+        # for i in range(len(self.delta)):
+        #     # if self.temp[i] == 0.:
+        #     #     print('yes')
+        #     #     self.temp[i] = 10
+        #     if self.delta[i] == 0.:
+        #         self.delta[i] = 1.e-40
                 
 
     def __len__(self):
@@ -193,8 +193,12 @@ class CSEmod():
     def split_in_0D(self):
         Δt = self.get_dt()
         n_0D = self.n
-        p = np.array([self.dens[:-1], self.temp[:-1], self.delta[:-1], self.Av[:-1]])
-        return Δt.astype(np.float32), n_0D.astype(np.float32), p.T.astype(np.float32)
+        y=1.e-100
+        p = np.array([self.get_dens()[:-1], self.get_temp()[:-1], self.get_delta()[:-1]+y, self.get_Av()[:-1]])
+        # print(self.get_delta()[:-1]+y)
+        # print(self.delta)
+
+        return Δt.astype(np.float64), n_0D.astype(np.float64), p.T.astype(np.float64)
         
 
 

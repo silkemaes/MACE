@@ -1,5 +1,7 @@
 import torch.nn          as nn
+import torch
 
+torch.set_default_dtype(torch.float64)
 
 class Encoder(nn.Module):
     """
@@ -10,6 +12,8 @@ class Encoder(nn.Module):
 
         self.layer_in = nn.Linear( input_dim, hidden_dim)
         self.hidden = nn.ModuleList()
+
+        # print(self.layer_in.type)
 
         ## encoder with decreasing number of nodes in hidden layers (n/2)
         if type == 'decr':
