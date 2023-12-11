@@ -33,6 +33,13 @@ class CSEdata(Dataset):
         np.random.seed(0)
         self.idxs = utils.generate_random_numbers(nb_samples, 0, len(paths))
         self.path = paths[self.idxs]
+        self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
+        self.testpath = paths[self.test_idx]
+        while self.test_idx in self.idxs:
+            self.testpath = paths[self.test_idx]
+            self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
+        
+
 
         ## These values are the results from a search through the full dataset; see 'minmax.json' file
         self.logρ_min = np.log10(0.008223)
@@ -88,6 +95,31 @@ class CSEdata(Dataset):
         Δt_transf = Δt/self.dt_max * self.dt_fract             ## scale to [0,1] and multiply with dt_fract
 
         return torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)
+
+
+    def get_test(self):
+        print(self.testpath)
+        mod = CSEmod(self.testpath[0])
+
+        Δt, n, p = mod.split_in_0D()
+
+        ## physical parameters
+        p_transf = np.empty_like(p)
+        for j in range(p.shape[1]):
+            # print(j)
+            p_transf[:,j] = utils.normalise(np.log10(p[:,j]), self.mins[j], self.maxs[j])
+
+        ## abundances
+        n_transf = np.clip(n, self.cutoff, None)
+        n_transf = np.log10(n_transf)
+        n_transf = utils.normalise(n_transf, self.n_min, self.n_max)       ## max boundary = rel. abundance of He
+
+        ## timesteps
+        Δt_transf = Δt/self.dt_max * self.dt_fract             ## scale to [0,1] and multiply with dt_fract
+
+        return torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)
+
+
 
 
 

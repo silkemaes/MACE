@@ -194,16 +194,21 @@ def test(model, input,  loss_obj):
     model.eval()
     n     = input[0]
     p     = input[1]
-    t     = input[2]
+    dt    = input[2]
 
-    n = torch.swapaxes(n,1,2)
+    print(n.shape, p.shape,dt.shape)
 
+    # n  = n.view(n.shape[1], n.shape[2])     ## op een niet-CPU berekenen als dat er is op de device
+    # p  = p.view(p.shape[1], p.shape[2])
+    # dt = dt.view(dt.shape[1])
+
+    
     tic = time()
-    n_hat, status = model(n[:,0,:],p,t)         ## output van het autoecoder model
+    n_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
     toc = time()
 
-    if status.item() == 4:
-        print('ERROR: neuralODE could not be solved!')
+    # if status.item() == 4:
+    #     print('ERROR: neuralODE could not be solved!')
         # break
 
     ## Calculate losses
@@ -231,4 +236,4 @@ def test(model, input,  loss_obj):
     print('\nTest loss       :',(overall_loss))
     print('\nSolving time [s]:', solve_time)
 
-    return n, n_hat, t, losses, mace_time
+    return n, n_hat[0].detach().numpy(), dt, losses, mace_time
