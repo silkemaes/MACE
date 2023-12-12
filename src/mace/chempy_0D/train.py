@@ -4,7 +4,7 @@ import torch
 from torch.optim  import Adam
 
 ## own scripts
-import plotting 
+import chempy_0D.plotting as plotting 
 from chempy_0D.loss import loss_function, get_loss, Loss
 
 

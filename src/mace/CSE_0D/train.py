@@ -4,7 +4,7 @@ import torch
 from torch.optim  import Adam
 
 ## own scripts
-import plotting 
+import chempy_0D.plotting as plotting 
 from CSE_0D.loss import loss_function, get_loss, Loss
 
 
@@ -236,4 +236,66 @@ def test(model, input,  loss_obj):
     print('\nTest loss       :',(overall_loss))
     print('\nSolving time [s]:', solve_time)
 
-    return n, n_hat[0].detach().numpy(), dt, losses, mace_time
+    return n, n_hat[0], dt, losses, mace_time
+
+def test_evolution(model, input, loss_obj):
+
+    losses = Loss(None,None)
+
+    mace_time = list()
+    n_evo = list()
+
+    print('>>> Testing model...')
+
+    model.eval()
+    n     = input[0]
+    p     = input[1]
+    dt    = input[2]
+
+    print(n.shape, p.shape,dt.shape)
+
+    ## first step of the evolution
+    tic = time()
+    n_hat, modstatus = model(n[:-1],p[0],dt[0])    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
+    toc = time()
+    n_evo.append(n_hat)
+    solve_time = toc-tic
+    mace_time.append(solve_time)
+
+    ## subsequent steps of the evolution
+    for i in range(len(dt)):
+        n_hat, modstatus = model(n_hat,p[i],dt[i])    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches
+        n_evo.append(n_hat)
+        solve_time = toc-tic
+        mace_time.append(solve_time)
+
+
+    # if status.item() == 4:
+    #     print('ERROR: neuralODE could not be solved!')
+        # break
+
+    ## Calculate losses
+    # mse_loss, rel_loss, evo_loss  = loss_function(loss_obj,n,n_hat)
+
+    # loss = get_loss(mse_loss, rel_loss, evo_loss, loss_obj.type)
+
+    # ## overall summed loss of test set
+    # overall_loss     += loss.item()
+
+    # ## individual losses of test set
+    # losses.set_idv_loss(mse_loss[:,-1,:].view(-1) .detach().cpu().numpy(), 'mse')
+    # losses.set_idv_loss(rel_loss[:,-1,:].view(-1) .detach().cpu().numpy(), 'rel')
+    # losses.set_idv_loss(evo_loss[:,-1,:].view(-1) .detach().cpu().numpy(), 'evo')
+
+    # losses.set_tot_loss(overall_loss)
+    # losses.set_loss(mse_loss.mean().item(),'mse')
+    # losses.set_loss(rel_loss.mean().item(),'rel')
+    # losses.set_loss(evo_loss.mean().item(),'evo')
+
+
+
+
+    # print('\nTest loss       :',(overall_loss))
+    # print('\nSolving time [s]:', solve_time)
+
+    return n_evo, losses, mace_time

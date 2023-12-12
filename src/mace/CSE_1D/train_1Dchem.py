@@ -9,7 +9,7 @@ from torch.optim         import Adam
 
 ## own scripts
 import dataset as ds
-import plotting   
+import chempy_0D.plotting as plotting   
 
 
 

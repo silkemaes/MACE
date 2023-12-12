@@ -19,7 +19,7 @@ import chempy_0D.dataset    as ds
 import chempy_0D.train      as tr
 import neuralODE            as nODE
 import utils                as utils
-import plotting             as pl
+import chempy_0D.plotting             as pl
 import chempy_0D.loss       as loss
 
 

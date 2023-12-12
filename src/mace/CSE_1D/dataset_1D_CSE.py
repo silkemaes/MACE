@@ -12,7 +12,7 @@ from torch.utils.data    import Dataset, DataLoader
 
 
 ## own scripts
-import plotting     
+import chempy_0D.plotting as plotting     
 import utils
 
 
