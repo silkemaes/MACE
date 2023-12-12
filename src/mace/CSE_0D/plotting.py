@@ -114,8 +114,8 @@ def get_evo(n, n_hat):
     nmin = np.log10(cutoff)
     nmax = np.log10(0.85e-1)
 
-    n_un = 10**utils.unscale(n,nmin, nmax).detach().numpy()
-    nhat_un = 10**utils.unscale(n_hat,nmin, nmax).detach().numpy()
+    n_un = 10**utils.unscale(n,nmin, nmax)
+    nhat_un = 10**utils.unscale(n_hat,nmin, nmax)
 
     n0 = n_un[:-1]
 
@@ -139,7 +139,7 @@ def get_abs(n,n_hat):
     nmax = np.log10(0.85e-1)
 
     n_un = 10**utils.unscale(n,nmin, nmax)
-    nhat_un = 10**utils.unscale(n_hat,nmin, nmax).detach().numpy()
+    nhat_un = 10**utils.unscale(n_hat,nmin, nmax)
 
     x = np.linspace(1e-20,1e-1,100)
 

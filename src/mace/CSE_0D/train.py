@@ -1,4 +1,6 @@
 from time       import time
+from tqdm   import tqdm
+import numpy as np
 
 import torch
 from torch.optim  import Adam
@@ -6,7 +8,6 @@ from torch.optim  import Adam
 ## own scripts
 import chempy_0D.plotting as plotting 
 from CSE_0D.loss import loss_function, get_loss, Loss
-
 
 
 
@@ -39,7 +40,7 @@ def train_one_epoch(data_loader, model, loss_obj, DEVICE, optimizer):
 
     for i, (n,p,dt) in enumerate(data_loader):
 
-        # print('\tbatch',i+1,'/',len(data_loader),end="\r")
+        print('\tbatch',i+1,'/',len(data_loader),end="\r")
         
         n  = n.view(n.shape[1], n.shape[2]).to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
         p  = p.view(p.shape[1], p.shape[2]).to(DEVICE) 
@@ -92,7 +93,7 @@ def validate_one_epoch(test_loader, model, loss_obj, DEVICE):
 
     with torch.no_grad():
         for i, (n,p,dt) in enumerate(test_loader):
-            # print('\tbatch',i+1,'/',len(test_loader),end="\r")
+            print('\tbatch',i+1,'/',len(test_loader),end="\r")
 
             n  = n.view(n.shape[1], n.shape[2]).to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
             p  = p.view(p.shape[1], p.shape[2]).to(DEVICE) 
@@ -197,19 +198,11 @@ def test(model, input,  loss_obj):
     dt    = input[2]
 
     print(n.shape, p.shape,dt.shape)
-
-    # n  = n.view(n.shape[1], n.shape[2])     ## op een niet-CPU berekenen als dat er is op de device
-    # p  = p.view(p.shape[1], p.shape[2])
-    # dt = dt.view(dt.shape[1])
-
     
     tic = time()
     n_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
     toc = time()
 
-    # if status.item() == 4:
-    #     print('ERROR: neuralODE could not be solved!')
-        # break
 
     ## Calculate losses
     mse_loss, rel_loss, evo_loss  = loss_function(loss_obj,n,n_hat)
@@ -236,9 +229,9 @@ def test(model, input,  loss_obj):
     print('\nTest loss       :',(overall_loss))
     print('\nSolving time [s]:', solve_time)
 
-    return n, n_hat[0], dt, losses, mace_time
+    return n.detach().numpy(), n_hat[0].detach().numpy(), dt, losses, mace_time
 
-def test_evolution(model, input, loss_obj):
+def test_evolution(model, input, start_idx):
 
     losses = Loss(None,None)
 
@@ -248,54 +241,26 @@ def test_evolution(model, input, loss_obj):
     print('>>> Testing model...')
 
     model.eval()
-    n     = input[0]
+    n     = input[0][start_idx]
     p     = input[1]
     dt    = input[2]
 
-    print(n.shape, p.shape,dt.shape)
+    # print(n.view(1, -1).shape, p[start_idx].view(1, -1).shape,dt[0].view(-1).shape[-1])
 
     ## first step of the evolution
     tic = time()
-    n_hat, modstatus = model(n[:-1],p[0],dt[0])    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
+    n_hat, modstatus = model(n.view(1, -1),p[start_idx].view(1, -1),dt[start_idx].view(-1))    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
     toc = time()
-    n_evo.append(n_hat)
+    n_evo.append(n_hat.detach().numpy())
     solve_time = toc-tic
     mace_time.append(solve_time)
 
     ## subsequent steps of the evolution
-    for i in range(len(dt)):
-        n_hat, modstatus = model(n_hat,p[i],dt[i])    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches
-        n_evo.append(n_hat)
+    for i in tqdm(range(start_idx+1,len(dt))):
+        n_hat, modstatus = model(n_hat.view(1, -1),p[i].view(1, -1),dt[i].view(-1))    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches
+        n_evo.append(n_hat.detach().numpy())
         solve_time = toc-tic
         mace_time.append(solve_time)
 
 
-    # if status.item() == 4:
-    #     print('ERROR: neuralODE could not be solved!')
-        # break
-
-    ## Calculate losses
-    # mse_loss, rel_loss, evo_loss  = loss_function(loss_obj,n,n_hat)
-
-    # loss = get_loss(mse_loss, rel_loss, evo_loss, loss_obj.type)
-
-    # ## overall summed loss of test set
-    # overall_loss     += loss.item()
-
-    # ## individual losses of test set
-    # losses.set_idv_loss(mse_loss[:,-1,:].view(-1) .detach().cpu().numpy(), 'mse')
-    # losses.set_idv_loss(rel_loss[:,-1,:].view(-1) .detach().cpu().numpy(), 'rel')
-    # losses.set_idv_loss(evo_loss[:,-1,:].view(-1) .detach().cpu().numpy(), 'evo')
-
-    # losses.set_tot_loss(overall_loss)
-    # losses.set_loss(mse_loss.mean().item(),'mse')
-    # losses.set_loss(rel_loss.mean().item(),'rel')
-    # losses.set_loss(evo_loss.mean().item(),'evo')
-
-
-
-
-    # print('\nTest loss       :',(overall_loss))
-    # print('\nSolving time [s]:', solve_time)
-
-    return n_evo, losses, mace_time
+    return np.array(n_evo).reshape(-1,468), mace_time
