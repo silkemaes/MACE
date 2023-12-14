@@ -120,7 +120,12 @@ class CSEdata(Dataset):
         return torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)
 
 
+def get_abs(n):
+    cutoff = 1e-20
+    nmin = np.log10(cutoff)
+    nmax = np.log10(0.85e-1)
 
+    return 10**utils.unscale(n,nmin, nmax)
 
 
 def get_data( nb_samples, dt_fract, batch_size, kwargs):
@@ -172,14 +177,6 @@ class CSEmod():
         arr = np.loadtxt(self.path+phys_path, skiprows=4, usecols=(0,1,2,3,4))
         self.radius, self.dens, self.temp, self.Av, self.delta = arr[:,0], arr[:,1], arr[:,2], arr[:,3], arr[:,4]
         self.time = self.radius/(self.v) 
-
-        # print(self.delta.shape, self.temp.shape)
-        # for i in range(len(self.delta)):
-        #     # if self.temp[i] == 0.:
-        #     #     print('yes')
-        #     #     self.temp[i] = 10
-        #     if self.delta[i] == 0.:
-        #         self.delta[i] = 1.e-40
                 
 
     def __len__(self):

@@ -102,12 +102,14 @@ class G(nn.Module):
     '''
     def __init__(self, z_dim):
         super(G, self).__init__()
+        self.C = nn.Parameter(torch.randn(z_dim).requires_grad_(True))
         self.A = nn.Parameter(torch.randn(z_dim, z_dim).requires_grad_(True))
         self.B = nn.Parameter(torch.randn(z_dim, z_dim, z_dim).requires_grad_(True))
 
     def forward(self,t, z):     ## t has also be given to the forward function, in order that the ODE solver can read it properly
 
-        return torch.einsum("ij, bj -> bi", self.A, z) + torch.einsum("ijk, bj, bk -> bi", self.B, z, z)  ## b is the index of the batchsize
+        return self.C + torch.einsum("ij, bj -> bi", self.A, z) + torch.einsum("ijk, bj, bk -> bi", self.B, z, z)  ## b is the index of the batchsize
+        # return  torch.einsum("ij, bj -> bi", self.A, z) + torch.einsum("ijk, bj, bk -> bi", self.B, z, z)  ## b is the index of the batchsize
 
 
 class Solver(nn.Module):
@@ -193,7 +195,7 @@ class Solver(nn.Module):
         ## Reshape correctly
         n_s = n_s_ravel.reshape(1,tstep.shape[-1], self.n_dim)
 
-        return n_s, solution.status
+        return n_s,  solution.status
 
         
         

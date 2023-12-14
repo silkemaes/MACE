@@ -50,11 +50,11 @@ dt_fracts = {1 : 0.597,
 ## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
 
 lr = 1.e-3
-tot_epochs = 50
-nb_epochs  = 40
+tot_epochs = 80
+nb_epochs  = 50
 ini_epochs = 5
-losstype = 'mse_rel_evo'
-z_dim = 12
+losstype = 'evo'
+z_dim = 10
 dt_fract = dt_fracts[z_dim]
 batch_size = 1
 nb_samples = 10000
@@ -132,7 +132,7 @@ toc = time()
 train_time1 = toc-tic
 
 # ## ------------- PART 2: normalised losses, but reinitialise model
-model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=466, DEVICE = DEVICE)
+# model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=n_dim, DEVICE = DEVICE)
 
 norm = {'mse' : 1, 'rel' : 1, 'evo' : 1}
 

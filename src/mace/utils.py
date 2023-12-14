@@ -32,9 +32,7 @@ def get_files_in(path):
 
 
 def unscale(x, min, max):
-
     unscaled = x*np.abs(max-min)+min
-
     return unscaled
 
 
@@ -53,9 +51,7 @@ def get_specs():
 
 
 def normalise(x,min,max):
-        # print("Normalising")
         norm = (x - min)*(1/np.abs( min - max ))
-        # print(x, norm)
         return norm
 
 def generate_random_numbers(n, start, end):

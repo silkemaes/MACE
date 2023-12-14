@@ -9,6 +9,13 @@ class Loss():
 
         norm:       dict with normalisation factors for each loss
         fract:      dict with factors to multiply each loss with
+
+        Different types of losses:
+            - 'mse':    mean squared error
+            - 'rel':    relative change in abundance
+            - 'evo':    relative evolution
+            - 'idn':    identity loss = losses due to autoencoder
+            - 'elm':    element conservation loss
         '''
         self.norm  = norm
         self.fract = fract
@@ -18,6 +25,8 @@ class Loss():
         self.mse = list()
         self.rel = list()
         self.evo = list()
+        self.idn = list()
+        self.elm = list()
 
         self.mse_idv = list()
         self.rel_idv = list()
@@ -61,16 +70,29 @@ class Loss():
         '''
         return np.array(self.tot)
     
-    def set_loss(self,loss,type):
+    def set_loss(self,loss,type, nb):
         '''
         Set the loss for the epoch.
         '''
+        loss = loss/nb
+
+        if type == 'tot':
+            self.tot.append(loss)
         if type == 'mse':
             self.mse.append(loss)
         elif type == 'rel':
             self.rel.append(loss)
         elif type == 'evo':
             self.evo.append(loss)
+        elif type == 'idn':
+            self.idn.append(loss)
+
+    def set_loss_all(self,loss_dict,nb):
+        '''
+        Set the losses for the epoch.
+        '''
+        for key in loss_dict.keys():
+            self.set_loss(loss_dict[key],key,nb)
 
     def set_idv_loss(self,loss,type):
         if type == 'mse':
@@ -89,10 +111,14 @@ class Loss():
         elif type == 'rel':
             return np.array(self.rel)
         elif type == 'evo':
-            return np.array(self.evo )
+            return np.array(self.evo)
+        elif type == 'idn':
+            return np.array(self.idn)
+        elif type == 'elm':
+            return np.array(self.elm)
     
     def get_all_losses(self):
-        return self.get_loss('mse'), self.get_loss('rel'), self.get_loss('evo')
+        return self.get_loss('mse'), self.get_loss('rel'), self.get_loss('evo'), self.get_loss('idn'), self.get_loss('elm')
         
     def get_idv_loss(self,type):
         if type == 'mse':
@@ -128,6 +154,8 @@ class Loss():
             np.save(path+'/rel.npy', rel_loss)
         if evo_loss is not None:
             np.save(path+'/evo.npy', evo_loss)
+        if mse_idv_loss is not None:
+            np.save(path+'/mse_idv.npy', mse_idv_loss)
         if mse_idv_loss is not None:
             np.save(path+'/mse_idv.npy', mse_idv_loss)
         if rel_idv_loss is not None:
@@ -167,7 +195,25 @@ def evo_loss(x,x_hat):
     loss  = ((torch.abs(x_hat-x_0)+eps**2)/(torch.abs(x-x_0)+eps))**2     ## absolute waarden nemen rond x, zodat het niet nog 0 kan worden
     return loss
 
-def loss_function(loss_obj, x,x_hat):
+def idn_loss(x,x_hat,p, model):
+    '''
+    Return the identity loss per x_i, 
+        i.e. compares x to D(E(x)), 
+        with E the encoder and D the decoder.
+    '''
+    E = model.encoder
+    D = model.decoder
+
+    x_E     = torch.cat((p, x), axis=-1)
+    # print(x.shape,x_hat.shape,p.shape)
+    xhat_E  = torch.cat((p, x_hat.view(-1,468)), axis=-1)
+
+    loss = (x-D(E(x_E)))**2 + (x_hat-D(E(xhat_E)))**2
+
+    return loss
+
+
+def loss_function(loss_obj, model, x, x_hat, p):
     '''
     Get the MSE loss and the relative loss, normalised to the maximum lossvalue.
         - fracts are scaling factors, put to 0 if you want to exclude one of both losses.
@@ -176,37 +222,55 @@ def loss_function(loss_obj, x,x_hat):
     mse = (mse_loss(x[1:],x_hat))     ## Compare with the final abundances for that model
     rel = (rel_loss(x[1:],x_hat))     ## Compare with the final abundances for that model
     evo = (evo_loss(x,x_hat))
+    idn = (idn_loss(x[1:],x_hat,p,model))
 
     mse = mse/loss_obj.norm['mse']* loss_obj.fract['mse']
     rel = rel/loss_obj.norm['rel']* loss_obj.fract['rel']
     evo = evo/loss_obj.norm['evo']* loss_obj.fract['evo']
 
-    return mse, rel, evo
+    return mse, rel, evo, idn
 
-def get_loss(mse, rel, evo, type):
+def get_loss(mse, rel, evo, idn, type):
     mse = mse.mean()
     rel = rel.mean()
     evo = evo.mean()
+    idn = idn.mean()
 
     ## only 1 type of loss
     if type == 'mse':
         return mse
-    if type =='rel':
+    elif type =='rel':
         return rel
-    if type =='evo':
+    elif type =='evo':
         return evo
+    elif type =='idn':
+        return idn
     
     ## 2 types of losses
-    if type =='mse_rel' or type == 'rel_mse':
+    elif type =='mse_rel' or type == 'rel_mse':
         return mse+rel
-    if type =='rel_evo' or type == 'evo_rel':
+    elif type =='rel_evo' or type == 'evo_rel':
         return rel+evo
-    if type =='mse_evo' or type == 'evo_mse':
+    elif type =='mse_evo' or type == 'evo_mse':
         return mse+evo
+    elif type =='mse_idn' or type == 'idn_mse':
+        return mse+idn
+    elif type =='rel_idn' or type == 'idn_rel':
+        return rel+idn
+    elif type =='evo_idn' or type == 'idn_evo':
+        return evo+idn
 
     ## 3 types of losses
-    if type =='mse_rel_evo' or type == 'mse_evo_rel' or type == 'rel_mse_evo' or type == 'rel_evo_mse' or type == 'evo_mse_rel' or type == 'evo_rel_mse':
+    elif type =='mse_rel_evo' or type == 'mse_evo_rel' or type == 'rel_mse_evo' or type == 'rel_evo_mse' or type == 'evo_mse_rel' or type == 'evo_rel_mse':
         return mse+rel+evo
+    elif type =='mse_rel_idn' or type == 'mse_idn_rel' or type == 'rel_mse_idn' or type == 'rel_idn_mse' or type == 'idn_mse_rel' or type == 'idn_rel_mse':
+        return mse+rel+idn
+    elif type =='mse_evo_idn' or type == 'mse_idn_evo' or type == 'evo_mse_idn' or type == 'evo_idn_mse' or type == 'idn_mse_evo' or type == 'idn_evo_mse':
+        return mse+evo+idn
+    
+    ## 4 types of losses
+    elif type =='mse_rel_evo_idn' or type == 'mse_rel_idn_evo' or type == 'mse_evo_rel_idn' or type == 'mse_evo_idn_rel' or type == 'mse_idn_rel_evo' or type == 'mse_idn_evo_rel' or type == 'rel_mse_evo_idn' or type == 'rel_mse_idn_evo' or type == 'rel_evo_mse_idn' or type == 'rel_evo_idn_mse' or type == 'rel_idn_mse_evo' or type == 'rel_idn_evo_mse' or type == 'evo_mse_rel_idn' or type == 'evo_mse_idn_rel' or type == 'evo_rel_mse_idn' or type == 'evo_rel_idn_mse' or type == 'evo_idn_mse_rel' or type == 'evo_idn_rel_mse' or type == 'idn_mse_rel_evo' or type == 'idn_mse_evo_rel' or type == 'idn_rel_mse_evo' or type == 'idn_rel_evo_mse' or type == 'idn_evo_mse_rel' or type == 'idn_evo_rel_mse':
+        return mse+rel+evo+idn
 
 
 class Loss_analyse():
@@ -266,6 +330,8 @@ class Loss_analyse():
             self.rel = loss
         elif type == 'evo':
             self.evo = loss 
+        elif type == 'idn':
+            self.idn = loss
 
     def set_idv_loss(self,loss,type):
         if type == 'mse':
@@ -285,9 +351,11 @@ class Loss_analyse():
             return self.rel
         elif type == 'evo':
             return self.evo 
+        elif type == 'idn':
+            return self.idn 
     
     def get_all_losses(self):
-        return self.get_loss('mse'), self.get_loss('rel'), self.get_loss('evo')
+        return self.get_loss('mse'), self.get_loss('rel'), self.get_loss('evo'), self.get_loss('idn')
         
     def get_idv_loss(self,type):
         if type == 'mse':
@@ -307,6 +375,7 @@ class Loss_analyse():
         self.set_loss(np.load(loc+type+'/mse.npy'), 'mse')
         self.set_loss(np.load(loc+type+'/rel.npy'), 'rel')
         self.set_loss(np.load(loc+type+'/evo.npy'), 'evo')
+        self.set_loss(np.load(loc+type+'/idn.npy'), 'idn')
         self.set_tot_loss(np.load(loc+type+'/tot.npy'))
 
         self.set_idv_loss(np.load(loc+type+'/mse_idv.npy'), 'mse')

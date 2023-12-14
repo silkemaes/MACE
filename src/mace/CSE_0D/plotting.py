@@ -13,22 +13,6 @@ import utils
 specs_dict, idx_specs = utils.get_specs()
 
 
-def plot_hist(df):
-
-    fig = plt.figure(figsize = (10,4))
-    ax1 = fig.add_subplot((111))
-
-    for i in range(df.shape[1]):
-        ax1.hist(df[:,i].ravel(), bins = 100, histtype='step')
-
-    # ax1.set_yscale('log')
-    ax1.set_xlabel('normalised log abundance')
-    ax1.set_ylabel('#')
-
-    plt.show()
-
-    return
-
 
 def plot_loss(train, test, log = True, ylim = False, limits = None, show = False):
 
@@ -51,37 +35,35 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
     ax1.plot(train.get_tot_loss(), ls = '-', marker = 'None', lw = lw, c='k')
 
     ## ------------- MSE -------------
-    if (train.type == 'mse' 
-        or train.type == 'mse_evo' or train.type == 'evo_mse' 
-        or train.type == 'mse_rel' or train.type == 'rel_mse'
-        or train.type == 'mse_rel_evo' or train.type == 'mse_evo_rel' or train.type == 'rel_mse_evo' or train.type == 'rel_evo_mse' or train.type == 'evo_mse_rel' or train.type == 'evo_rel_mse'):
-
+    if 'mse' in train.type:
         ax1.plot(test.get_loss('mse'), ls = '--', marker = 'x', lw = lw, c='firebrick', alpha = a)
         ax1.plot(train.get_loss('mse'), ls = '-', marker = '.', lw = lw, c='firebrick', alpha = a)
         l_mse   = mlines.Line2D([],[], color = 'firebrick', ls = '-',label='mse',lw = lw2, alpha = 1)
         handles.append(l_mse)
     
     ## ------------- REL -------------
-    if (train.type == 'rel'
-        or train.type == 'rel_evo' or train.type == 'evo_rel'
-        or train.type == 'rel_mse' or train.type == 'mse_rel'
-        or train.type == 'rel_mse_evo' or train.type == 'rel_evo_mse' or train.type == 'mse_rel_evo' or train.type == 'mse_evo_rel' or train.type == 'evo_rel_mse' or train.type == 'evo_mse_rel'):
-
+    if 'rel' in train.type:
         ax1.plot(test.get_loss('rel'), ls = '--', marker = 'x', lw = lw, c='royalblue', alpha = a)
         ax1.plot(train.get_loss('rel'), ls = '-', marker = '.', lw = lw, c='royalblue', alpha = a)
         l_rel = mlines.Line2D([],[], color = 'royalblue', ls = '-', label='rel',lw = lw2, alpha = 1)
         handles.append(l_rel)
 
     ## ------------- EVO -------------
-    if (train.type == 'evo'
-        or train.type == 'evo_rel' or train.type == 'rel_evo'
-        or train.type == 'evo_mse' or train.type == 'mse_evo'
-        or train.type == 'evo_mse_rel' or train.type == 'evo_rel_mse' or train.type == 'mse_evo_rel' or train.type == 'mse_rel_evo' or train.type == 'rel_evo_mse' or train.type == 'rel_mse_evo'):
-
+    if 'evo' in train.type:
         ax1.plot(test.get_loss('evo'), ls = '--', marker = 'x', lw = lw, c='goldenrod', alpha = a)
         ax1.plot(train.get_loss('evo'), ls = '-', marker = '.', lw = lw, c='goldenrod', alpha = a)
         l_evo = mlines.Line2D([],[], color = 'goldenrod', ls = '-', label='evo',lw = lw2, alpha = 1)
         handles.append(l_evo)
+
+    ## ------------- IDN -------------
+    c_idn = 'limegreen'
+    if 'idn' in train.type:
+        ax1.plot(test.get_loss('idn'), ls = '--', marker = 'x', lw = lw, c=c_idn, alpha = a)
+        ax1.plot(train.get_loss('idn'), ls = '-', marker = '.', lw = lw, c=c_idn, alpha = a)
+        l_idn = mlines.Line2D([],[], color = c_idn, ls = '-', label='idn',lw = lw2, alpha = 1)
+        handles.append(l_idn)
+
+
 
     ## ------------ settings --------------
     if log == True:
@@ -110,19 +92,14 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
 
 
 def get_evo(n, n_hat):
-    cutoff = 1e-20
-    nmin = np.log10(cutoff)
-    nmax = np.log10(0.85e-1)
 
-    n_un = 10**utils.unscale(n,nmin, nmax)
-    nhat_un = 10**utils.unscale(n_hat,nmin, nmax)
 
-    n0 = n_un[:-1]
+    n0 = n[:-1]
 
-    Δn_un = np.abs((n_un[1:]-n0))
-    Δnhat_un = np.abs((nhat_un-n0))
+    Δn = np.abs((n[1:]-n0))
+    Δn_hat = np.abs((n_hat-n0))
 
-    print(Δn_un[:,0].shape)
+    print(Δn[:,0].shape)
 
     # for i in range(len(Δn_un)):
     #     if Δn_un[i] == 0:
@@ -131,23 +108,12 @@ def get_evo(n, n_hat):
     limits = [5e-32,5e-1]
     x = np.linspace(1e-32,1e-2,100)
 
-    return Δn_un, Δnhat_un, limits, x
+    return Δn, Δn_hat, limits, x
 
-def get_abs(n,n_hat):
-    cutoff = 1e-20
-    nmin = np.log10(cutoff)
-    nmax = np.log10(0.85e-1)
-
-    n_un = 10**utils.unscale(n,nmin, nmax)
-    nhat_un = 10**utils.unscale(n_hat,nmin, nmax)
-
-    x = np.linspace(1e-20,1e-1,100)
-
-    return n_un, nhat_un, x
 
 def plot_mse(n, n_hat,ax1, color, alpha, title = None, j = -1):
 
-    n, n_hat, x = get_abs(n, n_hat)
+    x = np.linspace(1e-20,1e-1,100)
 
     if j == -1:
         colors = mpl.cm.brg(np.linspace(0, 1, n.shape[0]-1))
@@ -155,7 +121,7 @@ def plot_mse(n, n_hat,ax1, color, alpha, title = None, j = -1):
         step = 5
         ax1.set_title(title)
         for i in range(0,n.shape[0]-1, step):
-            ax1.scatter(n[i],n_hat[i],marker = 'o', color = colors[i], alpha = alpha, label = i) # type: ignore
+            ax1.scatter(n[i+1],n_hat[i],marker = 'o', color = colors[i], alpha = alpha, label = i) # type: ignore
 
     else:
         ax1.scatter(n[j],n_hat[j],marker = 'o', color = color, alpha = alpha, label = title+' - step '+str(j)) # type: ignore
@@ -250,135 +216,37 @@ def plot_evo_specs(n, n_hat, ax1,specs, alpha, title = None):
     return
 
 
+def plot_abs(n, n_hat, title = '', specs = None):
+
+    a = 0.5
+
+    if len(n_hat) != 0:
+        fig, axs = plt.subplots(2,1, gridspec_kw={'height_ratios': [1,4]},figsize=(10, 8))
+        ax1 = axs[0]
+        ax2 = axs[1]
+        ax2.plot(np.abs(n[:-1]-n_hat/(np.max(n)-np.min(n))), '-', alpha = a)
+        ax2.set_ylabel('relative error')
+        ax1.xaxis.set_ticklabels([])
+        ax2.set_xlabel('step')
+        ax2.set_yscale('log')
+
+    if len(n_hat) == 0:
+        n_hat = n
+ 
+        fig, ax1 = plt.subplots(figsize=(10, 6))
+        ax1.set_xlabel('step')
 
 
-### ----------- FOR OLD TRAINING --------------
+    ax1.set_title(title) 
+    ax1.plot(n_hat,alpha = a) # type: ignore
+    ax1.set_ylabel('abundance') # type: ignore
+    ax1.set_yscale('log') # type: ignore
+
+
+    plt.subplots_adjust(hspace = 0.07)
+
+    return fig
 
 
 
-def plot_compare(real, preds, models, molecs, spec, scale = 'norm'):
 
-    colors = mpl.cm.Set3(np.linspace(0, 1, len(models)))
-
-    fig = plt.figure(figsize = (3,3))
-    ax1 = fig.add_subplot((111))
-
-    ax1.set_title(spec, fontsize = 7)
-
-    for i, pred in enumerate(preds): 
-        ax1.scatter(real[:,molecs[spec]] ,pred[:,molecs[spec]], marker = '.', label = models[i].name, alpha = 0.6, color = colors[i])
-
-    if scale == 'norm':
-        line = [-3,2]
-    if scale == 'minmax':
-        line = [0,1]
-        
-    ax1.plot(line,line, '--k', lw = 0.5)
-
-    ax1.set_xlabel('real')
-    ax1.set_ylabel('predicted')
-
-    ax1.grid(True, linestyle = '--', linewidth = 0.2)
-
-    ax1.legend(fontsize = 5)
-
-    plt.show()
-
-
-'''
-preds = list(predictions)
-models = list(models)
-'''
-def plot_fracs_profile(rad, real, preds, models, molecs, spec, lw = 1):
-        
-    colors = mpl.cm.Set3(np.linspace(0, 1, len(models)))
-  
-    
-    fig, ax = plt.subplots(3,1, gridspec_kw={'height_ratios': [5,2,2]},figsize=(5,6))
-    ## first row
-    ax1 = ax[0]
-    ax2 = ax[1]
-    ax3 = ax[2]
-    axs = [ax1,ax2, ax3]
-
-    ax1.set_title(spec, fontsize = 7)
-
-    idx = molecs[spec]
-
-    ax1.plot(rad,real[:,idx], label = 'real' , lw = lw, c = 'k')
-    for i, pred in enumerate(preds): 
-        ax1.plot(rad,pred[:,idx], label = models[i].name  , lw = lw, c = colors[i])
-        ax2.plot(rad,np.abs(real[:,idx]-pred[:,idx])/max(real[:,idx])      , lw = lw, c = colors[i],ls = '--')
-        ## absolute residuals
-        res = utils.get_absolute_residuals(real, preds[i])
-        ax3.plot(rad, res, lw = lw, c = colors[i],ls = '--')
-   
-    for ax in axs:
-        ax.set_xscale('log')
-        ax.grid(True, linestyle = '--', linewidth = 0.2)
-        ax.set_yscale('log')
-    ax1.set(xticklabels=[])
-    ax2.set(xticklabels=[])
-
-    ax1.set_ylim([1e-12,3e-3])
-    ax2.set_ylim([1e-7,1e1])
-    ax3.set_xlabel('Radius (cm)')
-    ax1.set_ylabel('Fractional abundance w.r.t. H')
-    ax2.set_ylabel('Relative residuals')
-    ax3.set_ylabel('Total residual')
-
-    ax1.legend(loc = 'upper right', fontsize = 5)
-
-    fig.tight_layout()
-    fig.subplots_adjust(hspace = 0.07)
-
-    return
-
-'''
-preds = dict()
-'''
-def plot_fracs_profile_lr(rad, real, preds, molecs, spec, lw = 0.8):
-    
-    colors = mpl.cm.viridis(np.linspace(0, 1, len(preds)))
-      
-    fig, ax = plt.subplots(3,1, gridspec_kw={'height_ratios': [5,2,2]},figsize=(5,6))
-    ## first row
-    ax1 = ax[0]
-    ax2 = ax[1]
-    ax3 = ax[2]
-    axs = [ax1,ax2, ax3]
-
-    ax1.set_title(spec, fontsize = 7)
-
-    idx = molecs[spec]
-    alpha = 0.8
-
-    ax1.plot(rad,real[:,idx], label = 'real' , lw = 1.1, c = 'k')
-    for i,lr in enumerate(preds): 
-        ax1.plot(rad,preds[lr][:,idx], label = 'lr = '+str(lr) , lw = lw, c = colors[i], alpha = alpha)
-        ax2.plot(rad,np.abs(real[:,idx]-preds[lr][:,idx])/max(real[:,idx])      , lw = lw, c = colors[i], alpha = alpha,ls = '--')
-        ## absolute residuals
-        res = utils.get_absolute_residuals(real, preds[lr])
-        ax3.plot(rad, res, lw = lw, c = colors[i], alpha = alpha,ls = '--')
-   
-    for ax in axs:
-        ax.set_xscale('log')
-        ax.grid(True, linestyle = '--', linewidth = 0.2)
-        ax.set_yscale('log')
-    ax1.set(xticklabels=[])
-    ax2.set(xticklabels=[])
-
-    ax1.set_ylim([1e-12,3e-3])
-    ax2.set_ylim([1e-7,1e1])
-    ax3.set_xlabel('Radius (cm)')
-    ax1.set_ylabel('Fractional abundance w.r.t. H')
-    ax2.set_ylabel('Relative residuals')
-    ax3.set_ylabel('Total residual')
-
-    ax1.legend(loc = 'upper right', fontsize = 5)
-
-    fig.tight_layout()
-    fig.subplots_adjust(hspace = 0.07)
-
-    plt.show()
-    return
