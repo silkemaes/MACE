@@ -216,15 +216,16 @@ def plot_evo_specs(n, n_hat, ax1,specs, alpha, title = None):
     return
 
 
-def plot_abs(n, n_hat, title = '', specs = None):
+def plot_abs(n, n_hat, plots_path,title = '', specs = None):
 
     a = 0.5
 
     if len(n_hat) != 0:
-        fig, axs = plt.subplots(2,1, gridspec_kw={'height_ratios': [1,4]},figsize=(10, 8))
+        fig, axs = plt.subplots(2,1, gridspec_kw={'height_ratios': [4,4]},figsize=(10, 8))
         ax1 = axs[0]
         ax2 = axs[1]
-        ax2.plot(np.abs(n[:-1]-n_hat/(np.max(n)-np.min(n))), '-', alpha = a)
+        ax2.plot(np.abs((n[:-1]-n_hat)/(np.max(n, axis=0)-np.min(n, axis=0))), '-', alpha = a)
+        ## denominator? /(np.max(n, axis=1)-np.min(n, axis=1))
         ax2.set_ylabel('relative error')
         ax1.xaxis.set_ticklabels([])
         ax2.set_xlabel('step')
@@ -244,6 +245,8 @@ def plot_abs(n, n_hat, title = '', specs = None):
 
 
     plt.subplots_adjust(hspace = 0.07)
+
+    plt.savefig(plots_path+'abs_'+title+'.png')
 
     return fig
 

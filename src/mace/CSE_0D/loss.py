@@ -375,7 +375,7 @@ class Loss_analyse():
         self.set_loss(np.load(loc+type+'/mse.npy'), 'mse')
         self.set_loss(np.load(loc+type+'/rel.npy'), 'rel')
         self.set_loss(np.load(loc+type+'/evo.npy'), 'evo')
-        self.set_loss(np.load(loc+type+'/idn.npy'), 'idn')
+        # self.set_loss(np.load(loc+type+'/idn.npy'), 'idn')
         self.set_tot_loss(np.load(loc+type+'/tot.npy'))
 
         self.set_idv_loss(np.load(loc+type+'/mse_idv.npy'), 'mse')
