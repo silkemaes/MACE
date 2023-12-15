@@ -33,12 +33,15 @@ class CSEdata(Dataset):
         np.random.seed(0)
         self.idxs = utils.generate_random_numbers(nb_samples, 0, len(paths))
         self.path = paths[self.idxs]
+
+        ## select a random test path, that is not in the training set
         self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
         self.testpath = paths[self.test_idx]
         while self.test_idx in self.idxs:
-            self.testpath = paths[self.test_idx]
             self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
-        
+            self.testpath = paths[self.test_idx]
+
+        self.M = np.load('/STER/silkem/ChemTorch/rates/M_rate16.npy')       
 
 
         ## These values are the results from a search through the full dataset; see 'minmax.json' file

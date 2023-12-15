@@ -10,19 +10,20 @@ import chempy_0D.plotting as plotting
 from CSE_0D.loss import loss_function, get_loss, Loss
 
 
-def process_loss_one_epoch(loss_dict, n, n_hat, p, model, loss_obj):
+def process_loss_one_epoch(loss_dict, n, n_hat, z_hat, p, model, loss_obj):
     ## Calculate losses
             ## n[:,1:] = abundances[1:k+1] with k=last-1; In this way we can compare if the predicted abundances are correct
             ## the whole array n in passed along, since this is needed to compute the evo loss
-    mse_loss, rel_loss, evo_loss, idn_loss  = loss_function(loss_obj, model, n, n_hat, p) 
+    mse_loss, rel_loss, evo_loss, idn_loss, elm_loss  = loss_function(loss_obj, model, n, n_hat,z_hat, p) 
     ## The total loss depends upon the type of losses, set in the loss_obj
-    loss = get_loss(mse_loss, rel_loss, evo_loss,idn_loss, loss_obj.type)
+    loss = get_loss(mse_loss, rel_loss, evo_loss,idn_loss,elm_loss, loss_obj.type)
 
     loss_dict['tot']  += loss.item()
     loss_dict['mse']  += mse_loss.mean().item()
     loss_dict['rel']  += rel_loss.mean().item()
     loss_dict['evo']  += evo_loss.mean().item()
     loss_dict['idn']  += idn_loss.mean().item()
+    loss_dict['elm']  += elm_loss.mean().item()
 
     return loss,loss_dict
 
@@ -49,6 +50,8 @@ def train_one_epoch(data_loader, model, loss_obj, DEVICE, optimizer):
     loss_dict['rel'] = 0
     loss_dict['evo'] = 0
     loss_dict['idn'] = 0
+    loss_dict['elm'] = 0
+    # loss_dict['grd'] = 0
     loss_dict['tot'] = 0
 
     status = 0
@@ -61,14 +64,14 @@ def train_one_epoch(data_loader, model, loss_obj, DEVICE, optimizer):
         p  = p.view(p.shape[1], p.shape[2]).to(DEVICE) 
         dt = dt.view(dt.shape[1]).to(DEVICE)
 
-        n_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
+        n_hat, z_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
 
 
         # print(modstatus.shape)
         # if modstatus.item() == 4:
         #     status += modstatus.item()
 
-        loss,loss_dict = process_loss_one_epoch(loss_dict, n, n_hat, p, model, loss_obj)
+        loss,loss_dict = process_loss_one_epoch(loss_dict, n, n_hat, z_hat, p, model, loss_obj)
 
         ## Backpropagation
         optimizer.zero_grad()

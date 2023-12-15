@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import utils
+from torch.autograd.functional import jacobian
 
 class Loss():
     def __init__(self, norm, fract):
@@ -31,6 +32,8 @@ class Loss():
         self.mse_idv = list()
         self.rel_idv = list()
         self.evo_idv = list()
+
+        self.M = np.load('/STER/silkem/ChemTorch/rates/M_rate16.npy')
 
     def set_losstype(self, losstype):
         '''
@@ -86,6 +89,8 @@ class Loss():
             self.evo.append(loss)
         elif type == 'idn':
             self.idn.append(loss)
+        elif type == 'elm':
+            self.elm.append(loss)
 
     def set_loss_all(self,loss_dict,nb):
         '''
@@ -142,9 +147,12 @@ class Loss():
         mse_loss = self.get_loss('mse')
         rel_loss = self.get_loss('rel')
         evo_loss = self.get_loss('evo')
-        mse_idv_loss = self.get_idv_loss('mse')
-        rel_idv_loss = self.get_idv_loss('rel')
-        evo_idv_loss = self.get_idv_loss('evo')
+        idn_loss = self.get_loss('idn')
+        elm_loss = self.get_loss('elm')
+
+        # mse_idv_loss = self.get_idv_loss('mse')
+        # rel_idv_loss = self.get_idv_loss('rel')
+        # evo_idv_loss = self.get_idv_loss('evo')
         
         if tot_loss is not None:
             np.save(path+'/tot.npy', tot_loss)
@@ -154,14 +162,19 @@ class Loss():
             np.save(path+'/rel.npy', rel_loss)
         if evo_loss is not None:
             np.save(path+'/evo.npy', evo_loss)
-        if mse_idv_loss is not None:
-            np.save(path+'/mse_idv.npy', mse_idv_loss)
-        if mse_idv_loss is not None:
-            np.save(path+'/mse_idv.npy', mse_idv_loss)
-        if rel_idv_loss is not None:
-            np.save(path+'/rel_idv.npy', rel_idv_loss)
-        if evo_idv_loss is not None:
-            np.save(path+'/evo_idv.npy', evo_idv_loss)
+        if idn_loss is not None:
+            np.save(path+'/idn.npy', idn_loss)
+        if elm_loss is not None:
+            np.save(path+'/elm.npy', elm_loss)
+
+        # if mse_idv_loss is not None:
+        #     np.save(path+'/mse_idv.npy', mse_idv_loss)
+        # if mse_idv_loss is not None:
+        #     np.save(path+'/mse_idv.npy', mse_idv_loss)
+        # if rel_idv_loss is not None:
+        #     np.save(path+'/rel_idv.npy', rel_idv_loss)
+        # if evo_idv_loss is not None:
+        #     np.save(path+'/evo_idv.npy', evo_idv_loss)
 
     
 
@@ -204,16 +217,44 @@ def idn_loss(x,x_hat,p, model):
     E = model.encoder
     D = model.decoder
 
-    x_E     = torch.cat((p, x), axis=-1)
+    x_E     = torch.cat((p, x), axis=-1) # type: ignore
     # print(x.shape,x_hat.shape,p.shape)
-    xhat_E  = torch.cat((p, x_hat.view(-1,468)), axis=-1)
+    xhat_E  = torch.cat((p, x_hat.view(-1,468)), axis=-1) # type: ignore
 
     loss = (x-D(E(x_E)))**2 + (x_hat-D(E(xhat_E)))**2
 
     return loss
 
+def elm_loss(z_hat,model, M):
+    '''
+    Return the element conservation loss per x_i.
+        M is at matrix that gives the elemental composition of each species.
+        We know that M x n_hat should be conserved at all times in the network, hence d(M x n_hat)/dt = 0.
+        Since n_hat = D(g(z_hat)), with D the decoder, g=C+Az+Bzz the ODE function,
+            we can rewrite the element conservation loss 
+            as d(M x D(g(z_hat)))/dt = Mgrad(D)g = Mgrad(D)(C+A+B).
+        The einsum summation takes into account the right indexing.
+    '''
+    M = torch.from_numpy(M).to_sparse()     ## eventueel nog specifiek een sparse matrix van maken    
 
-def loss_function(loss_obj, model, x, x_hat, p):
+    D = model.decoder
+    A = model.g.A
+    B = model.g.B
+    C = model.g.C
+    jac_D = jacobian(D,z_hat, strategy='forward-mode', vectorize=True)
+
+    # L0 = torch.einsum("ZN , bNci , i   -> bcZ  ", M , jacobian(D,z_hat, strategy='forward-mode', vectorize=True) , C).mean()
+    L0 = ((jac_D @ C).T @ M).mean()
+    # L1 = torch.einsum("ZN , bNci , ij  -> bcZj ", M , jacobian(D,z_hat, strategy='forward-mode', vectorize=True) , A).mean()
+    L1 = ((jac_D @ model.g.A).T @ M).mean()
+    # L2 = torch.einsum("ZN , bNci , ijk -> bcZjk", M , jacobian(D,z_hat, strategy='forward-mode', vectorize=True) , B).mean()
+    # L2 = 
+
+    loss = (L0 + L1 + L2)**2
+    return loss
+
+
+def loss_function(loss_obj, model, x, x_hat,z_hat, p):
     '''
     Get the MSE loss and the relative loss, normalised to the maximum lossvalue.
         - fracts are scaling factors, put to 0 if you want to exclude one of both losses.
@@ -223,14 +264,15 @@ def loss_function(loss_obj, model, x, x_hat, p):
     rel = (rel_loss(x[1:],x_hat))     ## Compare with the final abundances for that model
     evo = (evo_loss(x,x_hat))
     idn = (idn_loss(x[1:],x_hat,p,model))
+    elm = (elm_loss(z_hat,model, loss_obj.M))
 
     mse = mse/loss_obj.norm['mse']* loss_obj.fract['mse']
     rel = rel/loss_obj.norm['rel']* loss_obj.fract['rel']
     evo = evo/loss_obj.norm['evo']* loss_obj.fract['evo']
 
-    return mse, rel, evo, idn
+    return mse, rel, evo, idn, elm
 
-def get_loss(mse, rel, evo, idn, type):
+def get_loss(mse, rel, evo, idn, elm, type):
     mse = mse.mean()
     rel = rel.mean()
     evo = evo.mean()
@@ -245,6 +287,8 @@ def get_loss(mse, rel, evo, idn, type):
         return evo
     elif type =='idn':
         return idn
+    elif type =='elm':
+        return elm
     
     ## 2 types of losses
     elif type =='mse_rel' or type == 'rel_mse':
@@ -259,6 +303,15 @@ def get_loss(mse, rel, evo, idn, type):
         return rel+idn
     elif type =='evo_idn' or type == 'idn_evo':
         return evo+idn
+    elif type =='elm_idn' or type == 'idn_elm':
+        return elm+idn
+    elif type =='elm_rel' or type == 'rel_elm':
+        return elm+rel
+    elif type =='elm_evo' or type == 'evo_elm':
+        return elm+evo
+    elif type =='elm_mse' or type == 'mse_elm':
+        return elm+mse
+    
 
     ## 3 types of losses
     elif type =='mse_rel_evo' or type == 'mse_evo_rel' or type == 'rel_mse_evo' or type == 'rel_evo_mse' or type == 'evo_mse_rel' or type == 'evo_rel_mse':
@@ -267,10 +320,46 @@ def get_loss(mse, rel, evo, idn, type):
         return mse+rel+idn
     elif type =='mse_evo_idn' or type == 'mse_idn_evo' or type == 'evo_mse_idn' or type == 'evo_idn_mse' or type == 'idn_mse_evo' or type == 'idn_evo_mse':
         return mse+evo+idn
+    elif type =='rel_evo_idn' or type == 'rel_idn_evo' or type == 'evo_rel_idn' or type == 'evo_idn_rel' or type == 'idn_rel_evo' or type == 'idn_evo_rel':
+        return rel+evo+idn
+    elif type =='elm_rel_idn' or type == 'elm_idn_rel' or type == 'rel_elm_idn' or type == 'rel_idn_elm' or type == 'idn_rel_elm' or type == 'idn_elm_rel':
+        return elm+rel+idn
+    elif type =='elm_evo_idn' or type == 'elm_idn_evo' or type == 'evo_elm_idn' or type == 'evo_idn_elm' or type == 'idn_elm_evo' or type == 'idn_evo_elm':
+        return elm+evo+idn
+    elif type =='elm_mse_idn' or type == 'elm_idn_mse' or type == 'mse_elm_idn' or type == 'mse_idn_elm' or type == 'idn_elm_mse' or type == 'idn_mse_elm':
+        return elm+mse+idn
+    elif type =='elm_mse_rel' or type == 'elm_rel_mse' or type == 'mse_elm_rel' or type == 'mse_rel_elm' or type == 'rel_elm_mse' or type == 'rel_mse_elm':
+        return elm+mse+rel
+    elif type =='elm_mse_evo' or type == 'elm_evo_mse' or type == 'mse_elm_evo' or type == 'mse_evo_elm' or type == 'evo_elm_mse' or type == 'evo_mse_elm':
+        return elm+mse+evo
+    elif type =='rel_evo_elm' or type == 'rel_elm_evo' or type == 'evo_rel_elm' or type == 'evo_elm_rel' or type == 'elm_rel_evo' or type == 'elm_evo_rel':
+        return rel+evo+elm
+
     
+
+
     ## 4 types of losses
     elif type =='mse_rel_evo_idn' or type == 'mse_rel_idn_evo' or type == 'mse_evo_rel_idn' or type == 'mse_evo_idn_rel' or type == 'mse_idn_rel_evo' or type == 'mse_idn_evo_rel' or type == 'rel_mse_evo_idn' or type == 'rel_mse_idn_evo' or type == 'rel_evo_mse_idn' or type == 'rel_evo_idn_mse' or type == 'rel_idn_mse_evo' or type == 'rel_idn_evo_mse' or type == 'evo_mse_rel_idn' or type == 'evo_mse_idn_rel' or type == 'evo_rel_mse_idn' or type == 'evo_rel_idn_mse' or type == 'evo_idn_mse_rel' or type == 'evo_idn_rel_mse' or type == 'idn_mse_rel_evo' or type == 'idn_mse_evo_rel' or type == 'idn_rel_mse_evo' or type == 'idn_rel_evo_mse' or type == 'idn_evo_mse_rel' or type == 'idn_evo_rel_mse':
-        return mse+rel+evo+idn
+        return mse+rel+evo+idn      ## no elm
+    elif type =='mse_rel_evo_elm' or type == 'mse_rel_elm_evo' or type == 'mse_evo_rel_elm' or type == 'mse_evo_elm_rel' or type == 'mse_elm_rel_evo' or type == 'mse_elm_evo_rel' or type == 'rel_mse_evo_elm' or type == 'rel_mse_elm_evo' or type == 'rel_evo_mse_elm' or type == 'rel_evo_elm_mse' or type == 'rel_elm_mse_evo' or type == 'rel_elm_evo_mse' or type == 'evo_mse_rel_elm' or type == 'evo_mse_elm_rel' or type == 'evo_rel_mse_elm' or type == 'evo_rel_elm_mse' or type == 'evo_elm_mse_rel' or type == 'evo_elm_rel_mse' or type == 'elm_mse_rel_evo' or type == 'elm_mse_evo_rel' or type == 'elm_rel_mse_evo' or type == 'elm_rel_evo_mse' or type == 'elm_evo_mse_rel' or type == 'elm_evo_rel_mse':
+        return mse+rel+evo+elm      ## no idn
+    elif type =='mse_rel_idn_elm' or type == 'mse_rel_elm_idn' or type == 'mse_idn_rel_elm' or type == 'mse_idn_elm_rel' or type == 'mse_elm_rel_idn' or type == 'mse_elm_idn_rel' or type == 'rel_mse_idn_elm' or type == 'rel_mse_elm_idn' or type == 'rel_idn_mse_elm' or type == 'rel_idn_elm_mse' or type == 'rel_elm_mse_idn' or type == 'rel_elm_idn_mse' or type == 'idn_mse_rel_elm' or type == 'idn_mse_elm_rel' or type == 'idn_rel_mse_elm' or type == 'idn_rel_elm_mse' or type == 'idn_elm_mse_rel' or type == 'idn_elm_rel_mse' or type == 'elm_mse_rel_idn' or type == 'elm_mse_idn_rel' or type == 'elm_rel_mse_idn' or type == 'elm_rel_idn_mse' or type == 'elm_idn_mse_rel' or type == 'elm_idn_rel_mse':
+        return mse+rel+idn+elm      ## no evo
+    elif type =='mse_evo_idn_elm' or type == 'mse_evo_elm_idn' or type == 'mse_idn_evo_elm' or type == 'mse_idn_elm_evo' or type == 'mse_elm_evo_idn' or type == 'mse_elm_idn_evo' or type == 'evo_mse_idn_elm' or type == 'evo_mse_elm_idn' or type == 'evo_idn_mse_elm' or type == 'evo_idn_elm_mse' or type == 'evo_elm_mse_idn' or type == 'evo_elm_idn_mse' or type == 'idn_mse_evo_elm' or type == 'idn_mse_elm_evo' or type == 'idn_evo_mse_elm' or type == 'idn_evo_elm_mse' or type == 'idn_elm_mse_evo' or type == 'idn_elm_evo_mse' or type == 'elm_mse_evo_idn' or type == 'elm_mse_idn_evo' or type == 'elm_evo_mse_idn' or type == 'elm_evo_idn_mse' or type == 'elm_idn_mse_evo' or type == 'elm_idn_evo_mse':
+        return mse+evo+idn+elm      ## no rel
+    elif type =='rel_evo_idn_elm' or type == 'rel_evo_elm_idn' or type == 'rel_idn_evo_elm' or type == 'rel_idn_elm_evo' or type == 'rel_elm_evo_idn' or type == 'rel_elm_idn_evo' or type == 'evo_rel_idn_elm' or type == 'evo_rel_elm_idn' or type == 'evo_idn_rel_elm' or type == 'evo_idn_elm_rel' or type == 'evo_elm_rel_idn' or type == 'evo_elm_idn_rel' or type == 'idn_rel_evo_elm' or type == 'idn_rel_elm_evo' or type == 'idn_evo_rel_elm' or type == 'idn_evo_elm_rel' or type == 'idn_elm_rel_evo' or type == 'idn_elm_evo_rel' or type == 'elm_rel_evo_idn' or type == 'elm_rel_idn_evo' or type == 'elm_evo_rel_idn' or type == 'elm_evo_idn_rel' or type == 'elm_idn_rel_evo' or type == 'elm_idn_evo_rel':
+        return rel+evo+idn+elm      ## no mse
+    
+    ## 5 types of losses
+    elif (type =='mse_rel_evo_idn_elm' or type == 'mse_rel_evo_elm_idn' or type == 'mse_rel_idn_evo_elm' or type == 'mse_rel_idn_elm_evo' or type == 'mse_rel_elm_evo_idn' 
+        or type == 'mse_rel_elm_idn_evo' or type == 'mse_evo_rel_idn_elm' or type == 'mse_evo_rel_elm_idn' or type == 'mse_evo_idn_rel_elm' or type == 'mse_evo_idn_elm_rel' 
+        or type == 'mse_evo_elm_rel_idn' or type == 'mse_evo_elm_idn_rel' or type == 'mse_idn_rel_evo_elm' or type == 'mse_idn_rel_elm_evo' or type == 'mse_idn_evo_rel_elm' 
+        or type == 'mse_idn_evo_elm_rel' or type == 'mse_idn_elm_rel_evo' or type == 'mse_idn_elm_evo_rel' or type == 'mse_elm_rel_evo_idn' or type == 'mse_elm_rel_idn_evo' 
+        or type == 'mse_elm_evo_rel_idn' or type == 'mse_elm_evo_idn_rel' or type == 'mse_elm_idn_rel_evo' or type == 'mse_elm_idn_evo_rel' or type == 'rel_mse_evo_idn_elm' 
+        or type == 'rel_mse_evo_elm_idn' or type == 'rel_mse_idn_evo_elm' or type == 'rel_mse_idn_elm_evo' or type == 'rel_mse_elm_evo_idn' or type == 'rel_mse_elm_idn_evo' 
+        or type == 'rel_evo_mse_idn_elm' or type == 'rel_evo_mse_elm_idn' or type == 'rel_evo_idn_mse_elm' or type == 'rel_evo_idn_elm_mse' or type == 'rel_evo_elm_mse_idn' 
+        or type == 'rel_evo_elm_idn_mse' or type == 'rel_idn_mse_evo_elm' or type == 'rel_idn_mse_elm_evo' or type == 'rel_idn_evo_mse_elm' or type == 'rel_idn_evo_elm_mse'):
+        return mse+rel+evo+idn+elm
 
 
 class Loss_analyse():

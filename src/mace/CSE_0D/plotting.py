@@ -216,16 +216,26 @@ def plot_evo_specs(n, n_hat, ax1,specs, alpha, title = None):
     return
 
 
-def plot_abs(n, n_hat, plots_path,title = '', specs = None):
+def plot_abs(n, n_hat, plots_path,title = '', specs = []):
 
     a = 0.5
+
+    
 
     if len(n_hat) != 0:
         fig, axs = plt.subplots(2,1, gridspec_kw={'height_ratios': [4,4]},figsize=(10, 8))
         ax1 = axs[0]
         ax2 = axs[1]
-        ax2.plot(np.abs((n[:-1]-n_hat)/(np.max(n, axis=0)-np.min(n, axis=0))), '-', alpha = a)
-        ## denominator? /(np.max(n, axis=1)-np.min(n, axis=1))
+        ## plot individual species
+        if len(specs) != 0:
+            for spec in specs:
+                idx = specs_dict[spec]
+                ax2.plot(np.abs((n[:-1]-n_hat)[:,idx]/(np.mean(n, axis=0))[idx]), '-', alpha = a, label = spec)
+        else:
+            ax2.plot(np.abs((n[:-1]-n_hat)/(np.mean(n, axis=0))), '-', alpha = a)
+        
+
+
         ax2.set_ylabel('relative error')
         ax1.xaxis.set_ticklabels([])
         ax2.set_xlabel('step')
@@ -233,20 +243,29 @@ def plot_abs(n, n_hat, plots_path,title = '', specs = None):
 
     if len(n_hat) == 0:
         n_hat = n
- 
         fig, ax1 = plt.subplots(figsize=(10, 6))
         ax1.set_xlabel('step')
 
 
     ax1.set_title(title) 
-    ax1.plot(n_hat,alpha = a) # type: ignore
+    if len(specs) != 0:
+        for spec in specs:
+            idx = specs_dict[spec]
+            ax1.plot(n_hat[:,idx], alpha = a, label = spec)
+            plt.legend()
+    else:
+        ax1.plot(n_hat,alpha = a) # type: ignore
     ax1.set_ylabel('abundance') # type: ignore
     ax1.set_yscale('log') # type: ignore
 
+    ax1.set_ylim([1e-20, 1e1])
 
     plt.subplots_adjust(hspace = 0.07)
 
-    plt.savefig(plots_path+'abs_'+title+'.png')
+    if len(specs) != 0:
+        plt.savefig(plots_path+'abs_specs_'+title+'.png')
+    else:
+        plt.savefig(plots_path+'abs_'+title+'.png')
 
     return fig
 
