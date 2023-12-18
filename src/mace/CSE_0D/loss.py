@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import utils
 from torch.autograd.functional import jacobian
+from time import time
 
 class Loss():
     def __init__(self, norm, fract):
@@ -235,21 +236,23 @@ def elm_loss(z_hat,model, M):
             as d(M x D(g(z_hat)))/dt = Mgrad(D)g = Mgrad(D)(C+A+B).
         The einsum summation takes into account the right indexing.
     '''
-    M = torch.from_numpy(M).to_sparse()     ## eventueel nog specifiek een sparse matrix van maken    
+    M = torch.from_numpy(M).T     ## eventueel nog specifiek een sparse matrix van maken    
 
     D = model.decoder
     A = model.g.A
     B = model.g.B
     C = model.g.C
-    jac_D = jacobian(D,z_hat, strategy='forward-mode', vectorize=True)
+    jac_D = jacobian(D,z_hat, strategy='forward-mode', vectorize=True).view(468,134,134,-1)
 
-    # L0 = torch.einsum("ZN , bNci , i   -> bcZ  ", M , jacobian(D,z_hat, strategy='forward-mode', vectorize=True) , C).mean()
-    L0 = ((jac_D @ C).T @ M).mean()
-    # L1 = torch.einsum("ZN , bNci , ij  -> bcZj ", M , jacobian(D,z_hat, strategy='forward-mode', vectorize=True) , A).mean()
-    L1 = ((jac_D @ model.g.A).T @ M).mean()
-    # L2 = torch.einsum("ZN , bNci , ijk -> bcZjk", M , jacobian(D,z_hat, strategy='forward-mode', vectorize=True) , B).mean()
-    # L2 = 
+    # print(M.shape, A.shape, B.shape, C.shape, jac_D.shape)
 
+    tic = time()
+    L0 = torch.einsum("ZN , Nbci , i   -> bcZ  ", M , jac_D , C).mean()
+    L1 = torch.einsum("ZN , Nbci , ij  -> bcZj ", M , jac_D , A).mean()
+    L2 = torch.einsum("ZN , Nbci , ijk -> bcZjk", M , jac_D , B).mean()
+    toc = time()
+    print('time elm loss: ', toc-tic)
+    
     loss = (L0 + L1 + L2)**2
     return loss
 
@@ -265,6 +268,7 @@ def loss_function(loss_obj, model, x, x_hat,z_hat, p):
     evo = (evo_loss(x,x_hat))
     idn = (idn_loss(x[1:],x_hat,p,model))
     elm = (elm_loss(z_hat,model, loss_obj.M))
+    # elm = torch.tensor([0.0,0.0])
 
     mse = mse/loss_obj.norm['mse']* loss_obj.fract['mse']
     rel = rel/loss_obj.norm['rel']* loss_obj.fract['rel']

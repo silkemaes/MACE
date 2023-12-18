@@ -49,11 +49,11 @@ dt_fracts = {1 : 0.597,
 ## ================================================== INPUT ========
 ## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
 
-lr = 1.e-3
+lr = 1.e-4
 tot_epochs = 80
 nb_epochs  = 50
 ini_epochs = 5
-losstype = 'evo'
+losstype = 'mse_idn_rel_evo'
 z_dim = 10
 dt_fract = dt_fracts[z_dim]
 batch_size = 1
@@ -134,7 +134,7 @@ train_time1 = toc-tic
 # ## ------------- PART 2: normalised losses, but reinitialise model
 # model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=n_dim, DEVICE = DEVICE)
 
-norm = {'mse' : 1, 'rel' : 1, 'evo' : 1}
+norm = {'mse' : 100, 'rel' : 1, 'evo' : 1, 'idn' : 100, 'elm' : 1}
 
 trainloss.change_norm({'mse' :np.mean(trainloss.get_loss('mse')), # type: ignore
                        'rel' :np.mean(trainloss.get_loss('rel')), # type: ignore
@@ -149,7 +149,7 @@ toc = time()
 train_time2 = toc-tic
 
 ## ------------- PART 3: increase losses with factor & train further
-fract = {'mse' : 100, 'rel' : 100, 'evo' : 100}
+fract = {'mse' : 100, 'rel' : 1, 'evo' : 1, 'idn' : 100, 'elm' : 1}
 trainloss.change_fract(fract)
 testloss.change_fract(fract)
 

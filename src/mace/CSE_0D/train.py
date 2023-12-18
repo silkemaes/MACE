@@ -90,6 +90,7 @@ def validate_one_epoch(test_loader, model, loss_obj, DEVICE):
     loss_dict['rel'] = 0
     loss_dict['evo'] = 0
     loss_dict['idn'] = 0
+    loss_dict['elm'] = 0
     loss_dict['tot'] = 0
 
     status = 0
@@ -102,12 +103,12 @@ def validate_one_epoch(test_loader, model, loss_obj, DEVICE):
             p  = p.view(p.shape[1], p.shape[2]).to(DEVICE) 
             dt = dt.view(dt.shape[1]).to(DEVICE)
     
-            n_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
+            n_hat, z_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
 
             # if modstatus is not None and modstatus.item() == 4:
             #     status += modstatus.item()
             
-            loss,loss_dict = process_loss_one_epoch(loss_dict, n, n_hat, p, model, loss_obj)
+            loss,loss_dict = process_loss_one_epoch(loss_dict, n, n_hat, z_hat,p, model, loss_obj)
 
 
         return loss_dict,i+1, status
