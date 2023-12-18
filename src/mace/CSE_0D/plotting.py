@@ -63,6 +63,14 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
         l_idn = mlines.Line2D([],[], color = c_idn, ls = '-', label='idn',lw = lw2, alpha = 1)
         handles.append(l_idn)
 
+    ## ------------- ELM -------------
+    c_elm = 'darkorchid'
+    if 'elm' in train.type:
+        ax1.plot(test.get_loss('elm'), ls = '--', marker = 'x', lw = lw, c=c_elm, alpha = a)
+        ax1.plot(train.get_loss('elm'), ls = '-', marker = '.', lw = lw, c=c_elm, alpha = a)
+        l_elm = mlines.Line2D([],[], color = c_elm, ls = '-', label='elm',lw = lw2, alpha = 1)
+        handles.append(l_elm)
+
 
 
     ## ------------ settings --------------
@@ -219,48 +227,56 @@ def plot_evo_specs(n, n_hat, ax1,specs, alpha, title = None):
 def plot_abs(n, n_hat, plots_path,title = '', specs = []):
 
     a = 0.5
+    ms = 2
 
-    
-
-    if len(n_hat) != 0:
-        fig, axs = plt.subplots(2,1, gridspec_kw={'height_ratios': [4,4]},figsize=(10, 8))
-        ax1 = axs[0]
-        ax2 = axs[1]
-        ## plot individual species
-        if len(specs) != 0:
-            for spec in specs:
-                idx = specs_dict[spec]
-                ax2.plot(np.abs((n[:-1]-n_hat)[:,idx]/(np.mean(n, axis=0))[idx]), '-', alpha = a, label = spec)
-        else:
-            ax2.plot(np.abs((n[:-1]-n_hat)/(np.mean(n, axis=0))), '-', alpha = a)
-        
-
-
-        ax2.set_ylabel('relative error')
-        ax1.xaxis.set_ticklabels([])
-        ax2.set_xlabel('step')
-        ax2.set_yscale('log')
-
-    if len(n_hat) == 0:
-        n_hat = n
-        fig, ax1 = plt.subplots(figsize=(10, 6))
-        ax1.set_xlabel('step')
-
+    fig, axs = plt.subplots(2,1, gridspec_kw={'height_ratios': [4,4]},figsize=(10, 8))
+    ax1 = axs[0]
+    ax2 = axs[1]
 
     ax1.set_title(title) 
+
+    if len(n_hat) == 0:
+        n_hat = n[1:]
+
+    ## ------------------- plot abundance profile -------------------
+    ## plot individual species
     if len(specs) != 0:
         for spec in specs:
             idx = specs_dict[spec]
-            ax1.plot(n_hat[:,idx], alpha = a, label = spec)
-            plt.legend()
+            ax1.plot(n_hat[:,idx], '-o', label = spec, ms = ms)
+            ax1.legend(fontsize = 6,loc = 'upper right')
+    ## plot all species
     else:
-        ax1.plot(n_hat,alpha = a) # type: ignore
-    ax1.set_ylabel('abundance') # type: ignore
-    ax1.set_yscale('log') # type: ignore
+        ax1.plot(n_hat,'-o',alpha = a, ms = ms) 
+
+
+    ## ------------------- plot relative error -------------------
+    if len(specs) != 0:
+        for spec in specs:
+            idx = specs_dict[spec]
+            ax2.plot(np.abs((n[1:]-n_hat)[:,idx]/n[:-1][:,idx]), '-o', label = spec, ms = ms)
+    else:
+        ax2.plot(np.abs((n[1:]-n_hat)/(n[:-1])), '-o', alpha = a, ms = ms)
+    ax2.plot([0,n_hat.shape[0]],[1,1], '--k', lw = 0.5)
+
+    ## ------------------- settings -------------------
+
+    ax1.xaxis.set_ticklabels([])
+
+    ax1.set_ylabel('abundance') 
+    ax2.set_ylabel('relative error')
+    ax2.set_xlabel('step')
+
+    ax2.set_yscale('log')
+    ax1.set_yscale('log') 
+    ax1.grid(True, linestyle = '--', linewidth = 0.2)
+    ax2.grid(True, linestyle = '--', linewidth = 0.2)
 
     ax1.set_ylim([1e-20, 1e1])
 
     plt.subplots_adjust(hspace = 0.07)
+
+    plt.tight_layout()
 
     if len(specs) != 0:
         plt.savefig(plots_path+'abs_specs_'+title+'.png')
