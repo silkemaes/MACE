@@ -236,22 +236,24 @@ def elm_loss(z_hat,model, M):
             as d(M x D(g(z_hat)))/dt = Mgrad(D)g = Mgrad(D)(C+A+B).
         The einsum summation takes into account the right indexing.
     '''
+    # tic = time()
+
     M = torch.from_numpy(M).T     ## eventueel nog specifiek een sparse matrix van maken    
 
     D = model.decoder
     A = model.g.A
     B = model.g.B
     C = model.g.C
-    jac_D = jacobian(D,z_hat, strategy='forward-mode', vectorize=True).view(468,134,134,-1)
+    dt_dim = z_hat.shape[0]
+    jac_D = jacobian(D,z_hat, strategy='forward-mode', vectorize=True).view(468,dt_dim,dt_dim,-1)
 
     # print(M.shape, A.shape, B.shape, C.shape, jac_D.shape)
-
-    tic = time()
+    
     L0 = torch.einsum("ZN , Nbci , i   -> bcZ  ", M , jac_D , C).mean()
     L1 = torch.einsum("ZN , Nbci , ij  -> bcZj ", M , jac_D , A).mean()
     L2 = torch.einsum("ZN , Nbci , ijk -> bcZjk", M , jac_D , B).mean()
-    toc = time()
-    print('time elm loss: ', toc-tic)
+    # toc = time()
+    # print('time elm loss: ', toc-tic)
     
     loss = (L0 + L1 + L2)**2
     return loss
@@ -273,6 +275,7 @@ def loss_function(loss_obj, model, x, x_hat,z_hat, p):
     mse = mse/loss_obj.norm['mse']* loss_obj.fract['mse']
     rel = rel/loss_obj.norm['rel']* loss_obj.fract['rel']
     evo = evo/loss_obj.norm['evo']* loss_obj.fract['evo']
+    idn = idn/loss_obj.norm['idn']* loss_obj.fract['idn']
 
     return mse, rel, evo, idn, elm
 
@@ -281,6 +284,7 @@ def get_loss(mse, rel, evo, idn, elm, type):
     rel = rel.mean()
     evo = evo.mean()
     idn = idn.mean()
+    elm = elm.mean()
 
     ## only 1 type of loss
     if type == 'mse':

@@ -77,6 +77,7 @@ def train_one_epoch(data_loader, model, loss_obj, DEVICE, optimizer):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+
     
 
     return loss_dict,i+1, status
@@ -123,6 +124,7 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
 
     print('Model:         ')
     print('learning rate: '+str(lr))
+    print('loss type:     '+str(trainloss.type))
     print('\n>>> Training model...')
     for epoch in range(start_epochs, end_epochs):
 
