@@ -98,7 +98,7 @@ class CSEdata(Dataset):
         Δt_transf = Δt/self.dt_max * self.dt_fract             ## scale to [0,1] and multiply with dt_fract
 
         return torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)
-
+    
 
     def get_test(self):
         print(self.testpath)
@@ -129,6 +129,13 @@ def get_abs(n):
     nmax = np.log10(0.85e-1)
 
     return 10**utils.unscale(n,nmin, nmax)
+
+def get_phys(p_transf,dataset):
+    p = torch.empty_like(p_transf)
+    for j in range(p_transf.shape[1]):
+        p[:,j] = 10**utils.unscale(p_transf[:,j],dataset.mins[j], dataset.maxs[j])
+    
+    return p
 
 
 def get_data( nb_samples, dt_fract, batch_size, kwargs):

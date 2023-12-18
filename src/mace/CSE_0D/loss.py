@@ -269,13 +269,15 @@ def loss_function(loss_obj, model, x, x_hat,z_hat, p):
     rel = (rel_loss(x[1:],x_hat))     ## Compare with the final abundances for that model
     evo = (evo_loss(x,x_hat))
     idn = (idn_loss(x[1:],x_hat,p,model))
-    elm = (elm_loss(z_hat,model, loss_obj.M))
-    # elm = torch.tensor([0.0,0.0])
+    if 'elm' in loss_obj.type:
+        elm = (elm_loss(z_hat,model, loss_obj.M))
+    else:
+        elm = torch.tensor([0.0,0.0])
 
     mse = mse/loss_obj.norm['mse']* loss_obj.fract['mse']
     rel = rel/loss_obj.norm['rel']* loss_obj.fract['rel']
     evo = evo/loss_obj.norm['evo']* loss_obj.fract['evo']
-    idn = idn/loss_obj.norm['idn']* loss_obj.fract['idn']
+    # idn = idn/loss_obj.norm['idn']* loss_obj.fract['idn']
 
     return mse, rel, evo, idn, elm
 
@@ -285,6 +287,8 @@ def get_loss(mse, rel, evo, idn, elm, type):
     evo = evo.mean()
     idn = idn.mean()
     elm = elm.mean()
+    # print(elm.grad,elm)
+    # elm.grad.zero_()
 
     ## only 1 type of loss
     if type == 'mse':
