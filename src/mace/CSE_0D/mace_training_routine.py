@@ -49,17 +49,41 @@ dt_fracts = {1 : 0.597,
 ## ================================================== INPUT ========
 ## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
 
-lr = 1.e-4
-tot_epochs = 80
-nb_epochs  = 50
-ini_epochs = 5
-losstype = 'mse_idn_rel_evo'
-z_dim = 10
-dt_fract = dt_fracts[z_dim]
-batch_size = 1
-nb_samples = 10000
-n_dim = 468
+## READ INPUT FILE
+arg = sys.argv[1]
 
+inFile = '/STER/silkem/MACE/input/'+arg+'.txt'
+
+with open(inFile, 'a') as file:
+    file.write('\nName = '+str(name)+'\n')
+
+with open(inFile,'r') as f:
+    file = f.readlines()
+    lines = []
+    for line in file:
+        lines.append(line.split())
+
+inputfile = {}
+for i in range(len(lines)):
+    if not len(lines[i]) == 0 and len(lines[i]) > 2:
+        # print(test[i])
+        inputfile[lines[i][0]] = lines[i][2]
+    elif not len(lines[i]) == 0 and len(lines[i]) <= 2:
+        print('You forgot to give an input for '+lines[i][0])
+
+## SET PARAMETERS
+lr          = float(inputfile['lr'])
+tot_epochs  = int(inputfile['tot_epochs'])
+nb_epochs   = int(inputfile['nb_epochs'])
+ini_epochs  = 5
+losstype    = inputfile['losstype']
+z_dim       = int(inputfile['z_dim'])
+dt_fract    = dt_fracts[z_dim]
+batch_size  = 1
+nb_samples  = int(inputfile['nb_samples'])
+n_dim       = 468
+
+print(lr, tot_epochs, nb_epochs, ini_epochs, losstype, z_dim, dt_fract, batch_size, nb_samples, n_dim)
 
 ## ================================================== INPUT ========
 
@@ -85,7 +109,8 @@ metadata = {'nb_samples'  : nb_samples,
             'epochs'    : tot_epochs,
             'z_dim'     : z_dim,
             'done'      : 'false',
-            'losstype'  : losstype
+            'losstype'  : losstype,
+            'inputfile' : arg
 }
 
 json_object = json.dumps(metadata, indent=4)
@@ -112,11 +137,13 @@ model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=n_dim, DEVICE = DEVICE)
 ## ------------- PART 1: unnormalised losses 
 norm = {'mse' : 1,
         'rel' : 1,
-        'evo' : 1}
+        'evo' : 1,
+        'idn' : 1}
 
 fract = {'mse' : 1, 
          'rel' : 1,
-         'evo' : 1}
+         'evo' : 1,
+         'idn' : 1}
 
 
 ## Make loss objects
@@ -132,16 +159,21 @@ toc = time()
 train_time1 = toc-tic
 
 # ## ------------- PART 2: normalised losses, but reinitialise model
-# model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=n_dim, DEVICE = DEVICE)
 
-norm = {'mse' : 100, 'rel' : 1, 'evo' : 1, 'idn' : 100, 'elm' : 1}
+
+fract = {'mse' : float(inputfile['mse1']), 'rel' : float(inputfile['rel1']), 'evo' : float(inputfile['evo1']), 'idn' : float(inputfile['idn1']), 'elm' : 1}
+trainloss.change_fract(fract)
+testloss.change_fract(fract)
 
 trainloss.change_norm({'mse' :np.mean(trainloss.get_loss('mse')), # type: ignore
                        'rel' :np.mean(trainloss.get_loss('rel')), # type: ignore
-                       'evo' :np.mean(trainloss.get_loss('evo'))})   # type: ignore
+                       'evo' :np.mean(trainloss.get_loss('evo')), # type: ignore
+                       'idn' :np.mean(trainloss.get_loss('idn'))})   # type: ignore
 testloss.change_norm({'mse' :np.mean(testloss.get_loss('mse')), # type: ignore
                       'rel' :np.mean(testloss.get_loss('rel')), # type: ignore
-                      'evo' :np.mean(testloss.get_loss('evo'))}) # type: ignore
+                      'evo' :np.mean(testloss.get_loss('evo')), # type: ignore
+                      'idn' :np.mean(testloss.get_loss('idn'))}) # type: ignore
+
 
 tic = time()
 tr.train(model, lr, data_loader, test_loader,path, end_epochs = nb_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=ini_epochs, plot = False, log = True, show = True)
@@ -149,7 +181,7 @@ toc = time()
 train_time2 = toc-tic
 
 ## ------------- PART 3: increase losses with factor & train further
-fract = {'mse' : 100, 'rel' : 1, 'evo' : 1, 'idn' : 100, 'elm' : 1}
+fract = {'mse' : float(inputfile['mse2']), 'rel' : float(inputfile['rel2']), 'evo' : float(inputfile['evo2']), 'idn' : float(inputfile['idn2']), 'elm' : 1}
 trainloss.change_fract(fract)
 testloss.change_fract(fract)
 
@@ -200,9 +232,8 @@ metadata = {'nb_samples'  : nb_samples,
             'samples'   : len(train),
             'cutoff_abs': train.cutoff,
             'done'      : 'true',
-            'norm'      : norm,
-            'fract'     : fract,
-            'losstype'  : losstype
+            'losstype'  : losstype,
+            'inputfile' : arg
 }
 
 json_object = json.dumps(metadata, indent=4)

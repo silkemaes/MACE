@@ -1,0 +1,26 @@
+
+## input model
+
+lr          = 1.e-4
+tot_epochs  = 80
+nb_epochs   = 50
+losstype    = mse_idn_rel_evo
+z_dim       = 10
+nb_samples  = 10000
+
+## loss fractions
+
+mse1 = 100
+rel1 = 1 
+evo1 = 10
+idn1 = 100
+
+mse2 = 100
+rel2 = 100
+evo2 = 100
+idn2 = 100
+
+
+
+Name = 2023-12-19 11:54:35.220597
+pleiad13

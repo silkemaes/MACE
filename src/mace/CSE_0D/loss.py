@@ -197,7 +197,7 @@ def rel_loss(x, x_hat):
 def evo_loss(x,x_hat):
     '''
     Return the relative evolutions loss per x_i.
-    The relative evolutions loss (EVO) is given by ((x_hat-x_0+eps**2)/(x-x_0+eps))**2, 
+    The relative evolutions loss (EVO) is given by ((x_hat-x_0)/x_0 - (x-x_0)/x_0)**2, 
         where eps makes sure we don't devide by 0.
     '''
 
@@ -206,7 +206,7 @@ def evo_loss(x,x_hat):
     ## Hence, x-x_0 gives the evolution of the abundances
 
     eps = 1e-10
-    loss  = ((torch.abs(x_hat-x_0)+eps**2)/(torch.abs(x-x_0)+eps))**2     ## absolute waarden nemen rond x, zodat het niet nog 0 kan worden
+    loss  = ((torch.abs(x_hat-x_0)/(x_0+eps))-(torch.abs(x-x_0)/(x_0+eps)))**2     ## absolute waarden nemen rond x, zodat het niet nog 0 kan worden
     return loss
 
 def idn_loss(x,x_hat,p, model):
@@ -277,7 +277,7 @@ def loss_function(loss_obj, model, x, x_hat,z_hat, p):
     mse = mse/loss_obj.norm['mse']* loss_obj.fract['mse']
     rel = rel/loss_obj.norm['rel']* loss_obj.fract['rel']
     evo = evo/loss_obj.norm['evo']* loss_obj.fract['evo']
-    # idn = idn/loss_obj.norm['idn']* loss_obj.fract['idn']
+    idn = idn/loss_obj.norm['idn']* loss_obj.fract['idn']
 
     return mse, rel, evo, idn, elm
 
@@ -479,9 +479,9 @@ class Loss_analyse():
         # self.set_loss(np.load(loc+type+'/idn.npy'), 'idn')
         self.set_tot_loss(np.load(loc+type+'/tot.npy'))
 
-        self.set_idv_loss(np.load(loc+type+'/mse_idv.npy'), 'mse')
-        self.set_idv_loss(np.load(loc+type+'/rel_idv.npy'), 'rel')
-        self.set_idv_loss(np.load(loc+type+'/evo_idv.npy'), 'evo')
+        # self.set_idv_loss(np.load(loc+type+'/mse_idv.npy'), 'mse')
+        # self.set_idv_loss(np.load(loc+type+'/rel_idv.npy'), 'rel')
+        # self.set_idv_loss(np.load(loc+type+'/evo_idv.npy'), 'evo')
 
         self.set_norm(meta['norm'])
         self.set_fract(meta['fract'])

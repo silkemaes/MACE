@@ -58,7 +58,7 @@ def train_one_epoch(data_loader, model, loss_obj, DEVICE, optimizer):
 
     for i, (n,p,dt) in enumerate(data_loader):
 
-        print('\tbatch',i+1,'/',len(data_loader),end="\r")
+        # print('\tbatch',i+1,'/',len(data_loader),end="\r")
         
         n  = n.view(n.shape[1], n.shape[2]).to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
         p  = p.view(p.shape[1], p.shape[2]).to(DEVICE) 
@@ -98,7 +98,7 @@ def validate_one_epoch(test_loader, model, loss_obj, DEVICE):
 
     with torch.no_grad():
         for i, (n,p,dt) in enumerate(test_loader):
-            print('\tbatch',i+1,'/',len(test_loader),end="\r")
+            # print('\tbatch',i+1,'/',len(test_loader),end="\r")
 
             n  = n.view(n.shape[1], n.shape[2]).to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
             p  = p.view(p.shape[1], p.shape[2]).to(DEVICE) 
@@ -154,7 +154,7 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
         if (start_epochs+epoch)%10 == 0 and path != None:
             torch.save(model.state_dict(),path+'/nn/nn'+str(int((epoch)/10))+'.pt')
         
-        print("\nEpoch", epoch + 1, "complete!", "\tAverage loss train: ", trainloss_dict['tot'], "\tAverage loss test: ", testloss_dict['tot'])
+        print("Epoch", epoch + 1, "complete!", "\tAverage loss train: ", trainloss_dict['tot'], "\tAverage loss test: ", testloss_dict['tot'])
     print('\n \tDONE!')
 
     if plot == True:
