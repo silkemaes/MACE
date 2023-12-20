@@ -13,14 +13,14 @@ nb_samples  = 10000
 mse1 = 100
 rel1 = 1 
 evo1 = 10
-idn1 = 100
+idn1 = 10
 
-mse2 = 100
-rel2 = 100
-evo2 = 100
-idn2 = 100
+mse2 = 1
+rel2 = 1
+evo2 = 1
+idn2 = 1
 
 
 
-Name = 2023-12-19 11:54:35.220597
+Name = 2023-12-20 13:04:40.618312
 pleiad13
