@@ -3,6 +3,7 @@ import numpy as np
 import utils
 from torch.autograd.functional import jacobian
 from time import time
+import os
 
 class Loss():
     def __init__(self, norm, fract):
@@ -184,6 +185,7 @@ def mse_loss(x, x_hat):
     Return the mean squared loss (MSE) per x_i.
     '''
     loss = (x-x_hat)**2
+    # print(x.shape, x_hat.shape)
     return loss
 
 def rel_loss(x, x_hat):
@@ -197,16 +199,14 @@ def rel_loss(x, x_hat):
 def evo_loss(x,x_hat):
     '''
     Return the relative evolutions loss per x_i.
-    The relative evolutions loss (EVO) is given by ((x_hat-x_0)/x_0 - (x-x_0)/x_0)**2, 
+    The relative evolutions loss (EVO) is given by ((x-x_0) - (x_hat-x_0))**2, 
         where eps makes sure we don't devide by 0.
     '''
 
-    x_0 = x[:-1]  ## Initial abundances
-    x   = x[1:]   ## Abundances to compare with
-    ## Hence, x-x_0 gives the evolution of the abundances
+    x   = x[1:]   ## ignore initial abundances
 
-    eps = 1e-10
-    loss  = ((torch.abs(x_hat-x_0)/(x_0+eps))-(torch.abs(x-x_0)/(x_0+eps)))**2     ## absolute waarden nemen rond x, zodat het niet nog 0 kan worden
+    loss = (torch.gradient(x)[0] - torch.gradient(x_hat[0])[0])**2
+    
     return loss
 
 def idn_loss(x,x_hat,p, model):
@@ -277,7 +277,8 @@ def loss_function(loss_obj, model, x, x_hat,z_hat, p):
     mse = mse/loss_obj.norm['mse']* loss_obj.fract['mse']
     rel = rel/loss_obj.norm['rel']* loss_obj.fract['rel']
     evo = evo/loss_obj.norm['evo']* loss_obj.fract['evo']
-    idn = idn/loss_obj.norm['idn']* loss_obj.fract['idn']
+    if 'idn' in loss_obj.norm:
+        idn = idn/loss_obj.norm['idn']* loss_obj.fract['idn']
 
     return mse, rel, evo, idn, elm
 
@@ -476,15 +477,16 @@ class Loss_analyse():
         self.set_loss(np.load(loc+type+'/mse.npy'), 'mse')
         self.set_loss(np.load(loc+type+'/rel.npy'), 'rel')
         self.set_loss(np.load(loc+type+'/evo.npy'), 'evo')
-        # self.set_loss(np.load(loc+type+'/idn.npy'), 'idn')
+        if os.path.exists(loc+type+'/idn.npy'):
+            self.set_loss(np.load(loc+type+'/idn.npy'), 'idn')
         self.set_tot_loss(np.load(loc+type+'/tot.npy'))
 
         # self.set_idv_loss(np.load(loc+type+'/mse_idv.npy'), 'mse')
         # self.set_idv_loss(np.load(loc+type+'/rel_idv.npy'), 'rel')
         # self.set_idv_loss(np.load(loc+type+'/evo_idv.npy'), 'evo')
 
-        self.set_norm(meta['norm'])
-        self.set_fract(meta['fract'])
+        # self.set_norm(meta['norm'])
+        # self.set_fract(meta['fract'])
 
         self.set_losstype(meta['losstype'])
 

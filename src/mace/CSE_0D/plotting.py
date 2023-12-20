@@ -56,7 +56,7 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
         handles.append(l_evo)
 
     ## ------------- IDN -------------
-    c_idn = 'limegreen'
+    c_idn = 'forestgreen'
     if 'idn' in train.type:
         ax1.plot(test.get_loss('idn'), ls = '--', marker = 'x', lw = lw, c=c_idn, alpha = a)
         ax1.plot(train.get_loss('idn'), ls = '-', marker = '.', lw = lw, c=c_idn, alpha = a)
@@ -85,10 +85,11 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
 
     ax1.set_xlabel('epoch')
     ax1.set_ylabel('loss')
+    # ax1.set_xlim([5.5,7.5])
 
     ax1.grid(True, linestyle = '--', linewidth = 0.2)
 
-    ax1.legend(handles=handles,loc = 'lower right')
+    ax1.legend(handles=handles,loc = 'center left')
     
     plt.tight_layout()
 
@@ -100,14 +101,12 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
 
 
 def get_evo(n, n_hat):
-
-
     n0 = n[:-1]
 
     Δn = np.abs((n[1:]-n0))
     Δn_hat = np.abs((n_hat-n0))
 
-    print(Δn[:,0].shape)
+    # print(Δn[:,0].shape)
 
     # for i in range(len(Δn_un)):
     #     if Δn_un[i] == 0:
@@ -224,7 +223,7 @@ def plot_evo_specs(n, n_hat, ax1,specs, alpha, title = None):
     return
 
 
-def plot_abs(n, n_hat, plots_path,title = '', specs = []):
+def plot_abs(n, n_hat, plots_path,title = '', specs = [], save = True):
 
     a = 0.5
     ms = 2
@@ -254,9 +253,9 @@ def plot_abs(n, n_hat, plots_path,title = '', specs = []):
     if len(specs) != 0:
         for spec in specs:
             idx = specs_dict[spec]
-            ax2.plot(np.abs((n[1:]-n_hat)[:,idx]/n[:-1][:,idx]), '-o', label = spec, ms = ms)
+            ax2.plot(np.abs((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-o', label = spec, ms = ms)
     else:
-        ax2.plot(np.abs((n[1:]-n_hat)/(n[:-1])), '-o', alpha = a, ms = ms)
+        ax2.plot(np.abs((n[1:]-n_hat)/(n[1:])), '-o', alpha = a, ms = ms)
     ax2.plot([0,n_hat.shape[0]],[1,1], '--k', lw = 0.5)
 
     ## ------------------- settings -------------------
@@ -278,10 +277,11 @@ def plot_abs(n, n_hat, plots_path,title = '', specs = []):
 
     plt.tight_layout()
 
-    if len(specs) != 0:
-        plt.savefig(plots_path+'abs_specs_'+title+'.png')
-    else:
-        plt.savefig(plots_path+'abs_'+title+'.png')
+    if save == True:
+        if len(specs) != 0:
+            plt.savefig(plots_path+'abs_specs_'+title+'.png')
+        else:
+            plt.savefig(plots_path+'abs_'+title+'.png')
 
     return fig
 

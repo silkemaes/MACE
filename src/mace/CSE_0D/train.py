@@ -1,6 +1,7 @@
-from time       import time
+from time   import time
 from tqdm   import tqdm
 import numpy as np
+import matplotlib.pyplot as plt
 
 import torch
 from torch.optim  import Adam
@@ -58,7 +59,7 @@ def train_one_epoch(data_loader, model, loss_obj, DEVICE, optimizer):
 
     for i, (n,p,dt) in enumerate(data_loader):
 
-        # print('\tbatch',i+1,'/',len(data_loader),end="\r")
+        print('\tbatch',i+1,'/',len(data_loader),end="\r")
         
         n  = n.view(n.shape[1], n.shape[2]).to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
         p  = p.view(p.shape[1], p.shape[2]).to(DEVICE) 
@@ -98,7 +99,7 @@ def validate_one_epoch(test_loader, model, loss_obj, DEVICE):
 
     with torch.no_grad():
         for i, (n,p,dt) in enumerate(test_loader):
-            # print('\tbatch',i+1,'/',len(test_loader),end="\r")
+            print('\tbatch',i+1,'/',len(test_loader),end="\r")
 
             n  = n.view(n.shape[1], n.shape[2]).to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
             p  = p.view(p.shape[1], p.shape[2]).to(DEVICE) 
@@ -153,6 +154,8 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
         ## save model
         if (start_epochs+epoch)%10 == 0 and path != None:
             torch.save(model.state_dict(),path+'/nn/nn'+str(int((epoch)/10))+'.pt')
+            plotting.plot_loss(trainloss, testloss, log = log, show = show)
+            plt.savefig(path+'/loss.png')
         
         print("Epoch", epoch + 1, "complete!", "\tAverage loss train: ", trainloss_dict['tot'], "\tAverage loss test: ", testloss_dict['tot'])
     print('\n \tDONE!')
@@ -167,16 +170,8 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
 
 def test(model, input,  loss_obj):
 
-    losses = Loss(None,None)
 
     mace_time = list()
-    loss_dict = dict()
-    loss_dict['mse'] = 0
-    loss_dict['rel'] = 0
-    loss_dict['evo'] = 0
-    loss_dict['idn'] = 0
-    loss_dict['elm'] = 0
-    loss_dict['tot'] = 0
     print('>>> Testing model...')
 
     model.eval()
@@ -187,19 +182,15 @@ def test(model, input,  loss_obj):
     # print(n.shape, p.shape,dt.shape)
     
     tic = time()
-    n_hat,z_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
+    n_hat, z_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
     toc = time()
-
-    loss,loss_dict = process_loss_one_epoch(loss_dict, n, n_hat, z_hat,p, model, loss_obj)
-    losses.set_loss_all(loss_dict, 1)
 
     solve_time = toc-tic
     mace_time.append(solve_time)
 
-    print('\nTest loss     :',loss.item())
     print('Solving time [s]:', solve_time)
 
-    return n.detach().numpy(), n_hat[0].detach().numpy(), dt, losses, mace_time
+    return n.detach().numpy(), n_hat[0].detach().numpy(), dt, mace_time
 
 def test_evolution(model, input, start_idx):
 
@@ -208,13 +199,14 @@ def test_evolution(model, input, start_idx):
     mace_time = list()
     n_evo = list()
 
-    print('>>> Testing model...')
+    print('\n>>> Testing model...')
 
     model.eval()
     n     = input[0][start_idx]
     p     = input[1]
     dt    = input[2]
 
+    tic_tot = time()
     ## first step of the evolution
     tic = time()
     n_hat, z_hat,modstatus = model(n.view(1, -1),p[start_idx].view(1, -1),dt[start_idx].view(-1))    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
@@ -223,12 +215,18 @@ def test_evolution(model, input, start_idx):
     solve_time = toc-tic
     mace_time.append(solve_time)
 
+    
     ## subsequent steps of the evolution
     for i in tqdm(range(start_idx+1,len(dt))):
+        tic = time()
         n_hat,z_hat, modstatus = model(n_hat.view(1, -1),p[i].view(1, -1),dt[i].view(-1))    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches
+        toc = time()
         n_evo.append(n_hat.detach().numpy())
         solve_time = toc-tic
         mace_time.append(solve_time)
+    toc_tot = time()
 
+    print('Solving time [s]:', np.array(solve_time).sum())
+    print('Total   time [s]:', toc_tot-tic_tot)
 
-    return np.array(n_evo).reshape(-1,468), mace_time
+    return np.array(n_evo).reshape(-1,468), np.array(solve_time)
