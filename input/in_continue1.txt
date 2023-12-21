@@ -10,19 +10,18 @@ nb_samples  = 10000
 
 ## loss fractions
 
-mse1 = 100
+mse1 = 10
 rel1 = 1 
-evo1 = 1
-idn1 = 1
+evo1 = 10
+idn1 = 10
 
 mse2 = 100
-rel2 = 1
-evo2 = 1
-idn2 = 1
+rel2 = 100
+evo2 = 100
+idn2 = 100
 
 
 
-Name = 2023-12-20 14:34:57.200497
-pleiad13
-Name = 2023-12-21 08:33:18.903361
+
+Name = 2023-12-20 14:59:39.388304
 pleiad13

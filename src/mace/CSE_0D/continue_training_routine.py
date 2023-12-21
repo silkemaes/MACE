@@ -17,9 +17,9 @@ rcParams.update({'figure.dpi': 200})
 sys.path.insert(1, '/STER/silkem/MACE/src/mace')
 import CSE_0D.dataset    as ds
 import CSE_0D.train      as tr
-import neuralODE            as nODE
-import utils                as utils
-import CSE_0D.plotting             as pl
+import neuralODE         as nODE
+import utils             as utils
+import CSE_0D.plotting   as pl
 import CSE_0D.loss       as loss
 
 
@@ -128,8 +128,10 @@ kwargs = {'num_workers': 1, 'pin_memory': True}
 ## Load train & test data sets 
 train, test, data_loader, test_loader = ds.get_data(dt_fract=dt_fract,nb_samples=nb_samples, batch_size=batch_size, kwargs=kwargs)
 
-## Make model
-model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=n_dim, DEVICE = DEVICE)
+## Load model
+outloc  = '/STER/silkem/MACE/models/CSE_0D/'
+dirname = '2023-12-13 18:19:22.522359'  ## lr = 1.e-4       GOOD MODEL
+meta, model = utils.load_all(outloc, dirname, sepr = True, epoch = 7) # type: ignore
 
 
 ## --------------------------------------- TRAINING ----------------
