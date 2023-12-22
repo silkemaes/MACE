@@ -200,7 +200,7 @@ def evo_loss(x,x_hat):
     '''
     Return the relative evolutions loss per x_i.
     The relative evolutions loss (EVO) is given by ((x-x_0) - (x_hat-x_0))**2, 
-        where eps makes sure we don't devide by 0.
+        
     '''
 
     x   = x[1:]   ## ignore initial abundances

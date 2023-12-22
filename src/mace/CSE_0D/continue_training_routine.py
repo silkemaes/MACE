@@ -163,10 +163,14 @@ train_time1 = toc-tic
 ## ------------- PART 2: normalised losses, but reinitialise model ----------------
 
 ## Change the ratio of losses via the fraction
-fract = {'mse' : float(inputfile['mse1']), 
-         'rel' : float(inputfile['rel1']), 
-         'evo' : float(inputfile['evo1']), 
-         'idn' : float(inputfile['idn1'])}
+mse1 = float(inputfile['mse1'])
+rel1 = float(inputfile['rel1'])
+evo1 = float(inputfile['evo1'])
+idn1 = float(inputfile['idn1'])
+fract = {'mse' : mse1, 
+         'rel' : rel1, 
+         'evo' : evo1, 
+         'idn' : idn1}
 trainloss.change_fract(fract)
 testloss.change_fract(fract)
 
@@ -187,10 +191,14 @@ train_time2 = toc-tic
 ## ------------- PART 3: increase losses with factor & train further ----------------
 
 ## Change the ratio of losses again via the fraction, but keep the normalisation
-fract = {'mse' : float(inputfile['mse2']), 
-         'rel' : float(inputfile['rel2']), 
-         'evo' : float(inputfile['evo2']), 
-         'idn' : float(inputfile['idn2'])}
+mse2 = float(inputfile['mse2'])
+rel2 = float(inputfile['rel2'])
+evo2 = float(inputfile['evo2'])
+idn2 = float(inputfile['idn2'])
+fract = {'mse' : mse1*mse2, 
+         'rel' : rel1*rel2, 
+         'evo' : evo1*evo2, 
+         'idn' : idn1*idn2}
 trainloss.change_fract(fract)
 testloss.change_fract(fract)
 

@@ -1,0 +1,13 @@
+#!/bin/bash
+#SBATCH --job-name='train_mace_mse_evo'
+#SBATCH --account=silkem
+#SBATCH --time=00-20:00:00
+#SBATCH --output=./mace_logs/log/mse_evo.log
+#SBATCH --error=./mace_logs/error/mse_evo.log
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --hint=multithread
+#SBATCH --mem=16G
+#SBATCH --partition=normal
+
+python /STER/silkem/MACE/src/mace/CSE_0D/mace_training_routine.py in_mse_evo
