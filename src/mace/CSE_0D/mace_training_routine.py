@@ -38,7 +38,7 @@ dt_fracts = {4 : 0.296, 5: 0.269,8: 0.221,10: 0.175,12: 0.146,16: 0.117,20: 0.09
 ## READ INPUT FILE
 arg = sys.argv[1]
 
-inFile = '/STER/silkem/MACE/input/'+arg+'.txt'
+inFile = '/STER/silkem/MACE/input/xmas2023/'+arg+'.txt'
 
 with open(inFile, 'a') as file:
     file.write('\nName = '+str(name)+'\n')

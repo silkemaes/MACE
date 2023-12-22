@@ -1,0 +1,21 @@
+
+## input model
+
+lr          = 6.26613864672335e-05
+tot_epochs  = 100
+nb_epochs   = 61
+losstype    = mse_idn_evo
+z_dim       = 16
+nb_samples  = 18000
+
+## loss fractions
+
+mse1 = 1000000.0
+rel1 = 0 
+evo1 = 1000.0
+idn1 = 100.0
+
+mse2 = 100.0
+rel2 = 0
+evo2 = 1
+idn2 = 1
