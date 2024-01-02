@@ -6,7 +6,7 @@ tot_epochs  = 100
 nb_epochs   = 51
 losstype    = mse_idn_evo
 z_dim       = 8
-nb_samples  = 18000
+nb_samples  = 10000
 
 ## loss fractions
 
@@ -21,3 +21,5 @@ evo2 = 1
 idn2 = 1
 
 
+
+Name = 2024-01-02 12:01:18.550468

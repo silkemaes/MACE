@@ -38,7 +38,8 @@ dt_fracts = {4 : 0.296, 5: 0.269,8: 0.221,10: 0.175,12: 0.146,16: 0.117,20: 0.09
 ## READ INPUT FILE
 arg = sys.argv[1]
 
-inFile = '/STER/silkem/MACE/input/xmas2023/'+arg+'.txt'
+# inFile = '/STER/silkem/MACE/input/xmas2023/'+arg+'.txt'
+inFile = '/STER/silkem/MACE/input/'+arg+'.txt'
 
 with open(inFile, 'a') as file:
     file.write('\nName = '+str(name)+'\n')
@@ -57,6 +58,7 @@ for i in range(len(lines)):
     elif not len(lines[i]) == 0 and len(lines[i]) <= 2:
         print('You forgot to give an input for '+lines[i][0])
 
+print(inputfile)
 ## SET PARAMETERS
 lr          = float(inputfile['lr'])
 tot_epochs  = int(inputfile['tot_epochs'])
@@ -140,7 +142,7 @@ trainloss.set_losstype(losstype)
 testloss.set_losstype(losstype)
 
 tic = time()
-tr.train(model, lr, data_loader, test_loader,path, end_epochs = ini_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, plot = False, log = True, show = True)
+tr.train(model, lr, data_loader, test_loader,path, end_epochs = ini_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, plot = False, log = True, show = False, start_time=start)
 toc = time()
 train_time1 = toc-tic
 
@@ -168,7 +170,7 @@ testloss.change_norm(new_norm)
 
 ## Continue training
 tic = time()
-tr.train(model, lr, data_loader, test_loader,path, end_epochs = nb_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=ini_epochs, plot = False, log = True, show = True)
+tr.train(model, lr, data_loader, test_loader,path, end_epochs = nb_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=ini_epochs, plot = False, log = True, show = False, start_time=start)
 toc = time()
 train_time2 = toc-tic
 
@@ -188,7 +190,7 @@ testloss.change_fract(fract)
 
 ## Continue training
 tic = time()
-tr.train(model, lr, data_loader, test_loader, path, end_epochs = tot_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=nb_epochs, plot = False, log = True, show = False)
+tr.train(model, lr, data_loader, test_loader, path, end_epochs = tot_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=nb_epochs, plot = False, log = True, show = False, start_time=start)
 toc = time()
 train_time3 = toc-tic
 

@@ -1,19 +1,19 @@
 
 ## input model
 
-lr          = 0.0005559042572704037
+lr          = 0.00020323570109362208
 tot_epochs  = 100
 nb_epochs   = 61
 losstype    = mse_idn_evo
-z_dim       = 32
+z_dim       = 16
 nb_samples  = 18000
 
 ## loss fractions
 
-mse1 = 10000.0
+mse1 = 100000.0
 rel1 = 0 
-evo1 = 100.0
-idn1 = 100000.0
+evo1 = 10.0
+idn1 = 10000.0
 
 mse2 = 10.0
 rel2 = 0

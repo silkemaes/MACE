@@ -118,7 +118,7 @@ def validate_one_epoch(test_loader, model, loss_obj, DEVICE):
   
 
 
-def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainloss, testloss, start_epochs = 0, plot = False, log = True, show = True):
+def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainloss, testloss, start_epochs = 0, plot = False, log = True, show = True, start_time = 0.):
     optimizer = Adam(model.parameters(), lr=lr)
 
     ## initialise lists for statistics of training
@@ -158,6 +158,7 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
             plt.savefig(path+'/loss.png')
         
         print("Epoch", epoch + 1, "complete!", "\tAverage loss train: ", trainloss_dict['tot'], "\tAverage loss test: ", testloss_dict['tot'])
+        print("              time [hours]: ", (time()-start_time)/(60*60))
     print('\n \tDONE!')
 
     if plot == True:
