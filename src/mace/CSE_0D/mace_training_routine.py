@@ -58,7 +58,7 @@ for i in range(len(lines)):
     elif not len(lines[i]) == 0 and len(lines[i]) <= 2:
         print('You forgot to give an input for '+lines[i][0])
 
-print(inputfile)
+# print(inputfile)
 ## SET PARAMETERS
 lr          = float(inputfile['lr'])
 tot_epochs  = int(inputfile['tot_epochs'])
