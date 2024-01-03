@@ -279,9 +279,9 @@ def plot_abs(n, n_hat, plots_path,title = '', specs = [], save = True):
 
     if save == True:
         if len(specs) != 0:
-            plt.savefig(plots_path+'abs_specs_'+title+'.png')
+            plt.savefig(plots_path+title+'_abs_specs.png')
         else:
-            plt.savefig(plots_path+'abs_'+title+'.png')
+            plt.savefig(plots_path+title+'_abs.png')
 
     return fig
 

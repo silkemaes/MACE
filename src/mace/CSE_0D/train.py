@@ -200,14 +200,16 @@ def test(model, input):
 
     return n.detach().numpy(), n_hat[0].detach().numpy(), dt, mace_time
 
+
+
 def test_evolution(model, input, start_idx):
 
     losses = Loss(None,None)
 
     mace_time = list()
     n_evo = list()
-
     print('\n>>> Testing model...')
+
 
     model.eval()
     n     = input[0][start_idx]
