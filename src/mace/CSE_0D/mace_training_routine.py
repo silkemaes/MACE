@@ -26,8 +26,9 @@ import CSE_0D.loss       as loss
 torch.multiprocessing.set_sharing_strategy('file_system')
 
 start = time()
-name = dt.datetime.now()
-path = '/STER/silkem/MACE/models/CSE_0D/'+str(name)
+now = dt.datetime.now()
+name = now.strftime("%Y%m%d")+'_'+now.strftime("%H%M%S")
+path = '/STER/silkem/MACE/models/CSE_0D/'+str(name)+'_'+str(int(sys.argv[2]))+'_'+str(int(sys.argv[3]))
 
 dt_fracts = {4 : 0.296, 5: 0.269,8: 0.221,10: 0.175,12: 0.146,16: 0.117,20: 0.09,25: 0.078,32: 0.062,48: 0.043,64: 0.033,128: 0.017}
 
@@ -37,6 +38,7 @@ dt_fracts = {4 : 0.296, 5: 0.269,8: 0.221,10: 0.175,12: 0.146,16: 0.117,20: 0.09
 
 ## READ INPUT FILE
 arg = sys.argv[1]
+
 
 # inFile = '/STER/silkem/MACE/input/xmas2023/'+arg+'.txt'
 inFile = '/STER/silkem/MACE/input/'+arg+'.txt'
@@ -85,6 +87,7 @@ print(' learning rate:', lr)
 print('# z dimensions:', z_dim)
 print('     # samples:', nb_samples)
 print('     loss type:', losstype)
+print('     inputfile:', arg)
 print('')
 
 ## --------------------------------------- SET UP ------------------
@@ -218,7 +221,7 @@ torch.save(model.state_dict(),path+'/nn/nn.pt')
 np.save(trainpath+'/status', model.get_status('train')) # type: ignore
 np.save(testpath +'/status', model.get_status('test') ) # type: ignore
 
-fig_loss = pl.plot_loss(trainloss, testloss, show = True)
+fig_loss = pl.plot_loss(trainloss, testloss, show = False)
 plt.savefig(path+'/loss.png')
 
 stop = time()

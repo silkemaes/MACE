@@ -177,16 +177,16 @@ class CSEmod():
         inp_path = 'inputChemistry_'+self.name+'.txt'
 
         ## retrieve input
-        # self.Rstar, self.Tstar, self.Mdot, self.v, self.eps, self.rtol, self.atol = read_input_1Dmodel(self.path[:-26]+inp_path)
+        self.Rstar, self.Tstar, self.Mdot, self.v, self.eps, self.rtol, self.atol = read_input_1Dmodel(self.path[:-26]+inp_path)
 
         ## retrieve abundances
-        # abs = read_data_1Dmodel(self.path+abs_path)
+        abs = read_data_1Dmodel(self.path+abs_path)
         self.n = abs
 
         ## retrieve physical parameters
         arr = np.loadtxt(self.path+phys_path, skiprows=4, usecols=(0,1,2,3,4))
-        # self.radius, self.dens, self.temp, self.Av, self.delta = arr[:,0], arr[:,1], arr[:,2], arr[:,3], arr[:,4]
-        # self.time = self.radius/(self.v) 
+        self.radius, self.dens, self.temp, self.Av, self.delta = arr[:,0], arr[:,1], arr[:,2], arr[:,3], arr[:,4]
+        self.time = self.radius/(self.v) 
                 
 
     def __len__(self):
