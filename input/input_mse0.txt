@@ -5,7 +5,7 @@ lr          = 1.e-4
 tot_epochs  = 100
 nb_epochs   = 51
 losstype    = mse
-z_dim       = 16
+z_dim       = 10
 nb_samples  = 10000
 
 ## loss fractions
@@ -22,4 +22,5 @@ idn2 = 1
 
 
 
-Name = 2024-01-02 21:42:09.723951
+
+Name = 2024-01-02 21:41:15.690239

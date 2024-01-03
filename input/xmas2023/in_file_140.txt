@@ -1,25 +1,23 @@
 
 ## input model
 
-lr          = 0.0008375292821268827
+lr          = 1.4927944095789974e-05
 tot_epochs  = 100
 nb_epochs   = 61
 losstype    = mse_idn_evo
-z_dim       = 32
+z_dim       = 16
 nb_samples  = 18000
 
 ## loss fractions
 
-mse1 = 1000.0
+mse1 = 1000000.0
 rel1 = 0 
-evo1 = 1.0
+evo1 = 10.0
 idn1 = 1000.0
 
-mse2 = 100.0
+mse2 = 10.0
 rel2 = 0
 evo2 = 1
 idn2 = 1
 
-Name = 2024-01-02 10:46:22.753686
-
-Name = 2024-01-02 14:16:11.494639
+Name = 2024-01-03 12:31:32.525681
