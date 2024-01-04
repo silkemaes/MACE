@@ -16,7 +16,7 @@ class Loss():
         Different types of losses:
             - 'mse':    mean squared error
             - 'rel':    relative change in abundance
-            - 'evo':    relative evolution
+            - 'grd':    relative grdlution
             - 'idn':    identity loss = losses due to autoencoder
             - 'elm':    element conservation loss
         '''
@@ -27,13 +27,13 @@ class Loss():
 
         self.mse = list()
         self.rel = list()
-        self.evo = list()
+        self.grd = list()
         self.idn = list()
         self.elm = list()
 
         self.mse_idv = list()
         self.rel_idv = list()
-        self.evo_idv = list()
+        self.grd_idv = list()
 
         self.M = np.load('/STER/silkem/ChemTorch/rates/M_rate16.npy')
 
@@ -43,11 +43,11 @@ class Loss():
             losstype:   string with the type of loss used
                 - 'mse':                            mean squared error
                 - 'rel':                            relative change in abundance
-                - 'evo':                            relative evolution
+                - 'grd':                            relative grdlution
                 - 'mse_rel' or 'rel_mse':           mse + rel
-                - 'mse_evo' or 'evo_rel':           mse + evo
-                - 'rel_evo' or 'evo_rel':           rel + evo
-                - 'mse_rel_evo' or permulations:    mse + rel + evo
+                - 'mse_grd' or 'grd_rel':           mse + grd
+                - 'rel_grd' or 'grd_rel':           rel + grd
+                - 'mse_rel_grd' or permulations:    mse + rel + grd
         '''
         self.type = losstype
 
@@ -87,8 +87,8 @@ class Loss():
             self.mse.append(loss)
         elif type == 'rel':
             self.rel.append(loss)
-        elif type == 'evo':
-            self.evo.append(loss)
+        elif type == 'grd':
+            self.grd.append(loss)
         elif type == 'idn':
             self.idn.append(loss)
         elif type == 'elm':
@@ -106,8 +106,8 @@ class Loss():
             self.mse_idv.append(loss)
         elif type == 'rel':
             self.rel_idv.append(loss)
-        elif type == 'evo':
-            self.evo_idv.append(loss)
+        elif type == 'grd':
+            self.grd_idv.append(loss)
         
     def get_loss(self,type):
         '''
@@ -117,26 +117,26 @@ class Loss():
             return np.array(self.mse)
         elif type == 'rel':
             return np.array(self.rel)
-        elif type == 'evo':
-            return np.array(self.evo)
+        elif type == 'grd':
+            return np.array(self.grd)
         elif type == 'idn':
             return np.array(self.idn)
         elif type == 'elm':
             return np.array(self.elm)
     
     def get_all_losses(self):
-        return self.get_loss('mse'), self.get_loss('rel'), self.get_loss('evo'), self.get_loss('idn'), self.get_loss('elm')
+        return self.get_loss('mse'), self.get_loss('rel'), self.get_loss('grd'), self.get_loss('idn'), self.get_loss('elm')
         
     def get_idv_loss(self,type):
         if type == 'mse':
             return np.array(self.mse_idv).T
         elif type == 'rel':
             return np.array(self.rel_idv).T
-        elif type == 'evo':
-            return np.array(self.evo_idv).T
+        elif type == 'grd':
+            return np.array(self.grd_idv).T
         
     def get_all_idv_losses(self):
-        return self.get_idv_loss('mse'), self.get_idv_loss('rel'), self.get_idv_loss('evo')
+        return self.get_idv_loss('mse'), self.get_idv_loss('rel'), self.get_idv_loss('grd')
 
 
     def save(self, path):
@@ -148,13 +148,13 @@ class Loss():
         tot_loss = self.get_tot_loss()
         mse_loss = self.get_loss('mse')
         rel_loss = self.get_loss('rel')
-        evo_loss = self.get_loss('evo')
+        grd_loss = self.get_loss('grd')
         idn_loss = self.get_loss('idn')
         elm_loss = self.get_loss('elm')
 
         # mse_idv_loss = self.get_idv_loss('mse')
         # rel_idv_loss = self.get_idv_loss('rel')
-        # evo_idv_loss = self.get_idv_loss('evo')
+        # grd_idv_loss = self.get_idv_loss('grd')
         
         if tot_loss is not None:
             np.save(path+'/tot.npy', tot_loss)
@@ -162,8 +162,8 @@ class Loss():
             np.save(path+'/mse.npy', mse_loss)
         if rel_loss is not None:
             np.save(path+'/rel.npy', rel_loss)
-        if evo_loss is not None:
-            np.save(path+'/evo.npy', evo_loss)
+        if grd_loss is not None:
+            np.save(path+'/grd.npy', grd_loss)
         if idn_loss is not None:
             np.save(path+'/idn.npy', idn_loss)
         if elm_loss is not None:
@@ -175,8 +175,8 @@ class Loss():
         #     np.save(path+'/mse_idv.npy', mse_idv_loss)
         # if rel_idv_loss is not None:
         #     np.save(path+'/rel_idv.npy', rel_idv_loss)
-        # if evo_idv_loss is not None:
-        #     np.save(path+'/evo_idv.npy', evo_idv_loss)
+        # if grd_idv_loss is not None:
+        #     np.save(path+'/grd_idv.npy', grd_idv_loss)
 
     
 
@@ -196,10 +196,10 @@ def rel_loss(x, x_hat):
     loss = (x_hat/(x+eps) - 1)**2    
     return loss
 
-def evo_loss(x,x_hat):
+def grd_loss(x,x_hat):
     '''
-    Return the relative evolutions loss per x_i.
-    The relative evolutions loss (EVO) is given by ((x-x_0) - (x_hat-x_0))**2, 
+    Return the relative grdlutions loss per x_i.
+    The relative grdlutions loss (grd) is given by ((x-x_0) - (x_hat-x_0))**2, 
         
     '''
 
@@ -220,9 +220,9 @@ def idn_loss(x,x_hat,p, model):
 
     x_E     = torch.cat((p, x), axis=-1) # type: ignore
     # print(x.shape,x_hat.shape,p.shape)
-    xhat_E  = torch.cat((p, x_hat.view(-1,468)), axis=-1) # type: ignore
+    # xhat_E  = torch.cat((p, x_hat.view(-1,468)), axis=-1) # type: ignore
 
-    loss = (x-D(E(x_E)))**2 + (x_hat-D(E(xhat_E)))**2
+    loss = (x-D(E(x_E)))**2 #+ (x_hat-D(E(xhat_E)))**2
 
     return loss
 
@@ -267,7 +267,7 @@ def loss_function(loss_obj, model, x, x_hat,z_hat, p):
     '''
     mse = (mse_loss(x[1:],x_hat))     ## Compare with the final abundances for that model
     rel = (rel_loss(x[1:],x_hat))     ## Compare with the final abundances for that model
-    evo = (evo_loss(x,x_hat))
+    grd = (grd_loss(x,x_hat))
     idn = (idn_loss(x[1:],x_hat,p,model))
     if 'elm' in loss_obj.type:
         elm = (elm_loss(z_hat,model, loss_obj.M))
@@ -276,16 +276,16 @@ def loss_function(loss_obj, model, x, x_hat,z_hat, p):
 
     mse = mse/loss_obj.norm['mse']* loss_obj.fract['mse']
     rel = rel/loss_obj.norm['rel']* loss_obj.fract['rel']
-    evo = evo/loss_obj.norm['evo']* loss_obj.fract['evo']
+    grd = grd/loss_obj.norm['grd']* loss_obj.fract['grd']
     if 'idn' in loss_obj.norm:
         idn = idn/loss_obj.norm['idn']* loss_obj.fract['idn']
 
-    return mse, rel, evo, idn, elm
+    return mse, rel, grd, idn, elm
 
-def get_loss(mse, rel, evo, idn, elm, type):
+def get_loss(mse, rel, grd, idn, elm, type):
     mse = mse.mean()
     rel = rel.mean()
-    evo = evo.mean()
+    grd = grd.mean()
     idn = idn.mean()
     elm = elm.mean()
     # print(elm.grad,elm)
@@ -296,8 +296,8 @@ def get_loss(mse, rel, evo, idn, elm, type):
         return mse
     elif type =='rel':
         return rel
-    elif type =='evo':
-        return evo
+    elif type =='grd':
+        return grd
     elif type =='idn':
         return idn
     elif type =='elm':
@@ -306,73 +306,73 @@ def get_loss(mse, rel, evo, idn, elm, type):
     ## 2 types of losses
     elif type =='mse_rel' or type == 'rel_mse':
         return mse+rel
-    elif type =='rel_evo' or type == 'evo_rel':
-        return rel+evo
-    elif type =='mse_evo' or type == 'evo_mse':
-        return mse+evo
+    elif type =='rel_grd' or type == 'grd_rel':
+        return rel+grd
+    elif type =='mse_grd' or type == 'grd_mse':
+        return mse+grd
     elif type =='mse_idn' or type == 'idn_mse':
         return mse+idn
     elif type =='rel_idn' or type == 'idn_rel':
         return rel+idn
-    elif type =='evo_idn' or type == 'idn_evo':
-        return evo+idn
+    elif type =='grd_idn' or type == 'idn_grd':
+        return grd+idn
     elif type =='elm_idn' or type == 'idn_elm':
         return elm+idn
     elif type =='elm_rel' or type == 'rel_elm':
         return elm+rel
-    elif type =='elm_evo' or type == 'evo_elm':
-        return elm+evo
+    elif type =='elm_grd' or type == 'grd_elm':
+        return elm+grd
     elif type =='elm_mse' or type == 'mse_elm':
         return elm+mse
     
 
     ## 3 types of losses
-    elif type =='mse_rel_evo' or type == 'mse_evo_rel' or type == 'rel_mse_evo' or type == 'rel_evo_mse' or type == 'evo_mse_rel' or type == 'evo_rel_mse':
-        return mse+rel+evo
+    elif type =='mse_rel_grd' or type == 'mse_grd_rel' or type == 'rel_mse_grd' or type == 'rel_grd_mse' or type == 'grd_mse_rel' or type == 'grd_rel_mse':
+        return mse+rel+grd
     elif type =='mse_rel_idn' or type == 'mse_idn_rel' or type == 'rel_mse_idn' or type == 'rel_idn_mse' or type == 'idn_mse_rel' or type == 'idn_rel_mse':
         return mse+rel+idn
-    elif type =='mse_evo_idn' or type == 'mse_idn_evo' or type == 'evo_mse_idn' or type == 'evo_idn_mse' or type == 'idn_mse_evo' or type == 'idn_evo_mse':
-        return mse+evo+idn
-    elif type =='rel_evo_idn' or type == 'rel_idn_evo' or type == 'evo_rel_idn' or type == 'evo_idn_rel' or type == 'idn_rel_evo' or type == 'idn_evo_rel':
-        return rel+evo+idn
+    elif type =='mse_grd_idn' or type == 'mse_idn_grd' or type == 'grd_mse_idn' or type == 'grd_idn_mse' or type == 'idn_mse_grd' or type == 'idn_grd_mse':
+        return mse+grd+idn
+    elif type =='rel_grd_idn' or type == 'rel_idn_grd' or type == 'grd_rel_idn' or type == 'grd_idn_rel' or type == 'idn_rel_grd' or type == 'idn_grd_rel':
+        return rel+grd+idn
     elif type =='elm_rel_idn' or type == 'elm_idn_rel' or type == 'rel_elm_idn' or type == 'rel_idn_elm' or type == 'idn_rel_elm' or type == 'idn_elm_rel':
         return elm+rel+idn
-    elif type =='elm_evo_idn' or type == 'elm_idn_evo' or type == 'evo_elm_idn' or type == 'evo_idn_elm' or type == 'idn_elm_evo' or type == 'idn_evo_elm':
-        return elm+evo+idn
+    elif type =='elm_grd_idn' or type == 'elm_idn_grd' or type == 'grd_elm_idn' or type == 'grd_idn_elm' or type == 'idn_elm_grd' or type == 'idn_grd_elm':
+        return elm+grd+idn
     elif type =='elm_mse_idn' or type == 'elm_idn_mse' or type == 'mse_elm_idn' or type == 'mse_idn_elm' or type == 'idn_elm_mse' or type == 'idn_mse_elm':
         return elm+mse+idn
     elif type =='elm_mse_rel' or type == 'elm_rel_mse' or type == 'mse_elm_rel' or type == 'mse_rel_elm' or type == 'rel_elm_mse' or type == 'rel_mse_elm':
         return elm+mse+rel
-    elif type =='elm_mse_evo' or type == 'elm_evo_mse' or type == 'mse_elm_evo' or type == 'mse_evo_elm' or type == 'evo_elm_mse' or type == 'evo_mse_elm':
-        return elm+mse+evo
-    elif type =='rel_evo_elm' or type == 'rel_elm_evo' or type == 'evo_rel_elm' or type == 'evo_elm_rel' or type == 'elm_rel_evo' or type == 'elm_evo_rel':
-        return rel+evo+elm
+    elif type =='elm_mse_grd' or type == 'elm_grd_mse' or type == 'mse_elm_grd' or type == 'mse_grd_elm' or type == 'grd_elm_mse' or type == 'grd_mse_elm':
+        return elm+mse+grd
+    elif type =='rel_grd_elm' or type == 'rel_elm_grd' or type == 'grd_rel_elm' or type == 'grd_elm_rel' or type == 'elm_rel_grd' or type == 'elm_grd_rel':
+        return rel+grd+elm
 
     
 
 
     ## 4 types of losses
-    elif type =='mse_rel_evo_idn' or type == 'mse_rel_idn_evo' or type == 'mse_evo_rel_idn' or type == 'mse_evo_idn_rel' or type == 'mse_idn_rel_evo' or type == 'mse_idn_evo_rel' or type == 'rel_mse_evo_idn' or type == 'rel_mse_idn_evo' or type == 'rel_evo_mse_idn' or type == 'rel_evo_idn_mse' or type == 'rel_idn_mse_evo' or type == 'rel_idn_evo_mse' or type == 'evo_mse_rel_idn' or type == 'evo_mse_idn_rel' or type == 'evo_rel_mse_idn' or type == 'evo_rel_idn_mse' or type == 'evo_idn_mse_rel' or type == 'evo_idn_rel_mse' or type == 'idn_mse_rel_evo' or type == 'idn_mse_evo_rel' or type == 'idn_rel_mse_evo' or type == 'idn_rel_evo_mse' or type == 'idn_evo_mse_rel' or type == 'idn_evo_rel_mse':
-        return mse+rel+evo+idn      ## no elm
-    elif type =='mse_rel_evo_elm' or type == 'mse_rel_elm_evo' or type == 'mse_evo_rel_elm' or type == 'mse_evo_elm_rel' or type == 'mse_elm_rel_evo' or type == 'mse_elm_evo_rel' or type == 'rel_mse_evo_elm' or type == 'rel_mse_elm_evo' or type == 'rel_evo_mse_elm' or type == 'rel_evo_elm_mse' or type == 'rel_elm_mse_evo' or type == 'rel_elm_evo_mse' or type == 'evo_mse_rel_elm' or type == 'evo_mse_elm_rel' or type == 'evo_rel_mse_elm' or type == 'evo_rel_elm_mse' or type == 'evo_elm_mse_rel' or type == 'evo_elm_rel_mse' or type == 'elm_mse_rel_evo' or type == 'elm_mse_evo_rel' or type == 'elm_rel_mse_evo' or type == 'elm_rel_evo_mse' or type == 'elm_evo_mse_rel' or type == 'elm_evo_rel_mse':
-        return mse+rel+evo+elm      ## no idn
+    elif type =='mse_rel_grd_idn' or type == 'mse_rel_idn_grd' or type == 'mse_grd_rel_idn' or type == 'mse_grd_idn_rel' or type == 'mse_idn_rel_grd' or type == 'mse_idn_grd_rel' or type == 'rel_mse_grd_idn' or type == 'rel_mse_idn_grd' or type == 'rel_grd_mse_idn' or type == 'rel_grd_idn_mse' or type == 'rel_idn_mse_grd' or type == 'rel_idn_grd_mse' or type == 'grd_mse_rel_idn' or type == 'grd_mse_idn_rel' or type == 'grd_rel_mse_idn' or type == 'grd_rel_idn_mse' or type == 'grd_idn_mse_rel' or type == 'grd_idn_rel_mse' or type == 'idn_mse_rel_grd' or type == 'idn_mse_grd_rel' or type == 'idn_rel_mse_grd' or type == 'idn_rel_grd_mse' or type == 'idn_grd_mse_rel' or type == 'idn_grd_rel_mse':
+        return mse+rel+grd+idn      ## no elm
+    elif type =='mse_rel_grd_elm' or type == 'mse_rel_elm_grd' or type == 'mse_grd_rel_elm' or type == 'mse_grd_elm_rel' or type == 'mse_elm_rel_grd' or type == 'mse_elm_grd_rel' or type == 'rel_mse_grd_elm' or type == 'rel_mse_elm_grd' or type == 'rel_grd_mse_elm' or type == 'rel_grd_elm_mse' or type == 'rel_elm_mse_grd' or type == 'rel_elm_grd_mse' or type == 'grd_mse_rel_elm' or type == 'grd_mse_elm_rel' or type == 'grd_rel_mse_elm' or type == 'grd_rel_elm_mse' or type == 'grd_elm_mse_rel' or type == 'grd_elm_rel_mse' or type == 'elm_mse_rel_grd' or type == 'elm_mse_grd_rel' or type == 'elm_rel_mse_grd' or type == 'elm_rel_grd_mse' or type == 'elm_grd_mse_rel' or type == 'elm_grd_rel_mse':
+        return mse+rel+grd+elm      ## no idn
     elif type =='mse_rel_idn_elm' or type == 'mse_rel_elm_idn' or type == 'mse_idn_rel_elm' or type == 'mse_idn_elm_rel' or type == 'mse_elm_rel_idn' or type == 'mse_elm_idn_rel' or type == 'rel_mse_idn_elm' or type == 'rel_mse_elm_idn' or type == 'rel_idn_mse_elm' or type == 'rel_idn_elm_mse' or type == 'rel_elm_mse_idn' or type == 'rel_elm_idn_mse' or type == 'idn_mse_rel_elm' or type == 'idn_mse_elm_rel' or type == 'idn_rel_mse_elm' or type == 'idn_rel_elm_mse' or type == 'idn_elm_mse_rel' or type == 'idn_elm_rel_mse' or type == 'elm_mse_rel_idn' or type == 'elm_mse_idn_rel' or type == 'elm_rel_mse_idn' or type == 'elm_rel_idn_mse' or type == 'elm_idn_mse_rel' or type == 'elm_idn_rel_mse':
-        return mse+rel+idn+elm      ## no evo
-    elif type =='mse_evo_idn_elm' or type == 'mse_evo_elm_idn' or type == 'mse_idn_evo_elm' or type == 'mse_idn_elm_evo' or type == 'mse_elm_evo_idn' or type == 'mse_elm_idn_evo' or type == 'evo_mse_idn_elm' or type == 'evo_mse_elm_idn' or type == 'evo_idn_mse_elm' or type == 'evo_idn_elm_mse' or type == 'evo_elm_mse_idn' or type == 'evo_elm_idn_mse' or type == 'idn_mse_evo_elm' or type == 'idn_mse_elm_evo' or type == 'idn_evo_mse_elm' or type == 'idn_evo_elm_mse' or type == 'idn_elm_mse_evo' or type == 'idn_elm_evo_mse' or type == 'elm_mse_evo_idn' or type == 'elm_mse_idn_evo' or type == 'elm_evo_mse_idn' or type == 'elm_evo_idn_mse' or type == 'elm_idn_mse_evo' or type == 'elm_idn_evo_mse':
-        return mse+evo+idn+elm      ## no rel
-    elif type =='rel_evo_idn_elm' or type == 'rel_evo_elm_idn' or type == 'rel_idn_evo_elm' or type == 'rel_idn_elm_evo' or type == 'rel_elm_evo_idn' or type == 'rel_elm_idn_evo' or type == 'evo_rel_idn_elm' or type == 'evo_rel_elm_idn' or type == 'evo_idn_rel_elm' or type == 'evo_idn_elm_rel' or type == 'evo_elm_rel_idn' or type == 'evo_elm_idn_rel' or type == 'idn_rel_evo_elm' or type == 'idn_rel_elm_evo' or type == 'idn_evo_rel_elm' or type == 'idn_evo_elm_rel' or type == 'idn_elm_rel_evo' or type == 'idn_elm_evo_rel' or type == 'elm_rel_evo_idn' or type == 'elm_rel_idn_evo' or type == 'elm_evo_rel_idn' or type == 'elm_evo_idn_rel' or type == 'elm_idn_rel_evo' or type == 'elm_idn_evo_rel':
-        return rel+evo+idn+elm      ## no mse
+        return mse+rel+idn+elm      ## no grd
+    elif type =='mse_grd_idn_elm' or type == 'mse_grd_elm_idn' or type == 'mse_idn_grd_elm' or type == 'mse_idn_elm_grd' or type == 'mse_elm_grd_idn' or type == 'mse_elm_idn_grd' or type == 'grd_mse_idn_elm' or type == 'grd_mse_elm_idn' or type == 'grd_idn_mse_elm' or type == 'grd_idn_elm_mse' or type == 'grd_elm_mse_idn' or type == 'grd_elm_idn_mse' or type == 'idn_mse_grd_elm' or type == 'idn_mse_elm_grd' or type == 'idn_grd_mse_elm' or type == 'idn_grd_elm_mse' or type == 'idn_elm_mse_grd' or type == 'idn_elm_grd_mse' or type == 'elm_mse_grd_idn' or type == 'elm_mse_idn_grd' or type == 'elm_grd_mse_idn' or type == 'elm_grd_idn_mse' or type == 'elm_idn_mse_grd' or type == 'elm_idn_grd_mse':
+        return mse+grd+idn+elm      ## no rel
+    elif type =='rel_grd_idn_elm' or type == 'rel_grd_elm_idn' or type == 'rel_idn_grd_elm' or type == 'rel_idn_elm_grd' or type == 'rel_elm_grd_idn' or type == 'rel_elm_idn_grd' or type == 'grd_rel_idn_elm' or type == 'grd_rel_elm_idn' or type == 'grd_idn_rel_elm' or type == 'grd_idn_elm_rel' or type == 'grd_elm_rel_idn' or type == 'grd_elm_idn_rel' or type == 'idn_rel_grd_elm' or type == 'idn_rel_elm_grd' or type == 'idn_grd_rel_elm' or type == 'idn_grd_elm_rel' or type == 'idn_elm_rel_grd' or type == 'idn_elm_grd_rel' or type == 'elm_rel_grd_idn' or type == 'elm_rel_idn_grd' or type == 'elm_grd_rel_idn' or type == 'elm_grd_idn_rel' or type == 'elm_idn_rel_grd' or type == 'elm_idn_grd_rel':
+        return rel+grd+idn+elm      ## no mse
     
     ## 5 types of losses
-    elif (type =='mse_rel_evo_idn_elm' or type == 'mse_rel_evo_elm_idn' or type == 'mse_rel_idn_evo_elm' or type == 'mse_rel_idn_elm_evo' or type == 'mse_rel_elm_evo_idn' 
-        or type == 'mse_rel_elm_idn_evo' or type == 'mse_evo_rel_idn_elm' or type == 'mse_evo_rel_elm_idn' or type == 'mse_evo_idn_rel_elm' or type == 'mse_evo_idn_elm_rel' 
-        or type == 'mse_evo_elm_rel_idn' or type == 'mse_evo_elm_idn_rel' or type == 'mse_idn_rel_evo_elm' or type == 'mse_idn_rel_elm_evo' or type == 'mse_idn_evo_rel_elm' 
-        or type == 'mse_idn_evo_elm_rel' or type == 'mse_idn_elm_rel_evo' or type == 'mse_idn_elm_evo_rel' or type == 'mse_elm_rel_evo_idn' or type == 'mse_elm_rel_idn_evo' 
-        or type == 'mse_elm_evo_rel_idn' or type == 'mse_elm_evo_idn_rel' or type == 'mse_elm_idn_rel_evo' or type == 'mse_elm_idn_evo_rel' or type == 'rel_mse_evo_idn_elm' 
-        or type == 'rel_mse_evo_elm_idn' or type == 'rel_mse_idn_evo_elm' or type == 'rel_mse_idn_elm_evo' or type == 'rel_mse_elm_evo_idn' or type == 'rel_mse_elm_idn_evo' 
-        or type == 'rel_evo_mse_idn_elm' or type == 'rel_evo_mse_elm_idn' or type == 'rel_evo_idn_mse_elm' or type == 'rel_evo_idn_elm_mse' or type == 'rel_evo_elm_mse_idn' 
-        or type == 'rel_evo_elm_idn_mse' or type == 'rel_idn_mse_evo_elm' or type == 'rel_idn_mse_elm_evo' or type == 'rel_idn_evo_mse_elm' or type == 'rel_idn_evo_elm_mse'):
-        return mse+rel+evo+idn+elm
+    elif (type =='mse_rel_grd_idn_elm' or type == 'mse_rel_grd_elm_idn' or type == 'mse_rel_idn_grd_elm' or type == 'mse_rel_idn_elm_grd' or type == 'mse_rel_elm_grd_idn' 
+        or type == 'mse_rel_elm_idn_grd' or type == 'mse_grd_rel_idn_elm' or type == 'mse_grd_rel_elm_idn' or type == 'mse_grd_idn_rel_elm' or type == 'mse_grd_idn_elm_rel' 
+        or type == 'mse_grd_elm_rel_idn' or type == 'mse_grd_elm_idn_rel' or type == 'mse_idn_rel_grd_elm' or type == 'mse_idn_rel_elm_grd' or type == 'mse_idn_grd_rel_elm' 
+        or type == 'mse_idn_grd_elm_rel' or type == 'mse_idn_elm_rel_grd' or type == 'mse_idn_elm_grd_rel' or type == 'mse_elm_rel_grd_idn' or type == 'mse_elm_rel_idn_grd' 
+        or type == 'mse_elm_grd_rel_idn' or type == 'mse_elm_grd_idn_rel' or type == 'mse_elm_idn_rel_grd' or type == 'mse_elm_idn_grd_rel' or type == 'rel_mse_grd_idn_elm' 
+        or type == 'rel_mse_grd_elm_idn' or type == 'rel_mse_idn_grd_elm' or type == 'rel_mse_idn_elm_grd' or type == 'rel_mse_elm_grd_idn' or type == 'rel_mse_elm_idn_grd' 
+        or type == 'rel_grd_mse_idn_elm' or type == 'rel_grd_mse_elm_idn' or type == 'rel_grd_idn_mse_elm' or type == 'rel_grd_idn_elm_mse' or type == 'rel_grd_elm_mse_idn' 
+        or type == 'rel_grd_elm_idn_mse' or type == 'rel_idn_mse_grd_elm' or type == 'rel_idn_mse_elm_grd' or type == 'rel_idn_grd_mse_elm' or type == 'rel_idn_grd_elm_mse'):
+        return mse+rel+grd+idn+elm
 
 
 class Loss_analyse():
@@ -399,11 +399,11 @@ class Loss_analyse():
             losstype:   string with the type of loss used
                 - 'mse':                            mean squared error
                 - 'rel':                            relative change in abundance
-                - 'evo':                            relative evolution
+                - 'grd':                            relative grdlution
                 - 'mse_rel' or 'rel_mse':           mse + rel
-                - 'mse_evo' or 'evo_rel':           mse + evo
-                - 'rel_evo' or 'evo_rel':           rel + evo
-                - 'mse_rel_evo' or permulations:    mse + rel + evo
+                - 'mse_grd' or 'grd_rel':           mse + grd
+                - 'rel_grd' or 'grd_rel':           rel + grd
+                - 'mse_rel_grd' or permulations:    mse + rel + grd
         '''
         self.type = losstype
 
@@ -430,8 +430,8 @@ class Loss_analyse():
             self.mse = loss
         elif type == 'rel':
             self.rel = loss
-        elif type == 'evo':
-            self.evo = loss 
+        elif type == 'grd':
+            self.grd = loss 
         elif type == 'idn':
             self.idn = loss
 
@@ -440,8 +440,8 @@ class Loss_analyse():
             self.mse_idv = loss
         elif type == 'rel':
             self.rel_idv = loss
-        elif type == 'evo':
-            self.evo_idv = loss 
+        elif type == 'grd':
+            self.grd_idv = loss 
         
     def get_loss(self,type):
         '''
@@ -451,24 +451,24 @@ class Loss_analyse():
             return self.mse
         elif type == 'rel':
             return self.rel
-        elif type == 'evo':
-            return self.evo 
+        elif type == 'grd':
+            return self.grd 
         elif type == 'idn':
             return self.idn 
     
     def get_all_losses(self):
-        return self.get_loss('mse'), self.get_loss('rel'), self.get_loss('evo'), self.get_loss('idn')
+        return self.get_loss('mse'), self.get_loss('rel'), self.get_loss('grd'), self.get_loss('idn')
         
     def get_idv_loss(self,type):
         if type == 'mse':
             return self.mse_idv
         elif type == 'rel':
             return self.rel_idv
-        elif type == 'evo':
-            return self.evo_idv
+        elif type == 'grd':
+            return self.grd_idv
         
     def get_all_idv_losses(self):
-        return self.get_idv_loss('mse'), self.get_idv_loss('rel'), self.get_idv_loss('evo')
+        return self.get_idv_loss('mse'), self.get_idv_loss('rel'), self.get_idv_loss('grd')
 
     def load(self, loc, type, meta):
         '''
@@ -476,14 +476,14 @@ class Loss_analyse():
         '''
         self.set_loss(np.load(loc+type+'/mse.npy'), 'mse')
         self.set_loss(np.load(loc+type+'/rel.npy'), 'rel')
-        self.set_loss(np.load(loc+type+'/evo.npy'), 'evo')
+        self.set_loss(np.load(loc+type+'/grd.npy'), 'grd')
         if os.path.exists(loc+type+'/idn.npy'):
             self.set_loss(np.load(loc+type+'/idn.npy'), 'idn')
         self.set_tot_loss(np.load(loc+type+'/tot.npy'))
 
         # self.set_idv_loss(np.load(loc+type+'/mse_idv.npy'), 'mse')
         # self.set_idv_loss(np.load(loc+type+'/rel_idv.npy'), 'rel')
-        # self.set_idv_loss(np.load(loc+type+'/evo_idv.npy'), 'evo')
+        # self.set_idv_loss(np.load(loc+type+'/grd_idv.npy'), 'grd')
 
         # self.set_norm(meta['norm'])
         # self.set_fract(meta['fract'])

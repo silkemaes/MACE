@@ -14,15 +14,15 @@ from CSE_0D.loss import loss_function, get_loss, Loss
 def process_loss_one_epoch(loss_dict, n, n_hat, z_hat, p, model, loss_obj):
     ## Calculate losses
             ## n[:,1:] = abundances[1:k+1] with k=last-1; In this way we can compare if the predicted abundances are correct
-            ## the whole array n in passed along, since this is needed to compute the evo loss
-    mse_loss, rel_loss, evo_loss, idn_loss, elm_loss  = loss_function(loss_obj, model, n, n_hat,z_hat, p) 
+            ## the whole array n in passed along, since this is needed to compute the grd loss
+    mse_loss, rel_loss, grd_loss, idn_loss, elm_loss  = loss_function(loss_obj, model, n, n_hat,z_hat, p) 
     ## The total loss depends upon the type of losses, set in the loss_obj
-    loss = get_loss(mse_loss, rel_loss, evo_loss,idn_loss,elm_loss, loss_obj.type)
+    loss = get_loss(mse_loss, rel_loss, grd_loss,idn_loss,elm_loss, loss_obj.type)
 
     loss_dict['tot']  += loss.item()
     loss_dict['mse']  += mse_loss.mean().item()
     loss_dict['rel']  += rel_loss.mean().item()
-    loss_dict['evo']  += evo_loss.mean().item()
+    loss_dict['grd']  += grd_loss.mean().item()
     loss_dict['idn']  += idn_loss.mean().item()
     loss_dict['elm']  += elm_loss.mean().item()
 
@@ -49,7 +49,7 @@ def train_one_epoch(data_loader, model, loss_obj, DEVICE, optimizer):
     loss_dict = dict()
     loss_dict['mse'] = 0
     loss_dict['rel'] = 0
-    loss_dict['evo'] = 0
+    loss_dict['grd'] = 0
     loss_dict['idn'] = 0
     loss_dict['elm'] = 0
     # loss_dict['grd'] = 0
@@ -90,7 +90,7 @@ def validate_one_epoch(test_loader, model, loss_obj, DEVICE):
     loss_dict = dict()
     loss_dict['mse'] = 0
     loss_dict['rel'] = 0
-    loss_dict['evo'] = 0
+    loss_dict['grd'] = 0
     loss_dict['idn'] = 0
     loss_dict['elm'] = 0
     loss_dict['tot'] = 0
@@ -202,12 +202,12 @@ def test(model, input):
 
 
 
-def test_evolution(model, input, start_idx):
+def test_grdlution(model, input, start_idx):
 
     losses = Loss(None,None)
 
     mace_time = list()
-    n_evo = list()
+    n_grd = list()
     print('\n>>> Testing model...')
 
 
@@ -217,21 +217,21 @@ def test_evolution(model, input, start_idx):
     dt    = input[2]
 
     tic_tot = time()
-    ## first step of the evolution
+    ## first step of the grdlution
     tic = time()
     n_hat, z_hat,modstatus = model(n.view(1, -1),p[start_idx].view(1, -1),dt[start_idx].view(-1))    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
     toc = time()
-    n_evo.append(n_hat.detach().numpy())
+    n_grd.append(n_hat.detach().numpy())
     solve_time = toc-tic
     mace_time.append(solve_time)
 
     
-    ## subsequent steps of the evolution
+    ## subsequent steps of the grdlution
     for i in tqdm(range(start_idx+1,len(dt))):
         tic = time()
         n_hat,z_hat, modstatus = model(n_hat.view(1, -1),p[i].view(1, -1),dt[i].view(-1))    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches
         toc = time()
-        n_evo.append(n_hat.detach().numpy())
+        n_grd.append(n_hat.detach().numpy())
         solve_time = toc-tic
         mace_time.append(solve_time)
     toc_tot = time()
@@ -239,4 +239,4 @@ def test_evolution(model, input, start_idx):
     print('Solving time [s]:', np.array(solve_time).sum())
     print('Total   time [s]:', toc_tot-tic_tot)
 
-    return np.array(n_evo).reshape(-1,468), np.array(solve_time)
+    return np.array(n_grd).reshape(-1,468), np.array(solve_time)

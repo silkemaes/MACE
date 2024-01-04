@@ -48,12 +48,12 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
         l_rel = mlines.Line2D([],[], color = 'royalblue', ls = '-', label='rel',lw = lw2, alpha = 1)
         handles.append(l_rel)
 
-    ## ------------- EVO -------------
-    if 'evo' in train.type:
-        ax1.plot(test.get_loss('evo'), ls = '--', marker = 'x', lw = lw, c='goldenrod', alpha = a)
-        ax1.plot(train.get_loss('evo'), ls = '-', marker = '.', lw = lw, c='goldenrod', alpha = a)
-        l_evo = mlines.Line2D([],[], color = 'goldenrod', ls = '-', label='evo',lw = lw2, alpha = 1)
-        handles.append(l_evo)
+    ## ------------- grd -------------
+    if 'grd' in train.type:
+        ax1.plot(test.get_loss('grd'), ls = '--', marker = 'x', lw = lw, c='goldenrod', alpha = a)
+        ax1.plot(train.get_loss('grd'), ls = '-', marker = '.', lw = lw, c='goldenrod', alpha = a)
+        l_grd = mlines.Line2D([],[], color = 'goldenrod', ls = '-', label='grd',lw = lw2, alpha = 1)
+        handles.append(l_grd)
 
     ## ------------- IDN -------------
     c_idn = 'forestgreen'
@@ -100,7 +100,7 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
     return fig
 
 
-def get_evo(n, n_hat):
+def get_grd(n, n_hat):
     n0 = n[:-1]
 
     Δn = np.abs((n[1:]-n0))
@@ -147,8 +147,8 @@ def plot_mse(n, n_hat,ax1, color, alpha, title = None, j = -1):
     return
 
 
-def plot_evo(n, n_hat,ax1, color, alpha, title = None, j = -1):
-    Δn, Δnhat, limits,x = get_evo(n, n_hat)
+def plot_grd(n, n_hat,ax1, color, alpha, title = None, j = -1):
+    Δn, Δnhat, limits,x = get_grd(n, n_hat)
 
     if j == -1:
         colors = mpl.cm.brg(np.linspace(0, 1, n.shape[0]-1))
@@ -167,8 +167,8 @@ def plot_evo(n, n_hat,ax1, color, alpha, title = None, j = -1):
     ax1.set_xlim(limits)
     ax1.set_ylim(limits)
 
-    ax1.set_xlabel('real evolution')
-    ax1.set_ylabel('predicted evolution')
+    ax1.set_xlabel('real grdlution')
+    ax1.set_ylabel('predicted grdlution')
 
     ax1.grid(True, linestyle = '--', linewidth = 0.2)
 
@@ -200,8 +200,8 @@ def plot_mse_specs(n, n_hat, ax1,specs, alpha, title = None):
     return
 
 
-def plot_evo_specs(n, n_hat, ax1,specs, alpha, title = None):
-    Δn, Δnhat, limits, x = get_evo(n, n_hat)
+def plot_grd_specs(n, n_hat, ax1,specs, alpha, title = None):
+    Δn, Δnhat, limits, x = get_grd(n, n_hat)
 
     for spec in specs:
         idx = specs_dict[spec]
@@ -213,8 +213,8 @@ def plot_evo_specs(n, n_hat, ax1,specs, alpha, title = None):
     ax1.set_xlim(limits)
     ax1.set_ylim(limits)
 
-    ax1.set_xlabel('real evolution')
-    ax1.set_ylabel('predicted evolution')
+    ax1.set_xlabel('real grdlution')
+    ax1.set_ylabel('predicted grdlution')
 
     ax1.grid(True, linestyle = '--', linewidth = 0.2)
 

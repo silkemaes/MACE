@@ -128,12 +128,12 @@ model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=n_dim, DEVICE = DEVICE)
 ## ------------- PART 1: unnormalised losses ----------------
 norm = {'mse' : 1,
         'rel' : 1,
-        'evo' : 1,
+        'grd' : 1,
         'idn' : 1}
 
 fract = {'mse' : 1, 
          'rel' : 1,
-         'evo' : 1,
+         'grd' : 1,
          'idn' : 1}
 
 
@@ -154,11 +154,11 @@ train_time1 = toc-tic
 ## Change the ratio of losses via the fraction
 mse1 = float(inputfile['mse1'])
 rel1 = float(inputfile['rel1'])
-evo1 = float(inputfile['evo1'])
+grd1 = float(inputfile['grd1'])
 idn1 = float(inputfile['idn1'])
 fract = {'mse' : mse1, 
          'rel' : rel1, 
-         'evo' : evo1, 
+         'grd' : grd1, 
          'idn' : idn1}
 trainloss.change_fract(fract)
 testloss.change_fract(fract)
@@ -166,7 +166,7 @@ testloss.change_fract(fract)
 ## normalise the losses
 new_norm = {'mse' :np.mean(trainloss.get_loss('mse')), # type: ignore
             'rel' :np.mean(trainloss.get_loss('rel')), # type: ignore
-            'evo' :np.mean(trainloss.get_loss('evo')), # type: ignore
+            'grd' :np.mean(trainloss.get_loss('grd')), # type: ignore
             'idn' :np.mean(trainloss.get_loss('idn'))}   # type: ignore
 trainloss.change_norm(new_norm)   
 testloss.change_norm(new_norm) 
@@ -182,11 +182,11 @@ train_time2 = toc-tic
 ## Change the ratio of losses again via the fraction, but keep the normalisation
 mse2 = float(inputfile['mse2'])
 rel2 = float(inputfile['rel2'])
-evo2 = float(inputfile['evo2'])
+grd2 = float(inputfile['grd2'])
 idn2 = float(inputfile['idn2'])
 fract = {'mse' : mse1*mse2, 
          'rel' : rel1*rel2, 
-         'evo' : evo1*evo2, 
+         'grd' : grd1*grd2, 
          'idn' : idn1*idn2}
 trainloss.change_fract(fract)
 testloss.change_fract(fract)
