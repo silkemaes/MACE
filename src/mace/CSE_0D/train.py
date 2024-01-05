@@ -67,10 +67,87 @@ def train_one_epoch(data_loader, model, loss_obj, DEVICE, optimizer):
 
         n_hat, z_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
 
+        loss,loss_dict = process_loss_one_epoch(loss_dict, n, n_hat, z_hat, p, model, loss_obj)
 
-        # print(modstatus.shape)
-        # if modstatus.item() == 4:
-        #     status += modstatus.item()
+        ## Backpropagation
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+    
+
+    return loss_dict,i+1, status
+
+
+
+def train_one_epoch_evol(data_loader, model, loss_obj, DEVICE, optimizer):
+    '''
+    Function to train 1 epoch.
+
+    - data_loader   = data, torchtensor
+    - model         = ML architecture to be trained
+    - loss_obj      = object that stores the losses
+
+    Method:
+    1. get data
+    2. push it through the model, x_hat = result
+    3. calculate loss (difference between x & x_hat), according to loss function defined in loss_function()
+    4. with optimiser, get the gradients and update weights using back propagation.
+    
+    Returns 
+    - losses
+    '''    
+        
+    loss_dict = dict()
+    loss_dict['mse'] = 0
+    loss_dict['rel'] = 0
+    loss_dict['grd'] = 0
+    loss_dict['idn'] = 0
+    loss_dict['elm'] = 0
+    # loss_dict['grd'] = 0
+    loss_dict['tot'] = 0
+
+    status = 0
+
+    for i, (n,p,dt) in enumerate(data_loader):
+
+        n  = n.view(n.shape[1], n.shape[2]).to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
+        p  = p.view(p.shape[1], p.shape[2]).to(DEVICE) 
+        dt = dt.view(dt.shape[1]).to(DEVICE)
+
+        tstep_evol = 44
+        n0 = n[0:-tstep_evol]
+        p0 = p[0:-tstep_evol]
+        dt0 = dt[0:-tstep_evol]
+
+        nhat_evol = list()
+        n_evol = list()
+        
+        n_hat, z_hat, modstatus = model(n0[:-1],p0,dt0)   
+        n_hat = n_hat.view(-1, 468)
+        nhat_evol.append(n_hat)
+        n_evol.append(n[0:-tstep_evol+0][:-1])
+
+        ## subsequent steps of the evolution
+        for i in range(1,tstep_evol):
+            n_hat,z_hat, modstatus = model(n_hat,p[i:-tstep_evol+i],dt[i:-tstep_evol+i])   
+            n_hat = n_hat.view(-1, 468) 
+            nhat_evol.append(n_hat)
+            n_evol.append(n[i:-tstep_evol+i][:-1])
+
+        nhat_evol = torch.stack(nhat_evol).permute(1,0,2)
+        n_evol = torch.stack(n_evol).permute(1,0,2)
+
+        ## not ready yet, need to still fix losses
+
+    #--- old
+        
+        # n  = n.view(n.shape[1], n.shape[2]).to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
+        # p  = p.view(p.shape[1], p.shape[2]).to(DEVICE) 
+        # dt = dt.view(dt.shape[1]).to(DEVICE)
+
+        # n_hat, z_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
+
 
         loss,loss_dict = process_loss_one_epoch(loss_dict, n, n_hat, z_hat, p, model, loss_obj)
 
@@ -202,12 +279,10 @@ def test(model, input):
 
 
 
-def test_grdlution(model, input, start_idx):
-
-    losses = Loss(None,None)
+def test_evolution(model, input, start_idx):
 
     mace_time = list()
-    n_grd = list()
+    n_evol = list()
     print('\n>>> Testing model...')
 
 
@@ -217,21 +292,21 @@ def test_grdlution(model, input, start_idx):
     dt    = input[2]
 
     tic_tot = time()
-    ## first step of the grdlution
+    ## first step of the evolution
     tic = time()
     n_hat, z_hat,modstatus = model(n.view(1, -1),p[start_idx].view(1, -1),dt[start_idx].view(-1))    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
     toc = time()
-    n_grd.append(n_hat.detach().numpy())
+    n_evol.append(n_hat.detach().numpy())
     solve_time = toc-tic
     mace_time.append(solve_time)
 
     
-    ## subsequent steps of the grdlution
+    ## subsequent steps of the evolution
     for i in tqdm(range(start_idx+1,len(dt))):
         tic = time()
         n_hat,z_hat, modstatus = model(n_hat.view(1, -1),p[i].view(1, -1),dt[i].view(-1))    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches
         toc = time()
-        n_grd.append(n_hat.detach().numpy())
+        n_evol.append(n_hat.detach().numpy())
         solve_time = toc-tic
         mace_time.append(solve_time)
     toc_tot = time()
@@ -239,4 +314,4 @@ def test_grdlution(model, input, start_idx):
     print('Solving time [s]:', np.array(solve_time).sum())
     print('Total   time [s]:', toc_tot-tic_tot)
 
-    return np.array(n_grd).reshape(-1,468), np.array(solve_time)
+    return np.array(n_evol).reshape(-1,468), np.array(solve_time)

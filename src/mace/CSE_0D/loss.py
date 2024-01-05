@@ -198,8 +198,8 @@ def rel_loss(x, x_hat):
 
 def grd_loss(x,x_hat):
     '''
-    Return the relative grdlutions loss per x_i.
-    The relative grdlutions loss (grd) is given by ((x-x_0) - (x_hat-x_0))**2, 
+    Return the relative gradient loss per x_i.
+    The relative gradient loss (grd) is given by ((x-x_0) - (x_hat-x_0))**2, 
         
     '''
 

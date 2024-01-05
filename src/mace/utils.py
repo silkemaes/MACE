@@ -6,7 +6,7 @@ import torch
 
 sys.path.insert(1, '/STER/silkem/MACE/src/mace')
 from CSE_0D.loss  import Loss_analyse
-from neuralODE    import Solver
+from neuralODE    import Solver_old
 
 '''
 Makes the output directory - if nessecary.
@@ -67,7 +67,7 @@ def load_model(loc, meta, epoch, sepr):
     n_dim = 468
     cuda   = False
     DEVICE = torch.device("cuda" if cuda else "cpu")
-    model = Solver(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, DEVICE = DEVICE)
+    model = Solver_old(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, DEVICE = DEVICE)
 
     if sepr == True:
         file = 'nn/nn'+str(epoch)+'.pt'

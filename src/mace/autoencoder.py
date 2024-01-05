@@ -7,8 +7,97 @@ class Encoder(nn.Module):
     """
     Encoder neural network.
     """
-    def __init__(self, input_dim, hidden_dim, latent_dim, nb_hidden = 1, type = 'straight'):
+    def __init__(self, input_dim, latent_dim):
         super(Encoder, self).__init__()
+        hidden1_dim = 264
+        hidden2_dim = 64
+
+        self.layer_in = nn.Linear(input_dim, hidden1_dim)
+
+        self.hidden = nn.ModuleList()
+        layer = nn.Linear(hidden1_dim, hidden2_dim)
+        self.hidden.append(layer)
+
+        self.layer_out = nn.Linear(hidden2_dim, latent_dim)
+        
+        self.LeakyReLU = nn.LeakyReLU(0.2)
+        self.Tanh = nn.Tanh()
+        
+    def forward(self, x):
+
+        h = self.LeakyReLU(self.layer_in(x))
+        for layer in self.hidden:
+            h = self.LeakyReLU(layer(h))
+        h = self.Tanh(self.layer_out(h))
+        return h
+
+
+    def set_name(self, name):
+        self.name = name
+        return
+
+
+
+class Decoder(nn.Module):
+    """
+    Decoder nearal network.
+    """
+    def __init__(self, latent_dim, output_dim):
+        super(Decoder, self).__init__()
+
+        self.hidden = nn.ModuleList()
+
+        hidden1_dim = 264
+        hidden2_dim = 64
+
+        self.layer_in = nn.Linear(latent_dim, hidden2_dim)
+
+        layer = nn.Linear(hidden2_dim, hidden1_dim)
+        self.hidden.append(layer)
+
+        self.layer_out = nn.Linear(hidden1_dim, output_dim)
+        
+        self.LeakyReLU = nn.LeakyReLU(0.2)
+        
+    def forward(self, z):
+        h = self.LeakyReLU(self.layer_in(z))
+        for layer in self.hidden:
+            h = self.LeakyReLU(layer(h))
+        h = self.LeakyReLU(self.layer_out(h))
+        return h
+
+    def set_name(self, name):
+        self.name = name
+        return
+    
+    
+class Autoencoder(nn.Module):
+    """
+    Autoencoder.
+    """
+    def __init__(self, Encoder, Decoder):
+        super(Autoencoder, self).__init__()
+        
+        self.Encoder = Encoder
+        self.Decoder = Decoder
+                
+    def forward(self, x):
+        h = self.Encoder(x)
+        h = self.Decoder(h)
+        return h
+
+    def set_name(self, name):
+        self.name = name
+        return
+    
+
+
+class Encoder_old(nn.Module):
+    """
+    Encoder neural network.
+    """
+    def __init__(self, input_dim, hidden_dim, latent_dim, nb_hidden = 1, type = 'straight'):
+        super(Encoder_old, self).__init__()
 
         self.layer_in = nn.Linear( input_dim, hidden_dim)
         self.hidden = nn.ModuleList()
@@ -50,12 +139,12 @@ class Encoder(nn.Module):
 
 
 
-class Decoder(nn.Module):
+class Decoder_old(nn.Module):
     """
     Decoder nearal network.
     """
     def __init__(self, latent_dim, hidden_dim, output_dim, nb_hidden = 1, type = 'straight'):
-        super(Decoder, self).__init__()
+        super(Decoder_old, self).__init__()
 
         self.hidden = nn.ModuleList()
 
@@ -93,27 +182,6 @@ class Decoder(nn.Module):
     def set_name(self, name):
         self.name = name
         return
-    
-    
-class Autoencoder(nn.Module):
-    """
-    Autoencoder.
-    """
-    def __init__(self, Encoder, Decoder):
-        super(Autoencoder, self).__init__()
-        
-        self.Encoder = Encoder
-        self.Decoder = Decoder
-                
-    def forward(self, x):
-        h = self.Encoder(x)
-        h = self.Decoder(h)
-        return h
-
-    def set_name(self, name):
-        self.name = name
-        return
-
 
 
 
