@@ -209,7 +209,7 @@ def grd_loss(x,x_hat):
     
     return loss
 
-def idn_loss(x,x_hat,p, model):
+def idn_loss(x,p, model):
     '''
     Return the identity loss per x_i, 
         i.e. compares x to D(E(x)), 
@@ -219,10 +219,8 @@ def idn_loss(x,x_hat,p, model):
     D = model.decoder
 
     x_E     = torch.cat((p, x), axis=-1) # type: ignore
-    # print(x.shape,x_hat.shape,p.shape)
-    # xhat_E  = torch.cat((p, x_hat.view(-1,468)), axis=-1) # type: ignore
 
-    loss = (x-D(E(x_E)))**2 #+ (x_hat-D(E(xhat_E)))**2
+    loss = (x-D(E(x_E)))**2 
 
     return loss
 
@@ -268,7 +266,7 @@ def loss_function(loss_obj, model, x, x_hat,z_hat, p):
     mse = (mse_loss(x[1:],x_hat))     ## Compare with the final abundances for that model
     rel = (rel_loss(x[1:],x_hat))     ## Compare with the final abundances for that model
     grd = (grd_loss(x,x_hat))
-    idn = (idn_loss(x[1:],x_hat,p,model))
+    idn = (idn_loss(x[:-1],p,model))
     if 'elm' in loss_obj.type:
         elm = (elm_loss(z_hat,model, loss_obj.M))
     else:
@@ -281,6 +279,7 @@ def loss_function(loss_obj, model, x, x_hat,z_hat, p):
         idn = idn/loss_obj.norm['idn']* loss_obj.fract['idn']
 
     return mse, rel, grd, idn, elm
+
 
 def get_loss(mse, rel, grd, idn, elm, type):
     mse = mse.mean()

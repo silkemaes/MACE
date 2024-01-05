@@ -16,10 +16,10 @@ rcParams.update({'figure.dpi': 200})
 ## import own functions
 sys.path.insert(1, '/STER/silkem/MACE/src/mace')
 import CSE_0D.dataset    as ds
-import CSE_0D.train      as tr
-import neuralODE            as nODE
-import utils                as utils
-import CSE_0D.plotting             as pl
+import CSE_0D.intregr_train      as tr
+import neuralODE         as nODE
+import utils             as utils
+import CSE_0D.plotting   as pl
 import CSE_0D.loss       as loss
 
 
@@ -28,7 +28,7 @@ torch.multiprocessing.set_sharing_strategy('file_system')
 start = time()
 now = dt.datetime.now()
 name = now.strftime("%Y%m%d")+'_'+now.strftime("%H%M%S")
-path = '/STER/silkem/MACE/models/CSE_0D/'+str(name)+'_'+str(int(sys.argv[2]))+'_'+str(int(sys.argv[3]))
+path = '/STER/silkem/MACE/models/CSE_0D/'+str(name)+'_'+str(sys.argv[2])+'_'+str(sys.argv[3])
 
 dt_fracts = {4 : 0.296, 5: 0.269,8: 0.221,10: 0.175,12: 0.146,16: 0.117,20: 0.09,25: 0.078,32: 0.062,48: 0.043,64: 0.033,128: 0.017}
 
@@ -38,7 +38,6 @@ dt_fracts = {4 : 0.296, 5: 0.269,8: 0.221,10: 0.175,12: 0.146,16: 0.117,20: 0.09
 
 ## READ INPUT FILE
 arg = sys.argv[1]
-
 
 # inFile = '/STER/silkem/MACE/input/xmas2023/'+arg+'.txt'
 inFile = '/STER/silkem/MACE/input/'+arg+'.txt'
@@ -71,9 +70,10 @@ z_dim       = int(inputfile['z_dim'])
 dt_fract    = dt_fracts[z_dim]
 batch_size  = 1
 nb_samples  = int(inputfile['nb_samples'])
+nb_evol     = int(inputfile['nb_evol'])
 n_dim       = 468
 
-print(lr, tot_epochs, nb_epochs, ini_epochs, losstype, z_dim, dt_fract, batch_size, nb_samples, n_dim)
+# print(lr, tot_epochs, nb_epochs, ini_epochs, losstype, z_dim, dt_fract, batch_size, nb_samples, n_dim)
 
 ## ================================================== INPUT ========
 
@@ -145,7 +145,8 @@ trainloss.set_losstype(losstype)
 testloss.set_losstype(losstype)
 
 tic = time()
-tr.train(model, lr, data_loader, test_loader,path, end_epochs = ini_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, plot = False, log = True, show = False, start_time=start)
+tr.train(model, lr, data_loader, test_loader, nb_evol=nb_evol, path=path, end_epochs = ini_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_time=start)
+
 toc = time()
 train_time1 = toc-tic
 
@@ -173,7 +174,7 @@ testloss.change_norm(new_norm)
 
 ## Continue training
 tic = time()
-tr.train(model, lr, data_loader, test_loader,path, end_epochs = nb_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=ini_epochs, plot = False, log = True, show = False, start_time=start)
+tr.train(model, lr, data_loader, test_loader, nb_evol=nb_evol, path=path, end_epochs = nb_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=ini_epochs, start_time=start)
 toc = time()
 train_time2 = toc-tic
 
@@ -193,7 +194,7 @@ testloss.change_fract(fract)
 
 ## Continue training
 tic = time()
-tr.train(model, lr, data_loader, test_loader, path, end_epochs = tot_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=nb_epochs, plot = False, log = True, show = False, start_time=start)
+tr.train(model, lr, data_loader, test_loader, nb_evol=nb_evol, path=path, end_epochs = tot_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_epochs=nb_epochs, start_time=start)
 toc = time()
 train_time3 = toc-tic
 

@@ -7,6 +7,7 @@ nb_epochs   = 51
 losstype    = mse
 z_dim       = 10
 nb_samples  = 10000
+nb_evol     = 22
 
 ## loss fractions
 

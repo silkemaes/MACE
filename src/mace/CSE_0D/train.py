@@ -9,6 +9,8 @@ from torch.optim  import Adam
 ## own scripts
 import chempy_0D.plotting as plotting 
 from CSE_0D.loss import loss_function, get_loss, Loss
+import CSE_0D.loss as loss_scipt
+
 
 
 def process_loss_one_epoch(loss_dict, n, n_hat, z_hat, p, model, loss_obj):
@@ -27,6 +29,8 @@ def process_loss_one_epoch(loss_dict, n, n_hat, z_hat, p, model, loss_obj):
     loss_dict['elm']  += elm_loss.mean().item()
 
     return loss,loss_dict
+
+
 
 def train_one_epoch(data_loader, model, loss_obj, DEVICE, optimizer):
     '''
@@ -74,91 +78,10 @@ def train_one_epoch(data_loader, model, loss_obj, DEVICE, optimizer):
         loss.backward()
         optimizer.step()
 
-    
-
     return loss_dict,i+1, status
 
 
 
-def train_one_epoch_evol(data_loader, model, loss_obj, DEVICE, optimizer):
-    '''
-    Function to train 1 epoch.
-
-    - data_loader   = data, torchtensor
-    - model         = ML architecture to be trained
-    - loss_obj      = object that stores the losses
-
-    Method:
-    1. get data
-    2. push it through the model, x_hat = result
-    3. calculate loss (difference between x & x_hat), according to loss function defined in loss_function()
-    4. with optimiser, get the gradients and update weights using back propagation.
-    
-    Returns 
-    - losses
-    '''    
-        
-    loss_dict = dict()
-    loss_dict['mse'] = 0
-    loss_dict['rel'] = 0
-    loss_dict['grd'] = 0
-    loss_dict['idn'] = 0
-    loss_dict['elm'] = 0
-    # loss_dict['grd'] = 0
-    loss_dict['tot'] = 0
-
-    status = 0
-
-    for i, (n,p,dt) in enumerate(data_loader):
-
-        n  = n.view(n.shape[1], n.shape[2]).to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
-        p  = p.view(p.shape[1], p.shape[2]).to(DEVICE) 
-        dt = dt.view(dt.shape[1]).to(DEVICE)
-
-        tstep_evol = 44
-        n0 = n[0:-tstep_evol]
-        p0 = p[0:-tstep_evol]
-        dt0 = dt[0:-tstep_evol]
-
-        nhat_evol = list()
-        n_evol = list()
-        
-        n_hat, z_hat, modstatus = model(n0[:-1],p0,dt0)   
-        n_hat = n_hat.view(-1, 468)
-        nhat_evol.append(n_hat)
-        n_evol.append(n[0:-tstep_evol+0][:-1])
-
-        ## subsequent steps of the evolution
-        for i in range(1,tstep_evol):
-            n_hat,z_hat, modstatus = model(n_hat,p[i:-tstep_evol+i],dt[i:-tstep_evol+i])   
-            n_hat = n_hat.view(-1, 468) 
-            nhat_evol.append(n_hat)
-            n_evol.append(n[i:-tstep_evol+i][:-1])
-
-        nhat_evol = torch.stack(nhat_evol).permute(1,0,2)
-        n_evol = torch.stack(n_evol).permute(1,0,2)
-
-        ## not ready yet, need to still fix losses
-
-    #--- old
-        
-        # n  = n.view(n.shape[1], n.shape[2]).to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
-        # p  = p.view(p.shape[1], p.shape[2]).to(DEVICE) 
-        # dt = dt.view(dt.shape[1]).to(DEVICE)
-
-        # n_hat, z_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
-
-
-        loss,loss_dict = process_loss_one_epoch(loss_dict, n, n_hat, z_hat, p, model, loss_obj)
-
-        ## Backpropagation
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-    
-
-    return loss_dict,i+1, status
 
 
 
@@ -184,8 +107,6 @@ def validate_one_epoch(test_loader, model, loss_obj, DEVICE):
     
             n_hat, z_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
 
-            # if modstatus is not None and modstatus.item() == 4:
-            #     status += modstatus.item()
             
             loss,loss_dict = process_loss_one_epoch(loss_dict, n, n_hat, z_hat,p, model, loss_obj)
 
@@ -249,6 +170,8 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
         plotting.plot_loss(trainloss, testloss, log = log, show = show)
 
     return optimizer
+
+
 
 
 

@@ -7,6 +7,7 @@ nb_epochs   = 51
 losstype    = mse
 z_dim       = 16
 nb_samples  = 10000
+nb_evol     = 22
 
 ## loss fractions
 
@@ -23,3 +24,7 @@ idn2 = 1
 
 
 Name = 2024-01-02 21:42:09.723951
+
+Name = 20240105_175329
+
+Name = 20240105_175419
