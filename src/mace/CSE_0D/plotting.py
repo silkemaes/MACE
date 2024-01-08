@@ -147,11 +147,11 @@ def plot_mse(n, n_hat,ax1, color, alpha, title = None, j = -1):
     return
 
 
-def plot_grd(n, n_hat,ax1, color, alpha, title = None, j = -1):
+def plot_grd(n, n_hat,ax1, colors, alpha, title = None, j = -1):
     Δn, Δnhat, limits,x = get_grd(n, n_hat)
 
     if j == -1:
-        colors = mpl.cm.brg(np.linspace(0, 1, n.shape[0]-1))
+        
         alpha = 0.2
         step = 5
         ax1.set_title(title)
@@ -159,7 +159,7 @@ def plot_grd(n, n_hat,ax1, color, alpha, title = None, j = -1):
             ax1.scatter(Δn[i],Δnhat[i],marker = 'o', color = colors[i], alpha = alpha, label = i) # type: ignore
 
     else:
-        ax1.scatter(Δn[j],Δnhat[j],marker = 'o', color = color, alpha = alpha, label = title) # type: ignore
+        ax1.scatter(Δn[j],Δnhat[j],marker = 'o', color = colors, alpha = alpha, label = title) # type: ignore
 
     ax1.plot(x,x, '--k', lw = 0.5)
     ax1.set_xscale('log')
@@ -167,12 +167,27 @@ def plot_grd(n, n_hat,ax1, color, alpha, title = None, j = -1):
     ax1.set_xlim(limits)
     ax1.set_ylim(limits)
 
-    ax1.set_xlabel('real grdlution')
-    ax1.set_ylabel('predicted grdlution')
+    ax1.set_xlabel('real evolution')
+    ax1.set_ylabel('predicted evolution')
 
     ax1.grid(True, linestyle = '--', linewidth = 0.2)
 
     ax1.legend(fontsize = 10)
+
+    return
+
+def plot_compare(n, n_hat, plots_path,  title, alpha = 0.5, j = -1, save=True):
+    colors = mpl.cm.brg(np.linspace(0, 1, n.shape[0]-1))
+    
+    fig, axs = plt.subplots(1,2,figsize=(13,6))
+    ax1 = axs[0]
+    ax2 = axs[1]
+
+    j=-1
+    plot_mse(n, n_hat, ax1, colors, alpha = 0.5, title = "metric for mse loss", j = j)
+    plot_grd(n, n_hat, ax2, colors, alpha = 0.5, title = "metric for gradient loss", j = j)
+    if save:
+        plt.savefig(plots_path+title+'_comparison.png')
 
     return
 
@@ -200,7 +215,7 @@ def plot_mse_specs(n, n_hat, ax1,specs, alpha, title = None):
     return
 
 
-def plot_grd_specs(n, n_hat, ax1,specs, alpha, title = None):
+def plot_evol_specs(n, n_hat, ax1,specs, alpha, title = None):
     Δn, Δnhat, limits, x = get_grd(n, n_hat)
 
     for spec in specs:
@@ -213,8 +228,8 @@ def plot_grd_specs(n, n_hat, ax1,specs, alpha, title = None):
     ax1.set_xlim(limits)
     ax1.set_ylim(limits)
 
-    ax1.set_xlabel('real grdlution')
-    ax1.set_ylabel('predicted grdlution')
+    ax1.set_xlabel('real evolution')
+    ax1.set_ylabel('predicted evolution')
 
     ax1.grid(True, linestyle = '--', linewidth = 0.2)
 
@@ -226,7 +241,8 @@ def plot_grd_specs(n, n_hat, ax1,specs, alpha, title = None):
 def plot_abs(n, n_hat, plots_path,title = '', specs = [], save = True):
 
     a = 0.5
-    ms = 2
+    ms = 1.5
+    lw = 1
 
     fig, axs = plt.subplots(2,1, gridspec_kw={'height_ratios': [4,4]},figsize=(10, 8))
     ax1 = axs[0]
@@ -241,8 +257,11 @@ def plot_abs(n, n_hat, plots_path,title = '', specs = [], save = True):
     ## plot individual species
     if len(specs) != 0:
         for spec in specs:
+            # cols = plt.rcParams['axes.prop_cycle'].by_key()['color']
             idx = specs_dict[spec]
-            ax1.plot(n_hat[:,idx], '-o', label = spec, ms = ms)
+            
+            line, = ax1.plot(n_hat[:,idx], '-', label = spec, ms = ms,  lw = lw)
+            ax1.plot(n[1:,idx], '--',  lw = lw, color = line.get_color())
             ax1.legend(fontsize = 6,loc = 'upper right')
     ## plot all species
     else:
@@ -253,7 +272,7 @@ def plot_abs(n, n_hat, plots_path,title = '', specs = [], save = True):
     if len(specs) != 0:
         for spec in specs:
             idx = specs_dict[spec]
-            ax2.plot(np.abs((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-o', label = spec, ms = ms)
+            ax2.plot(np.abs((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-', label = spec, ms = ms, lw = lw)
     else:
         ax2.plot(np.abs((n[1:]-n_hat)/(n[1:])), '-o', alpha = a, ms = ms)
     ax2.plot([0,n_hat.shape[0]],[1,1], '--k', lw = 0.5)
@@ -283,7 +302,7 @@ def plot_abs(n, n_hat, plots_path,title = '', specs = [], save = True):
         else:
             plt.savefig(plots_path+title+'_abs.png')
 
-    return fig
+    return 
 
 
 

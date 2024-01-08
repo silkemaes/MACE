@@ -99,9 +99,10 @@ metadata = {'nb_samples'  : nb_samples,
             'lr'        : lr,
             'epochs'    : tot_epochs,
             'z_dim'     : z_dim,
-            'done'      : 'false',
             'losstype'  : losstype,
-            'inputfile' : arg
+            'inputfile' : arg,
+            'nb_evol'   : nb_evol,
+            'done'      : 'false',
 }
 
 json_object = json.dumps(metadata, indent=4)
@@ -155,7 +156,7 @@ train_time1 = toc-tic
 ## Change the ratio of losses via the fraction
 mse1 = float(inputfile['mse1'])
 rel1 = float(inputfile['rel1'])
-grd1 = float(inputfile['grd1'])
+grd1 = float(inputfile['evo1'])
 idn1 = float(inputfile['idn1'])
 fract = {'mse' : mse1, 
          'rel' : rel1, 
@@ -183,7 +184,7 @@ train_time2 = toc-tic
 ## Change the ratio of losses again via the fraction, but keep the normalisation
 mse2 = float(inputfile['mse2'])
 rel2 = float(inputfile['rel2'])
-grd2 = float(inputfile['grd2'])
+grd2 = float(inputfile['evo2'])
 idn2 = float(inputfile['idn2'])
 fract = {'mse' : mse1*mse2, 
          'rel' : rel1*rel2, 
@@ -239,9 +240,10 @@ metadata = {'nb_samples'  : nb_samples,
             'overhead_s'  : overhead_time,
             'samples'   : len(train),
             'cutoff_abs': train.cutoff,
-            'done'      : 'true',
             'losstype'  : losstype,
-            'inputfile' : arg
+            'inputfile' : arg,
+            'nb_evol'   : nb_evol,
+            'done'      : 'true'
 }
 
 json_object = json.dumps(metadata, indent=4)

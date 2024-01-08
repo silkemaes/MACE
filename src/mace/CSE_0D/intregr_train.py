@@ -165,3 +165,66 @@ def train(model, lr, data_loader, test_loader,nb_evol, path, end_epochs, DEVICE,
 
     return optimizer
 
+
+def test(model, input):
+
+
+    mace_time = list()
+    print('>>> Testing model...')
+
+    model.eval()
+    n     = input[0]
+    p     = input[1]
+    dt    = input[2]
+
+    # print(n.shape, p.shape,dt.shape)
+    
+    tic = time()
+    n_hat, z_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
+    toc = time()
+
+    solve_time = toc-tic
+    mace_time.append(solve_time)
+
+    print('Solving time [s]:', solve_time)
+
+    return n.detach().numpy(), n_hat[0].detach().numpy(), dt, mace_time
+
+
+
+def test_evolution(model, input, start_idx):
+
+    mace_time = list()
+    n_evol = list()
+    print('\n>>> Testing model...')
+
+
+    model.eval()
+    n     = input[0][start_idx]
+    p     = input[1]
+    dt    = input[2]
+
+    tic_tot = time()
+    ## first step of the evolution
+    tic = time()
+    n_hat, z_hat,modstatus = model(n.view(1, -1),p[start_idx].view(1, -1),dt[start_idx].view(-1))    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
+    toc = time()
+    n_evol.append(n_hat.detach().numpy())
+    solve_time = toc-tic
+    mace_time.append(solve_time)
+
+    
+    ## subsequent steps of the evolution
+    for i in tqdm(range(start_idx+1,len(dt))):
+        tic = time()
+        n_hat,z_hat, modstatus = model(n_hat.view(1, -1),p[i].view(1, -1),dt[i].view(-1))    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches
+        toc = time()
+        n_evol.append(n_hat.detach().numpy())
+        solve_time = toc-tic
+        mace_time.append(solve_time)
+    toc_tot = time()
+
+    print('Solving time [s]:', np.array(solve_time).sum())
+    print('Total   time [s]:', toc_tot-tic_tot)
+
+    return np.array(n_evol).reshape(-1,468), np.array(solve_time)

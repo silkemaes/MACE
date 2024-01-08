@@ -36,10 +36,17 @@ class CSEdata(Dataset):
 
         ## select a random test path, that is not in the training set
         self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
-        self.testpath = paths[self.test_idx]
-        while self.test_idx in self.idxs:
+        self.testpath = list()
+        self.testpath.append(paths[self.test_idx][0])
+        nb_test = 20
+        count = 0
+        while count <= nb_test:
             self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
-            self.testpath = paths[self.test_idx]
+            if self.test_idx not in self.idxs:
+                count += 1
+                self.testpath.append(paths[self.test_idx][0])
+
+        # print('test path:', self.testpath)
 
         self.M = np.load('/STER/silkem/ChemTorch/rates/M_rate16.npy')       
 
@@ -124,7 +131,7 @@ class CSEdata(Dataset):
     
 
 def get_test_data(testpath, dataset):
-    print(testpath)
+    # print(testpath)
     mod = CSEmod(testpath)
 
     Δt, n, p = mod.split_in_0D()
