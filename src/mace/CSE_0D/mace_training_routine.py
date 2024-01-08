@@ -27,8 +27,8 @@ torch.multiprocessing.set_sharing_strategy('file_system')
 
 start = time()
 now = dt.datetime.now()
-name = now.strftime("%Y%m%d")+'_'+now.strftime("%H%M%S")
-path = '/STER/silkem/MACE/models/CSE_0D/'+str(name)+'_'+str(sys.argv[2])+'_'+str(sys.argv[3])
+name = str(now.strftime("%Y%m%d")+'_'+now.strftime("%H%M%S"))+'_'+str(sys.argv[2])+'_'+str(sys.argv[3])
+path = '/STER/silkem/MACE/models/CSE_0D/'+name
 
 dt_fracts = {4 : 0.296, 5: 0.269,8: 0.221,10: 0.175,12: 0.146,16: 0.117,20: 0.09,25: 0.078,32: 0.062,48: 0.043,64: 0.033,128: 0.017}
 
@@ -43,7 +43,7 @@ arg = sys.argv[1]
 inFile = '/STER/silkem/MACE/input/'+arg+'.txt'
 
 with open(inFile, 'a') as file:
-    file.write('\nName = '+str(name)+'\n')
+    file.write('\nName = '+name+'\n')
 
 with open(inFile,'r') as f:
     file = f.readlines()
@@ -54,7 +54,6 @@ with open(inFile,'r') as f:
 inputfile = {}
 for i in range(len(lines)):
     if not len(lines[i]) == 0 and len(lines[i]) > 2:
-        # print(test[i])
         inputfile[lines[i][0]] = lines[i][2]
     elif not len(lines[i]) == 0 and len(lines[i]) <= 2:
         print('You forgot to give an input for '+lines[i][0])
@@ -64,7 +63,8 @@ for i in range(len(lines)):
 lr          = float(inputfile['lr'])
 tot_epochs  = int(inputfile['tot_epochs'])
 nb_epochs   = int(inputfile['nb_epochs'])
-ini_epochs  = 5
+ini_epochs  = int(inputfile['ini_epochs'])
+
 losstype    = inputfile['losstype']
 z_dim       = int(inputfile['z_dim'])
 dt_fract    = dt_fracts[z_dim]
@@ -102,6 +102,7 @@ metadata = {'nb_samples'  : nb_samples,
             'losstype'  : losstype,
             'inputfile' : arg,
             'nb_evol'   : nb_evol,
+            'node'      : sys.argv[4],
             'done'      : 'false',
 }
 
@@ -243,6 +244,7 @@ metadata = {'nb_samples'  : nb_samples,
             'losstype'  : losstype,
             'inputfile' : arg,
             'nb_evol'   : nb_evol,
+            'node'      : sys.argv[4],
             'done'      : 'true'
 }
 
