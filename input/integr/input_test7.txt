@@ -1,0 +1,26 @@
+
+## input model
+
+lr          = 3.e-4
+ini_epochs  = 1
+tot_epochs  = 1
+nb_epochs   = 1
+losstype    = mse_idn
+z_dim       = 8
+nb_samples  = 10000
+nb_evol     = 11
+
+## loss fractions
+
+mse1 = 1
+rel1 = 0 
+evo1 = 1
+idn1 = 1
+
+mse2 = 1
+rel2 = 0
+evo2 = 1
+idn2 = 1
+
+
+Name = 20240109_122052_58786_7

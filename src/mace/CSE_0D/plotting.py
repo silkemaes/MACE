@@ -35,28 +35,31 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
     ax1.plot(train.get_tot_loss(), ls = '-', marker = 'None', lw = lw, c='k')
 
     ## ------------- MSE -------------
+    c_mse = 'royalblue'
     if 'mse' in train.type:
-        ax1.plot(test.get_loss('mse'), ls = '--', marker = 'x', lw = lw, c='firebrick', alpha = a)
-        ax1.plot(train.get_loss('mse'), ls = '-', marker = '.', lw = lw, c='firebrick', alpha = a)
-        l_mse   = mlines.Line2D([],[], color = 'firebrick', ls = '-',label='mse',lw = lw2, alpha = 1)
+        ax1.plot(test.get_loss('mse'), ls = '--', marker = 'x', lw = lw, c=c_mse, alpha = a)
+        ax1.plot(train.get_loss('mse'), ls = '-', marker = '.', lw = lw, c=c_mse, alpha = a)
+        l_mse   = mlines.Line2D([],[], color = c_mse, ls = '-',label='mse',lw = lw2, alpha = 1)
         handles.append(l_mse)
     
     ## ------------- REL -------------
+    c_rel = 'firebrick'
     if 'rel' in train.type:
-        ax1.plot(test.get_loss('rel'), ls = '--', marker = 'x', lw = lw, c='royalblue', alpha = a)
-        ax1.plot(train.get_loss('rel'), ls = '-', marker = '.', lw = lw, c='royalblue', alpha = a)
-        l_rel = mlines.Line2D([],[], color = 'royalblue', ls = '-', label='rel',lw = lw2, alpha = 1)
+        ax1.plot(test.get_loss('rel'), ls = '--', marker = 'x', lw = lw, c=c_rel, alpha = a)
+        ax1.plot(train.get_loss('rel'), ls = '-', marker = '.', lw = lw, c=c_rel, alpha = a)
+        l_rel = mlines.Line2D([],[], color = c_rel, ls = '-', label='rel',lw = lw2, alpha = 1)
         handles.append(l_rel)
 
-    ## ------------- grd -------------
+    ## ------------- GRD -------------
+    c_grd = 'forestgreen'
     if 'grd' in train.type:
-        ax1.plot(test.get_loss('grd'), ls = '--', marker = 'x', lw = lw, c='goldenrod', alpha = a)
-        ax1.plot(train.get_loss('grd'), ls = '-', marker = '.', lw = lw, c='goldenrod', alpha = a)
-        l_grd = mlines.Line2D([],[], color = 'goldenrod', ls = '-', label='grd',lw = lw2, alpha = 1)
+        ax1.plot(test.get_loss('grd'), ls = '--', marker = 'x', lw = lw, c=c_grd, alpha = a)
+        ax1.plot(train.get_loss('grd'), ls = '-', marker = '.', lw = lw, c=c_grd, alpha = a)
+        l_grd = mlines.Line2D([],[], color = c_grd, ls = '-', label='grd',lw = lw2, alpha = 1)
         handles.append(l_grd)
 
     ## ------------- IDN -------------
-    c_idn = 'forestgreen'
+    c_idn = 'goldenrod'
     if 'idn' in train.type:
         ax1.plot(test.get_loss('idn'), ls = '--', marker = 'x', lw = lw, c=c_idn, alpha = a)
         ax1.plot(train.get_loss('idn'), ls = '-', marker = '.', lw = lw, c=c_idn, alpha = a)
@@ -257,25 +260,22 @@ def plot_abs(n, n_hat, plots_path,title = '', specs = [], save = True):
     ## plot individual species
     if len(specs) != 0:
         for spec in specs:
-            # cols = plt.rcParams['axes.prop_cycle'].by_key()['color']
             idx = specs_dict[spec]
-            
             line, = ax1.plot(n_hat[:,idx], '-', label = spec, ms = ms,  lw = lw)
             ax1.plot(n[1:,idx], '--',  lw = lw, color = line.get_color())
+            ## relative error
+            ax2.plot(np.abs((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
             ax1.legend(fontsize = 6,loc = 'upper right')
     ## plot all species
     else:
-        ax1.plot(n_hat,'-o',alpha = a, ms = ms) 
-
-
-    ## ------------------- plot relative error -------------------
-    if len(specs) != 0:
-        for spec in specs:
-            idx = specs_dict[spec]
-            ax2.plot(np.abs((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-', label = spec, ms = ms, lw = lw)
-    else:
-        ax2.plot(np.abs((n[1:]-n_hat)/(n[1:])), '-o', alpha = a, ms = ms)
+        for i in range(n_hat.shape[1]):
+            line, = ax1.plot(n_hat[:,i], '-',  ms = ms,  lw = lw)
+            ax1.plot(n[1:,i], '--',  lw = lw, color = line.get_color())
+            ## relative error
+            ax2.plot(np.abs((n[1:]-n_hat)[:,i]/n[1:][:,i]), '-', ms = ms, lw = lw, color = line.get_color())
+       
     ax2.plot([0,n_hat.shape[0]],[1,1], '--k', lw = 0.5)
+
 
     ## ------------------- settings -------------------
 

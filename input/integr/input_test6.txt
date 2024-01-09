@@ -8,7 +8,7 @@ nb_epochs   = 1
 losstype    = mse_idn
 z_dim       = 64
 nb_samples  = 10000
-nb_evol     = 44
+nb_evol     = 11
 
 ## loss fractions
 
@@ -25,3 +25,5 @@ idn2 = 1
 
 
 Name = 20240108_164448
+
+Name = 20240109_093201_58772_6

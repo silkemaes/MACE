@@ -17,6 +17,10 @@ def makeOutputDir(path):
         os.mkdir(path)
     return path
 
+def relative_error(x,x_hat):
+    res = np.abs((x[1:]-x_hat)/x[1:])
+    return res
+
 
 def get_absolute_residuals(real, pred):
 
