@@ -85,6 +85,24 @@ def load_model(loc, meta, epoch, sepr):
 
     return model
 
+def load_model_old(loc, meta, epoch, sepr):
+    n_dim = 468
+    cuda   = False
+    DEVICE = torch.device("cuda" if cuda else "cpu")
+    model = Solver_old(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, DEVICE = DEVICE)
+
+    if sepr == True:
+        file = 'nn/nn'+str(epoch)+'.pt'
+    else:
+        file = 'nn/nn.pt'
+
+    model.load_state_dict(torch.load(loc+file))
+    
+    num_params = count_parameters(model)
+    print(f'The model has {num_params} trainable parameters')
+
+    return model
+
 def load_all_noevol(outloc, dirname, sepr = False, epoch = ''):
     loc   = outloc+dirname+'/'
 
@@ -94,7 +112,7 @@ def load_all_noevol(outloc, dirname, sepr = False, epoch = ''):
     meta  = json.loads(meta)
 
     ## loading torch model
-    model = load_model(loc,meta, epoch, sepr)
+    model = load_model_old(loc,meta, epoch, sepr)
 
     ## loading losses
     if sepr == False:

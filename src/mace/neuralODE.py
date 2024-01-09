@@ -112,6 +112,8 @@ class G(nn.Module):
         # return  torch.einsum("ij, bj -> bi", self.A, z) + torch.einsum("ijk, bj, bk -> bi", self.B, z, z)  ## b is the index of the batchsize
 
 
+
+
 class Solver(nn.Module):
     '''
     The Solver class presents the architecture of MACE.
@@ -121,7 +123,7 @@ class Solver(nn.Module):
         3) Decoder; neural network with adjustable amount of nodes and layers
 
     '''
-    def __init__(self, p_dim, z_dim, DEVICE,  n_dim=466, g_nn = False, atol = 1e-5, rtol = 1e-2):
+    def __init__(self, p_dim, z_dim, DEVICE, n_dim,nb_hidden, ae_type, g_nn = False, atol = 1e-5, rtol = 1e-2):
         super(Solver, self).__init__()
 
         self.status_train = list()
@@ -149,8 +151,8 @@ class Solver(nn.Module):
         self.jit_solver = torch.compile(self.adjoint)
 
         ## Setting the autoencoder (enocder + decoder)
-        self.encoder = ae.Encoder(input_dim=input_ae_dim, latent_dim=z_dim)
-        self.decoder = ae.Decoder(latent_dim=z_dim      , output_dim=n_dim)
+        self.encoder = ae.Encoder(input_dim=input_ae_dim, latent_dim=z_dim, nb_hidden=nb_hidden, ae_type=ae_type)
+        self.decoder = ae.Decoder(latent_dim=z_dim      , output_dim=n_dim, nb_hidden=nb_hidden, ae_type=ae_type)
 
     def set_status(self, status, type):
         if type == 'train':

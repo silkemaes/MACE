@@ -72,6 +72,8 @@ batch_size  = 1
 nb_samples  = int(inputfile['nb_samples'])
 nb_evol     = int(inputfile['nb_evol'])
 n_dim       = 468
+nb_hidden   = int(inputfile['nb_hidden'])
+ae_type     = str(inputfile['ae_type'])
 
 # print(lr, tot_epochs, nb_epochs, ini_epochs, losstype, z_dim, dt_fract, batch_size, nb_samples, n_dim)
 
@@ -88,6 +90,8 @@ print('# z dimensions:', z_dim)
 print('     # samples:', nb_samples)
 print('  # evolutions:', nb_evol)
 print('     loss type:', losstype)
+print('      # hidden:', nb_hidden)
+print('       ae type:', ae_type)
 print('     inputfile:', arg)
 print('')
 
@@ -103,6 +107,8 @@ metadata = {'nb_samples'  : nb_samples,
             'losstype'  : losstype,
             'inputfile' : arg,
             'nb_evol'   : nb_evol,
+            'nb_hidden' : nb_hidden,
+            'ae_type'   : ae_type,
             'node'      : sys.argv[4],
             'done'      : 'false',
 }
@@ -123,8 +129,8 @@ kwargs = {'num_workers': 1, 'pin_memory': True}
 train, test, data_loader, test_loader = ds.get_data(dt_fract=dt_fract,nb_samples=nb_samples, batch_size=batch_size, kwargs=kwargs)
 
 ## Make model
-model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=n_dim, DEVICE = DEVICE)
-
+model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=n_dim, nb_hidden=nb_hidden, ae_type=ae_type, DEVICE = DEVICE)
+# print(model.encoder)
 
 ## --------------------------------------- TRAINING ----------------
 
@@ -245,6 +251,8 @@ metadata = {'nb_samples'  : nb_samples,
             'losstype'  : losstype,
             'inputfile' : arg,
             'nb_evol'   : nb_evol,
+            'nb_hidden' : nb_hidden,
+            'ae_type'   : ae_type,
             'node'      : sys.argv[4],
             'done'      : 'true'
 }

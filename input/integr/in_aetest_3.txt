@@ -1,0 +1,43 @@
+
+## input model
+
+lr          = 3.e-5
+ini_epochs  = 5
+tot_epochs  = 100
+nb_epochs   = 51
+losstype    = mse_idn
+z_dim       = 8
+nb_samples  = 10000
+nb_evol     = 22
+
+nb_hidden = 2
+ae_type = complex
+
+## loss fractions
+
+mse1 = 1
+rel1 = 0 
+evo1 = 1
+idn1 = 1
+
+mse2 = 100
+rel2 = 0
+evo2 = 1
+idn2 = 1
+
+
+
+
+Name = 20240109_171754_59096_3
+
+Name = 20240109_172450_59100_3
+
+Name = 20240109_172909_59105_3
+
+Name = 20240109_173141_59109_3
+
+Name = 20240109_173417_59113_3
+
+Name = 20240109_173446_59117_3
+
+Name = 20240109_173711_59121_3
