@@ -14,7 +14,7 @@ class Encoder(nn.Module):
         self.hidden = nn.ModuleList()
 
         if nb_hidden == 1:
-            hidden1_dim = 256
+            hidden1_dim = 264
             self.layer_in = nn.Linear(input_dim, hidden1_dim)
             layer = nn.Linear(hidden1_dim, hidden_out_dim)
             self.hidden.append(layer)
@@ -75,7 +75,7 @@ class Decoder(nn.Module):
         self.layer_in = nn.Linear(latent_dim, hidden_in_dim)
 
         if nb_hidden == 1:
-            hidden1_dim = 256
+            hidden1_dim = 264
             layer = nn.Linear(hidden_in_dim, hidden1_dim)
             self.hidden.append(layer)
             self.layer_out = nn.Linear(hidden1_dim, output_dim)

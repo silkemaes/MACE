@@ -35,7 +35,7 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
     ax1.plot(train.get_tot_loss(), ls = '-', marker = 'None', lw = lw, c='k')
 
     ## ------------- MSE -------------
-    c_mse = 'royalblue'
+    c_mse = 'deepskyblue'
     if 'mse' in train.type:
         ax1.plot(test.get_loss('mse'), ls = '--', marker = 'x', lw = lw, c=c_mse, alpha = a)
         ax1.plot(train.get_loss('mse'), ls = '-', marker = '.', lw = lw, c=c_mse, alpha = a)
@@ -59,7 +59,7 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
         handles.append(l_grd)
 
     ## ------------- IDN -------------
-    c_idn = 'goldenrod'
+    c_idn = 'salmon'
     if 'idn' in train.type:
         ax1.plot(test.get_loss('idn'), ls = '--', marker = 'x', lw = lw, c=c_idn, alpha = a)
         ax1.plot(train.get_loss('idn'), ls = '-', marker = '.', lw = lw, c=c_idn, alpha = a)

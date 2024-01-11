@@ -38,7 +38,7 @@ class CSEdata(Dataset):
         self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
         self.testpath = list()
         self.testpath.append(paths[self.test_idx][0])
-        nb_test = 20
+        nb_test = 3000
         count = 0
         while count <= nb_test:
             self.test_idx = utils.generate_random_numbers(1, 0, len(paths))

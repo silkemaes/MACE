@@ -67,11 +67,11 @@ def normalise(x,min,max):
 def generate_random_numbers(n, start, end):
     return np.random.randint(start, end, size=n)
 
-def load_model(loc, meta, epoch, sepr):
+def load_model(loc, meta, nb_hidden, ae_type, epoch, sepr):
     n_dim = 468
     cuda   = False
     DEVICE = torch.device("cuda" if cuda else "cpu")
-    model = Solver(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, DEVICE = DEVICE)
+    model = Solver(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, nb_hidden=nb_hidden, ae_type=ae_type, DEVICE = DEVICE)
 
     if sepr == True:
         file = 'nn/nn'+str(epoch)+'.pt'
@@ -128,7 +128,7 @@ def load_all_noevol(outloc, dirname, sepr = False, epoch = ''):
     else:
         return meta, model
     
-def load_all(outloc, dirname, epoch = ''):
+def load_all(outloc, dirname, nb_hidden, ae_type,epoch = ''):
     loc   = outloc+dirname+'/'
 
     ## loading meta file
@@ -137,7 +137,7 @@ def load_all(outloc, dirname, epoch = ''):
     meta  = json.loads(meta)
 
     ## loading torch model
-    model = load_model(loc,meta, epoch, sepr=True)
+    model = load_model(loc,meta, nb_hidden, ae_type,epoch, sepr=True)
 
     ## loading losses
 
