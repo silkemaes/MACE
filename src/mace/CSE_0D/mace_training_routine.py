@@ -39,7 +39,7 @@ dt_fracts = {4 : 0.296, 5: 0.269,8: 0.221,10: 0.175,12: 0.146,16: 0.117,20: 0.09
 ## READ INPUT FILE
 arg = sys.argv[1]
 
-# inFile = '/STER/silkem/MACE/input/xmas2023/'+arg+'.txt'
+
 inFile = '/STER/silkem/MACE/input/'+arg+'.txt'
 
 with open(inFile, 'a') as file:
@@ -126,7 +126,7 @@ kwargs = {'num_workers': 1, 'pin_memory': True}
 
 
 ## Load train & test data sets 
-train, test, data_loader, test_loader = ds.get_data(dt_fract=dt_fract,nb_samples=nb_samples, batch_size=batch_size, kwargs=kwargs)
+trainset, testset, data_loader, test_loader = ds.get_data(dt_fract=dt_fract,nb_samples=nb_samples, batch_size=batch_size, kwargs=kwargs)
 
 ## Make model
 model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=n_dim, nb_hidden=nb_hidden, ae_type=ae_type, DEVICE = DEVICE)
@@ -221,7 +221,7 @@ trainloss.save(trainpath)
 testloss.save(testpath)
 
 ## dataset characteristics
-min_max = np.stack((train.mins, train.maxs), axis=1)
+min_max = np.stack((trainset.mins, trainset.maxs), axis=1)
 np.save(path+'/minmax', min_max) 
 
 ## model
@@ -242,12 +242,12 @@ metadata = {'nb_samples'  : nb_samples,
             'lr'        : lr,
             'epochs'    : tot_epochs,
             'z_dim'     : z_dim,
-            'dt_fract'  : train.dt_fract,
-            'tmax'      : train.dt_max,
+            'dt_fract'  : trainset.dt_fract,
+            'tmax'      : trainset.dt_max,
             'train_time_h': train_time/(60*60),
             'overhead_s'  : overhead_time,
-            'samples'   : len(train),
-            'cutoff_abs': train.cutoff,
+            'samples'   : len(trainset),
+            'cutoff_abs': trainset.cutoff,
             'losstype'  : losstype,
             'inputfile' : arg,
             'nb_evol'   : nb_evol,
@@ -271,7 +271,50 @@ print(' learning rate:', lr)
 print('# z dimensions:', z_dim)
 print('     # samples:', nb_samples)
 print('     loss type:', losstype)
-print('')
+print('')\
+
+print('------------------------------')
+print('>> Testing the model')
+
+sum_step = 0
+sum_evol = 0
+evol_calctime = list()
+step_calctime = list()
+
+for i in range(len(trainset.testpath)):
+    print(i,end='\r')
+
+    testpath = trainset.testpath[i]
+    # print(testpath)
+
+    # print('>> Loading test data...')
+    physpar, info = ds.get_test_data(testpath,trainset)
+
+    # print('>> Running model')
+    n, n_hat, t, mace_step_time = tr.test(model, physpar)
+    step_calctime.append(mace_step_time)
+    n_evol, mace_evol_time = tr.test_evolution(model, physpar, start_idx=0)
+    evol_calctime.append(mace_evol_time)
+
+    # print('>> Den ormalising abundances...')
+    n = ds.get_abs(n)
+    n_hat = ds.get_abs(n_hat)
+    n_evol = ds.get_abs(n_evol)
+
+    # print('>> Calculating & saving losses...')
+    # print('per time step:')
+    mse = loss.mse_loss(n[1:], n_hat)
+    sum_step += mse.sum()
+
+    # print('    evolution:')
+    mse_evol = loss.mse_loss(n[1:], n_evol)
+    sum_evol += mse_evol.sum()
+
+np.save(path+ '/testloss_evol_' + str(len(trainset.testpath)) + '.npy', np.array(sum_evol))
+np.save(path+ '/testloss_step_' + str(len(trainset.testpath)) + '.npy', np.array(sum_step))
+np.save(path+ '/calctime_evol_' + str(len(trainset.testpath)) + '.npy', evol_calctime)
+np.save(path+ '/calctime_step_' + str(len(trainset.testpath)) + '.npy', step_calctime)  
+
 
 
 print('** ',name,' ALL DONE! in [hours]', round((train_time + overhead_time)/(60*60),2))

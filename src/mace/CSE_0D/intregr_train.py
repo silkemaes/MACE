@@ -170,7 +170,7 @@ def test(model, input):
 
 
     mace_time = list()
-    print('>>> Testing model...')
+    # print('     >>> Testing model per time step...')
 
     model.eval()
     n     = input[0]
@@ -184,11 +184,11 @@ def test(model, input):
     toc = time()
 
     solve_time = toc-tic
-    mace_time.append(solve_time)
+    # mace_time.append(solve_time)
 
-    print('Solving time [s]:', solve_time)
+    # print('             Solving time [s]:', solve_time)
 
-    return n.detach().numpy(), n_hat[0].detach().numpy(), dt, mace_time
+    return n.detach().numpy(), n_hat[0].detach().numpy(), dt, solve_time
 
 
 
@@ -196,7 +196,7 @@ def test_evolution(model, input, start_idx):
 
     mace_time = list()
     n_evol = list()
-    print('\n>>> Testing model...')
+    # print('     >>> Testing evolution model...')
 
 
     model.eval()
@@ -215,7 +215,7 @@ def test_evolution(model, input, start_idx):
 
     
     ## subsequent steps of the evolution
-    for i in tqdm(range(start_idx+1,len(dt))):
+    for i in range(start_idx+1,len(dt)):
         tic = time()
         n_hat,z_hat, modstatus = model(n_hat.view(1, -1),p[i].view(1, -1),dt[i].view(-1))    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches
         toc = time()
@@ -224,7 +224,7 @@ def test_evolution(model, input, start_idx):
         mace_time.append(solve_time)
     toc_tot = time()
 
-    print('Solving time [s]:', np.array(solve_time).sum())
-    print('Total   time [s]:', toc_tot-tic_tot)
+    # print('             Solving time [s]:', np.array(mace_time).sum())
+    # print('         Total   time [s]:', toc_tot-tic_tot)
 
-    return np.array(n_evol).reshape(-1,468), np.array(solve_time)
+    return np.array(n_evol).reshape(-1,468), np.array(mace_time).sum()

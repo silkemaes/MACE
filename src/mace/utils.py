@@ -67,11 +67,11 @@ def normalise(x,min,max):
 def generate_random_numbers(n, start, end):
     return np.random.randint(start, end, size=n)
 
-def load_model(loc, meta, nb_hidden, ae_type, epoch, sepr):
+def load_model(loc, meta, epoch, sepr):
     n_dim = 468
     cuda   = False
     DEVICE = torch.device("cuda" if cuda else "cpu")
-    model = Solver(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, nb_hidden=nb_hidden, ae_type=ae_type, DEVICE = DEVICE)
+    model = Solver(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, nb_hidden=meta['nb_hidden'], ae_type=meta['ae_type'], DEVICE = DEVICE)
 
     if sepr == True:
         file = 'nn/nn'+str(epoch)+'.pt'
@@ -81,9 +81,34 @@ def load_model(loc, meta, nb_hidden, ae_type, epoch, sepr):
     model.load_state_dict(torch.load(loc+file))
     
     num_params = count_parameters(model)
-    print(f'The model has {num_params} trainable parameters')
+    # print(f'The model has {num_params} trainable parameters')
 
     return model
+
+
+    
+def load_all(outloc, dirname,epoch = ''):
+    loc   = outloc+dirname+'/'
+
+    ## loading meta file
+    with open(loc+'/meta.json', 'r') as f:
+        meta=f.read()
+    meta  = json.loads(meta)
+
+    ## loading torch model
+    model = load_model(loc,meta,epoch, sepr=True)
+
+    ## loading losses
+
+    trainloss = Loss_analyse()
+    trainloss.load(loc, 'train', meta)
+    testloss  = Loss_analyse()
+    testloss.load(loc, 'test', meta)
+
+    return meta, model, trainloss, testloss
+
+    
+
 
 def load_model_old(loc, meta, epoch, sepr):
     n_dim = 468
@@ -112,7 +137,7 @@ def load_all_noevol(outloc, dirname, sepr = False, epoch = ''):
     meta  = json.loads(meta)
 
     ## loading torch model
-    model = load_model_old(loc,meta, epoch, sepr)
+    model = load_model_old(loc, meta, epoch, sepr)
 
     ## loading losses
     if sepr == False:
@@ -127,30 +152,6 @@ def load_all_noevol(outloc, dirname, sepr = False, epoch = ''):
         return meta, model, trainloss, testloss
     else:
         return meta, model
-    
-def load_all(outloc, dirname, nb_hidden, ae_type,epoch = ''):
-    loc   = outloc+dirname+'/'
-
-    ## loading meta file
-    with open(loc+'/meta.json', 'r') as f:
-        meta=f.read()
-    meta  = json.loads(meta)
-
-    ## loading torch model
-    model = load_model(loc,meta, nb_hidden, ae_type,epoch, sepr=True)
-
-    ## loading losses
-
-    trainloss = Loss_analyse()
-    trainloss.load(loc, 'train', meta)
-    testloss  = Loss_analyse()
-    testloss.load(loc, 'test', meta)
-    # model.set_status(np.load(loc+'train/status.npy'), 'train')
-    # model.set_status(np.load(loc+'test/status.npy'), 'test')
-
-    return meta, model, trainloss, testloss
-
-    
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)

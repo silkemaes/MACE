@@ -25,7 +25,7 @@ class CSEdata(Dataset):
         - take np.log10 of abudances
 
     '''
-    def __init__(self, nb_samples,dt_fract, train=True, fraction=0.7, cutoff = 1e-20, scale = 'norm'):
+    def __init__(self, nb_samples,dt_fract, nb_test, train=True, fraction=0.7, cutoff = 1e-20, scale = 'norm'):
         loc = '/STER/silkem/MACE/'
         paths = np.loadtxt(loc+'data/paths_data_C.txt', dtype=str)
 
@@ -38,7 +38,7 @@ class CSEdata(Dataset):
         self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
         self.testpath = list()
         self.testpath.append(paths[self.test_idx][0])
-        nb_test = 3000
+        self.nb_test = nb_test
         count = 0
         while count <= nb_test:
             self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
@@ -176,17 +176,18 @@ def get_phys(p_transf,dataset):
     return p
 
 
-def get_data( nb_samples, dt_fract, batch_size, kwargs):
+def get_data( nb_samples, dt_fract, nb_test, batch_size, kwargs):
     ## Make PyTorch dataset
-    train = CSEdata( nb_samples=nb_samples, dt_fract=dt_fract)
-    test  = CSEdata( nb_samples=nb_samples, dt_fract=dt_fract, train = False)
+    train = CSEdata( nb_samples=nb_samples, dt_fract=dt_fract, nb_test = nb_test, train = True)
+    test  = CSEdata( nb_samples=nb_samples, dt_fract=dt_fract, nb_test = nb_samples,train = False)
     
     print('Dataset:')
     print('------------------------------')
-    print('total # of samples:',len(train)+len(test))
-    print('# training samples:',len(train))
-    print('#  testing samples:',len(test) )
-    print('             ratio:',np.round(len(test)/(len(train)+len(test)),2))
+    print('  total # of samples:',len(train)+len(test))
+    print('#   training samples:',len(train))
+    print('# validation samples:',len(test) )
+    print('               ratio:',np.round(len(test)/(len(train)+len(test)),2))
+    print('     #  test samples:',train.nb_test)
 
     data_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=True ,  **kwargs)
     test_loader = DataLoader(dataset=test , batch_size=1 , shuffle=False,  **kwargs)
