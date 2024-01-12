@@ -81,7 +81,7 @@ def load_model(loc, meta, epoch, sepr):
     model.load_state_dict(torch.load(loc+file))
     
     num_params = count_parameters(model)
-    # print(f'The model has {num_params} trainable parameters')
+    print(f'The model has {num_params} trainable parameters')
 
     return model
 

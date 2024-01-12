@@ -210,6 +210,7 @@ class CSEmod():
     def __init__(self, path):
 
         self.path = '/STER/silkem/CSEchem/' + path[34:-17]
+        self.model = path[34:-51]
         abs_path = 'csfrac_smooth.out'
         phys_path = 'csphyspar_smooth.out'
         self.name = path[-43:-18]

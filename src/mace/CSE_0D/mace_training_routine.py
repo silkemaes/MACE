@@ -40,7 +40,7 @@ dt_fracts = {4 : 0.296, 5: 0.269,8: 0.221,10: 0.175,12: 0.146,16: 0.117,20: 0.09
 arg = sys.argv[1]
 
 
-inFile = '/STER/silkem/MACE/input/'+arg+'.txt'
+inFile = '/STER/silkem/MACE/input/'+arg+'.in'
 
 with open(inFile, 'a') as file:
     file.write('\nName = '+name+'\n')
@@ -74,6 +74,7 @@ nb_evol     = int(inputfile['nb_evol'])
 n_dim       = 468
 nb_hidden   = int(inputfile['nb_hidden'])
 ae_type     = str(inputfile['ae_type'])
+nb_test     = 3000
 
 # print(lr, tot_epochs, nb_epochs, ini_epochs, losstype, z_dim, dt_fract, batch_size, nb_samples, n_dim)
 
@@ -126,7 +127,7 @@ kwargs = {'num_workers': 1, 'pin_memory': True}
 
 
 ## Load train & test data sets 
-trainset, testset, data_loader, test_loader = ds.get_data(dt_fract=dt_fract,nb_samples=nb_samples, batch_size=batch_size, kwargs=kwargs)
+trainset, testset, data_loader, test_loader = ds.get_data(dt_fract=dt_fract,nb_samples=nb_samples, batch_size=batch_size, nb_test=nb_test,kwargs=kwargs)
 
 ## Make model
 model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=n_dim, nb_hidden=nb_hidden, ae_type=ae_type, DEVICE = DEVICE)
