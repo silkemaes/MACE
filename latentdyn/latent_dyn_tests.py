@@ -175,7 +175,7 @@ def get_sigma(idx, dyn, dt,cutoff,plot = False):
         ax1.set_xlim([0,1000])
         ax1.grid(True, linestyle = '--', linewidth = 0.2)
         plt.legend(fontsize = 8)
-
+        
         print('     >> Plotting...')
         # plt.show()
 
