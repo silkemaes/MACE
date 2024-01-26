@@ -1,4 +1,5 @@
 import numpy             as np
+import sys
 import matplotlib.pyplot as plt
 import matplotlib        as mpl
 import matplotlib.lines     as mlines
@@ -9,6 +10,8 @@ plt.rcParams['figure.dpi'] = 150
 
 ## own scripts
 import utils
+sys.path.insert(1, '/STER/silkem/MACE/src/mace')
+import CSE_0D.loss             as loss_script
 
 specs_dict, idx_specs = utils.get_specs()
 
@@ -16,12 +19,13 @@ specs_dict, idx_specs = utils.get_specs()
 
 def plot_loss(train, test, log = True, ylim = False, limits = None, show = False):
 
-    fig = plt.figure(figsize = (10,4))
+    fig = plt.figure(figsize = (6,2.5))
     ax1 = fig.add_subplot((111))
 
     lw = 1
     a = 0.8
     lw2 = 4
+    ms = 1
     ## ------------ legend ----------------
 
     l_train = mlines.Line2D([],[], color = 'grey', ls = '-' , marker = '.', label='train',lw = lw, alpha = 1)
@@ -34,47 +38,47 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
     ax1.plot(test.get_tot_loss(), ls = '--', marker = 'None', lw = lw, c='k')
     ax1.plot(train.get_tot_loss(), ls = '-', marker = 'None', lw = lw, c='k')
 
-    ## ------------- MSE -------------
-    c_mse = 'deepskyblue'
-    if 'mse' in train.type:
-        ax1.plot(test.get_loss('mse'), ls = '--', marker = 'x', lw = lw, c=c_mse, alpha = a)
-        ax1.plot(train.get_loss('mse'), ls = '-', marker = '.', lw = lw, c=c_mse, alpha = a)
-        l_mse   = mlines.Line2D([],[], color = c_mse, ls = '-',label='mse',lw = lw2, alpha = 1)
-        handles.append(l_mse)
+
     
     ## ------------- REL -------------
     c_rel = 'firebrick'
     if 'rel' in train.type:
-        ax1.plot(test.get_loss('rel'), ls = '--', marker = 'x', lw = lw, c=c_rel, alpha = a)
-        ax1.plot(train.get_loss('rel'), ls = '-', marker = '.', lw = lw, c=c_rel, alpha = a)
+        ax1.plot(test.get_loss('rel'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_rel, alpha = a)
+        ax1.plot(train.get_loss('rel'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_rel, alpha = a)
         l_rel = mlines.Line2D([],[], color = c_rel, ls = '-', label='rel',lw = lw2, alpha = 1)
         handles.append(l_rel)
 
     ## ------------- GRD -------------
-    c_grd = 'forestgreen'
-    if 'grd' in train.type:
-        ax1.plot(test.get_loss('grd'), ls = '--', marker = 'x', lw = lw, c=c_grd, alpha = a)
-        ax1.plot(train.get_loss('grd'), ls = '-', marker = '.', lw = lw, c=c_grd, alpha = a)
-        l_grd = mlines.Line2D([],[], color = c_grd, ls = '-', label='grd',lw = lw2, alpha = 1)
+    c_grd = 'gold'
+    if 'evo' in train.type or 'grd' in train.type:
+        ax1.plot(test.get_loss('grd'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_grd, alpha = a)
+        ax1.plot(train.get_loss('grd'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_grd, alpha = a)
+        l_grd = mlines.Line2D([],[], color = c_grd, ls = '-', label='GRD',lw = lw2, alpha = 1)
         handles.append(l_grd)
 
     ## ------------- IDN -------------
     c_idn = 'salmon'
     if 'idn' in train.type:
-        ax1.plot(test.get_loss('idn'), ls = '--', marker = 'x', lw = lw, c=c_idn, alpha = a)
-        ax1.plot(train.get_loss('idn'), ls = '-', marker = '.', lw = lw, c=c_idn, alpha = a)
-        l_idn = mlines.Line2D([],[], color = c_idn, ls = '-', label='idn',lw = lw2, alpha = 1)
+        ax1.plot(test.get_loss('idn'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_idn, alpha = a)
+        ax1.plot(train.get_loss('idn'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_idn, alpha = a)
+        l_idn = mlines.Line2D([],[], color = c_idn, ls = '-', label='IDN',lw = lw2, alpha = 1)
         handles.append(l_idn)
 
     ## ------------- ELM -------------
     c_elm = 'darkorchid'
     if 'elm' in train.type:
-        ax1.plot(test.get_loss('elm'), ls = '--', marker = 'x', lw = lw, c=c_elm, alpha = a)
-        ax1.plot(train.get_loss('elm'), ls = '-', marker = '.', lw = lw, c=c_elm, alpha = a)
+        ax1.plot(test.get_loss('elm'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_elm, alpha = a)
+        ax1.plot(train.get_loss('elm'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_elm, alpha = a)
         l_elm = mlines.Line2D([],[], color = c_elm, ls = '-', label='elm',lw = lw2, alpha = 1)
         handles.append(l_elm)
 
-
+    ## ------------- MSE -------------
+    c_mse = 'cornflowerblue'
+    if 'mse' in train.type:
+        ax1.plot(test.get_loss('mse'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_mse, alpha = a)
+        ax1.plot(train.get_loss('mse'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_mse, alpha = a)
+        l_mse   = mlines.Line2D([],[], color = c_mse, ls = '-',label='ABS',lw = lw2, alpha = 1)
+        handles.append(l_mse)
 
     ## ------------ settings --------------
     if log == True:
@@ -92,7 +96,7 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
 
     ax1.grid(True, linestyle = '--', linewidth = 0.2)
 
-    ax1.legend(handles=handles,loc = 'center left')
+    ax1.legend(handles=handles,loc = 'lower right', fontsize = 9)
     
     plt.tight_layout()
 
@@ -241,17 +245,24 @@ def plot_evol_specs(n, n_hat, ax1,specs, alpha, title = None):
     return
 
 
-def plot_abs(n, n_hat, plots_path,title = '', specs = [], save = True):
+def plot_abs(r,n, n_hat, plots_path, rho,T,title = '', specs = [], save = True):
 
     a = 0.5
     ms = 1.5
     lw = 1
 
-    fig, axs = plt.subplots(2,1, gridspec_kw={'height_ratios': [4,4]},figsize=(10, 8))
-    ax1 = axs[0]
-    ax2 = axs[1]
+    fig, axs = plt.subplots(3,1, gridspec_kw={'height_ratios': [1,4,1.5]},figsize=(6, 5))
+    ax1 = axs[1]
+    ax2 = axs[2]
+    ax3 = axs[0]
 
-    ax1.set_title(title) 
+    ax4 = ax3.twinx()
+
+    # axs = np.array([ax1,ax2,ax3,ax4])
+
+    # ax3.set_title(title) 
+
+    
 
     if len(n_hat) == 0:
         n_hat = n[1:]
@@ -261,38 +272,60 @@ def plot_abs(n, n_hat, plots_path,title = '', specs = [], save = True):
     if len(specs) != 0:
         for spec in specs:
             idx = specs_dict[spec]
-            line, = ax1.plot(n_hat[:,idx], '-', label = spec, ms = ms,  lw = lw)
-            ax1.plot(n[1:,idx], '--',  lw = lw, color = line.get_color())
+            line, = ax1.plot(r[1:],n_hat[:,idx], '-', label = spec, ms = ms,  lw = lw)
+            ax1.plot(r[1:],n[1:,idx], '--',  lw = lw, color = line.get_color())
             ## relative error
-            ax2.plot(np.abs((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
-            ax1.legend(fontsize = 6,loc = 'upper right')
+            # mse = loss_script.mse_loss(n[1:], n_hat)
+            # ax2.plot(r[1:], mse[:,idx], '-', label = spec, ms = ms, lw = lw, color = line.get_color())
+            # ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
+            ax2.plot(r[1:],((np.log10(n[1:])-np.log10(n_hat))[:,idx]/np.log10(n[1:][:,idx])), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
+            # ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
+            # ax2.plot(r[1:],((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
+            ax1.legend(fontsize = 9,loc = 'lower left')
     ## plot all species
     else:
         for i in range(n_hat.shape[1]):
             line, = ax1.plot(n_hat[:,i], '-',  ms = ms,  lw = lw)
-            ax1.plot(n[1:,i], '--',  lw = lw, color = line.get_color())
+            ax1.plot(r[1:],n[1:,i], '--',  lw = lw, color = line.get_color())
             ## relative error
-            ax2.plot(np.abs((n[1:]-n_hat)[:,i]/n[1:][:,i]), '-', ms = ms, lw = lw, color = line.get_color())
+            ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,i]/n[1:][:,i]), '-', ms = ms, lw = lw, color = line.get_color())
        
-    ax2.plot([0,n_hat.shape[0]],[1,1], '--k', lw = 0.5)
+    ax2.plot([1e14,1e18],[0,0], '--k', lw = 0.5)
+    ax3.plot(r,rho, 'k--', lw =lw)
+    tempc = 'rosybrown'
+    ax4.plot(r, T, ls='-', c=tempc, lw=lw)
 
 
     ## ------------------- settings -------------------
 
     ax1.xaxis.set_ticklabels([])
 
-    ax1.set_ylabel('abundance') 
-    ax2.set_ylabel('relative error')
-    ax2.set_xlabel('step')
+    ax1.set_ylabel('Abundance relative to H$_2$') 
+    ax2.set_ylabel('log relative error')
+    ax2.set_xlabel('Radius [cm]')
+    ax3.set_ylabel('$\\rho$ [cm$^{-3}$]')
+    ax4.set_ylabel('$T$ [K]', color = tempc)
 
-    ax2.set_yscale('log')
-    ax1.set_yscale('log') 
+    for ax in axs:
+        ax.set_yscale('log')
+        ax.set_xscale('log')
+        ax.set_xlim([1e14, 1e18])
+    ax4.set_xscale('log')
+    ax3.set_yscale('linear')
+
+    ax2.set_yscale('linear')
+
+    for ax in [ax1,ax3,ax4]:
+        ax.set_xticklabels([])
+
     ax1.grid(True, linestyle = '--', linewidth = 0.2)
     ax2.grid(True, linestyle = '--', linewidth = 0.2)
 
-    ax1.set_ylim([1e-20, 1e1])
+    ax1.set_ylim([1e-20, 1e-2])
+    # ax2.set_ylim([-2,2])
+         
 
-    plt.subplots_adjust(hspace = 0.07)
+    plt.subplots_adjust(hspace = 0.00001)
 
     plt.tight_layout()
 
