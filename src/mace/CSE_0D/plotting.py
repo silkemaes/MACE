@@ -29,7 +29,7 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
     ## ------------ legend ----------------
 
     l_train = mlines.Line2D([],[], color = 'grey', ls = '-' , marker = '.', label='train',lw = lw, alpha = 1)
-    l_test  = mlines.Line2D([],[], color = 'grey', ls = '--', marker = 'x', label='test' ,lw = lw, alpha = 1)
+    l_test  = mlines.Line2D([],[], color = 'grey', ls = '--', marker = 'x', label='validation' ,lw = lw, alpha = 1)
     l_tot   = mlines.Line2D([],[], color = 'k'   , ls = '-' , label='total',lw = lw, alpha = 1)
     
     handles = [l_train, l_test, l_tot]
@@ -245,7 +245,7 @@ def plot_evol_specs(n, n_hat, ax1,specs, alpha, title = None):
     return
 
 
-def plot_abs(r,n, n_hat, plots_path, rho,T,title = '', specs = [], save = True):
+def plot_abs(r,n, n_hat, plots_path, rho,T,title = '',specs_lg=dict(), specs = [], save = True):
 
     a = 0.5
     ms = 1.5
@@ -272,13 +272,13 @@ def plot_abs(r,n, n_hat, plots_path, rho,T,title = '', specs = [], save = True):
     if len(specs) != 0:
         for spec in specs:
             idx = specs_dict[spec]
-            line, = ax1.plot(r[1:],n_hat[:,idx], '-', label = spec, ms = ms,  lw = lw)
+            line, = ax1.plot(r[1:],n_hat[:,idx], '-', label = specs_lg[spec], ms = ms,  lw = lw)
             ax1.plot(r[1:],n[1:,idx], '--',  lw = lw, color = line.get_color())
             ## relative error
             # mse = loss_script.mse_loss(n[1:], n_hat)
             # ax2.plot(r[1:], mse[:,idx], '-', label = spec, ms = ms, lw = lw, color = line.get_color())
             # ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
-            ax2.plot(r[1:],((np.log10(n[1:])-np.log10(n_hat))[:,idx]/np.log10(n[1:][:,idx])), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
+            ax2.plot(r[1:],((np.log10(n[1:])-np.log10(n_hat))[:,idx]/np.log10(n[1:][:,idx])), '-', label = specs_lg[spec], ms = ms, lw = lw, color = line.get_color())
             # ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
             # ax2.plot(r[1:],((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
             ax1.legend(fontsize = 9,loc = 'lower left')
