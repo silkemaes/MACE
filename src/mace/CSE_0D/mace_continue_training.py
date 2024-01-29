@@ -40,12 +40,11 @@ dt_fracts = {4 : 0.296, 5: 0.269,8: 0.221,10: 0.175,12: 0.146,16: 0.117,20: 0.09
 
 ## ================================================== INPUT ========
 ## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
+arg = meta['inputfile']
 
 ## READ INPUT FILE
-arg = sys.argv[1]
-
-
-inFile = '/STER/silkem/MACE/input/'+meta['inputfile']+'.in'
+inFile = '/STER/silkem/MACE/input/'+arg+'.in'
+print(inFile)
 
 with open(inFile, 'a') as file:
     file.write('\nName = '+name+'\n')
@@ -116,10 +115,18 @@ metadata = {'nb_samples'  : nb_samples,
             'nb_evol'   : nb_evol,
             'nb_hidden' : nb_hidden,
             'ae_type'   : ae_type,
-            'node_1'    : meta['node'],
-            'node_2'    : sys.argv[3],
             'done'      : 'false',
 }
+
+if 'node_1' in meta:
+    metadata['node_1'] = meta['node_1']
+else:
+    metadata['node_1'] = meta['node']
+
+if 'node_2' in meta:
+    metadata['node_2'] = meta['node_2']
+else:
+    metadata['node_2'] = sys.argv[3]
 
 json_object = json.dumps(metadata, indent=4)
 with open(path+"/meta.json", "w") as outfile:
@@ -161,11 +168,14 @@ testloss  = loss.Loss(norm, fract)
 trainloss.set_losstype(losstype)
 testloss.set_losstype(losstype)
 
-tic = time()
-tr.train(model, lr, data_loader, test_loader, nb_evol=nb_evol, path=path, end_epochs = ini_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_time=start)
+if restart_epoch == 250:
+    train_time1 = 0
+else:
+    tic = time()
+    tr.train(model, lr, data_loader, test_loader, nb_evol=nb_evol, path=path, end_epochs = ini_epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_time=start)
 
-toc = time()
-train_time1 = toc-tic
+    toc = time()
+    train_time1 = toc-tic
 
 ## ------------- PART 2: normalised losses, but reinitialise model ----------------
 
@@ -290,7 +300,7 @@ metadata = {'nb_samples'  : nb_samples,
             'nb_evol'   : nb_evol,
             'nb_hidden' : nb_hidden,
             'ae_type'   : ae_type,
-            'node'      : sys.argv[4],
+            'node'      : sys.argv[3],
             'done'      : 'true'
 }
 
