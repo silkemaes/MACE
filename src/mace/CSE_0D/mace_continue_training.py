@@ -4,7 +4,7 @@ import torch
 import json
 import numpy                as np
 import datetime             as dt
-from time                   import time
+    from time                   import time
 import matplotlib.pyplot    as plt
 # import matplotlib           as mpl
 from matplotlib          import rcParams
@@ -67,7 +67,7 @@ for i in range(len(lines)):
 lr          = float(inputfile['lr'])
 tot_epochs  = int(inputfile['tot_epochs'])
 nb_epochs   = int(inputfile['nb_epochs'])
-ini_epochs  = int(inputfile['ini_epochs'])
+ini_epochs  = 2
 restart_epoch = (int(sys.argv[2])+1)*10
 
 losstype    = inputfile['losstype']
