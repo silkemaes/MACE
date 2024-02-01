@@ -35,12 +35,12 @@ class CSEdata(Dataset):
         self.path = paths[self.idxs]
 
         ## select a random test path, that is not in the training set
-        self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
+        # self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
         self.testpath = list()
-        self.testpath.append(paths[self.test_idx][0])
+        # self.testpath.append(paths[self.test_idx][0])
         self.nb_test = nb_test
         count = 0
-        while count <= nb_test:
+        while count < nb_test:
             self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
             if self.test_idx not in self.idxs:
                 count += 1

@@ -8,7 +8,7 @@ nb_epochs   = 151
 losstype    = mse_idn
 z_dim       = 16
 nb_samples  = 10000
-nb_evol     = 11
+nb_evol     = 8
 
 nb_hidden = 1
 ae_type = simple
@@ -24,11 +24,3 @@ mse2 = 100
 rel2 = 0
 evo2 = 0
 idn2 = 100
-
-Name = 20240112_155327_61485_5
-
-Name = 20240112_155614_61505_5
-
-Name = 20240112_162015_61524_5
-
-Name = 20240122_104049_64042_5

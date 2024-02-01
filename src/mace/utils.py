@@ -107,6 +107,15 @@ def load_all(outloc, dirname,epoch = ''):
 
     return meta, model, trainloss, testloss
 
+
+def load_meta(outloc,loc):
+    ## loading meta file
+    with open(outloc+loc+'/meta.json', 'r') as f:
+        meta=f.read()
+    meta  = json.loads(meta)
+
+    return meta
+
     
 
 
