@@ -4,7 +4,7 @@ import torch
 import json
 import numpy                as np
 import datetime             as dt
-    from time                   import time
+from time                   import time
 import matplotlib.pyplot    as plt
 # import matplotlib           as mpl
 from matplotlib          import rcParams
@@ -260,7 +260,7 @@ train_time = train_time1+train_time2+train_time3
 
 
 ## -------------- SAVING THE DATA --------------------
-trainpath = path+'/train2'
+trainpath = path+'vim 2'
 testpath  = path+'/test2'
 
 ## losses
@@ -337,8 +337,8 @@ for i in range(len(trainset.testpath)):
     # print('>> Loading test data...')
     physpar, info = ds.get_test_data(testpath,trainset)
 
-    # print('>> Running model')
     n, n_hat, t, mace_step_time = tr.test(model, physpar)
+    # print('>> Running model')
     step_calctime.append(mace_step_time)
     n_evol, mace_evol_time = tr.test_evolution(model, physpar, start_idx=0)
     evol_calctime.append(mace_evol_time)
