@@ -282,7 +282,7 @@ class CSEmod():
 
 
 def read_input_1Dmodel(file_name):
-    with open(file_name) as file:
+    with open(file_name, 'r') as file:
         lines = file.readlines()
         lines = [item.rstrip() for item in lines]
 
