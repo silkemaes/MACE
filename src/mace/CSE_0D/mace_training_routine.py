@@ -279,6 +279,10 @@ print('>> Testing the model')
 
 sum_step = 0
 sum_evol = 0
+
+sum_log_err_step = 0
+sum_log_err_evol = 0
+
 evol_calctime = list()
 step_calctime = list()
 
@@ -306,13 +310,22 @@ for i in range(len(trainset.testpath)):
     # print('per time step:')
     mse = loss.mse_loss(n[1:], n_hat)
     sum_step += mse.sum()
+    log_err_step = np.abs((np.log10(n[1:])-np.log10(n_hat))/np.log10(n[1:]))
+    sum_log_err_step += log_err_step.sum()
 
     # print('    evolution:')
     mse_evol = loss.mse_loss(n[1:], n_evol)
     sum_evol += mse_evol.sum()
+    log_err_evol = np.abs((np.log10(n[1:])-np.log10(n_evol))/np.log10(n[1:]))
+    sum_log_err_evol += log_err_evol.sum()
+
 
 np.save(path+ '/testloss_evol_' + str(len(trainset.testpath)) + '.npy', np.array(sum_evol))
 np.save(path+ '/testloss_step_' + str(len(trainset.testpath)) + '.npy', np.array(sum_step))
+
+np.save(path+ '/testloss_step_logerr_' + str(len(trainset.testpath))+'.npy', np.array(sum_log_err_evol))
+np.save(path+ '/testloss_evol_logerr_' + str(len(trainset.testpath))+'.npy', np.array(sum_log_err_evol))
+
 np.save(path+ '/calctime_evol_' + str(len(trainset.testpath)) + '.npy', evol_calctime)
 np.save(path+ '/calctime_step_' + str(len(trainset.testpath)) + '.npy', step_calctime)  
 

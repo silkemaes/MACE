@@ -5,7 +5,7 @@ import matplotlib        as mpl
 import matplotlib.lines     as mlines
 from matplotlib          import rcParams
 rcParams.update({'figure.dpi': 200})
-mpl.rcParams.update({'font.size': 10})
+# mpl.rcParams.update({'font.size': 10})
 plt.rcParams['figure.dpi'] = 150
 
 ## own scripts
@@ -25,12 +25,12 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
     lw = 1
     a = 0.8
     lw2 = 4
-    ms = 1
+    ms = 0.1
     ## ------------ legend ----------------
 
-    l_train = mlines.Line2D([],[], color = 'grey', ls = '-' , marker = '.', label='train',lw = lw, alpha = 1)
-    l_test  = mlines.Line2D([],[], color = 'grey', ls = '--', marker = 'x', label='validation' ,lw = lw, alpha = 1)
-    l_tot   = mlines.Line2D([],[], color = 'k'   , ls = '-' , label='total',lw = lw, alpha = 1)
+    l_train = mlines.Line2D([],[], color = 'grey', ls = '-' , marker = 'none', label='train',lw = lw, alpha = 1)
+    l_test  = mlines.Line2D([],[], color = 'grey', ls = '--', marker = 'none', label='validation' ,lw = lw, alpha = 1)
+    l_tot   = mlines.Line2D([],[], color = 'k'   , ls = '-' , label='total',lw = lw2, alpha = 1)
     
     handles = [l_train, l_test, l_tot]
 
@@ -81,22 +81,28 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
         handles.append(l_mse)
 
     ## ------------ settings --------------
+    plt.rcParams.update({'font.size': 12})    
+
     if log == True:
         ax1.set_yscale('log') 
 
     if ylim == True:
         if limits == None:
-            ax1.set_ylim([1e-2,1e0])
+            ax1.set_ylim(1e-2,1e0)
         else:
             ax1.set_ylim(limits)
 
+    ax1.set_xlim(5,100)
+
+    fs= 12
     ax1.set_xlabel('epoch')
     ax1.set_ylabel('loss')
     # ax1.set_xlim([5.5,7.5])
 
     ax1.grid(True, linestyle = '--', linewidth = 0.2)
 
-    ax1.legend(handles=handles,loc = 'lower right', fontsize = 9)
+    fs1 = 10
+    ax1.legend(handles=handles,loc = 'upper right', fontsize = fs1)
     
     plt.tight_layout()
 
@@ -296,7 +302,7 @@ def plot_abs(r,n, n_hat, plots_path, rho,T,title = '',specs_lg=dict(), specs = [
        
     ax2.plot([1e14,1e18],[0,0], '--k', lw = 0.5)
     ax3.plot(r,rho, 'k--', lw =lw)
-    tempc = 'rosybrown'
+    tempc = 'sienna'
     ax4.plot(r, T, ls='-', c=tempc, lw=lw)
 
 
