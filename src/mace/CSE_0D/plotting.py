@@ -92,7 +92,7 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
         else:
             ax1.set_ylim(limits)
 
-    ax1.set_xlim(5,100)
+    ax1.set_xlim(5,250)
 
     fs= 12
     ax1.set_xlabel('epoch')
@@ -102,7 +102,7 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
     ax1.grid(True, linestyle = '--', linewidth = 0.2)
 
     fs1 = 10
-    ax1.legend(handles=handles,loc = 'upper right', fontsize = fs1)
+    ax1.legend(handles=handles,loc = 'upper left', fontsize = fs1)
     
     plt.tight_layout()
 

@@ -112,7 +112,7 @@ for i in range(len(trainset.testpath)):
 
 # np.save(outloc + dirname + '/testloss_evol_' + str(len(trainset.testpath)) + '.npy', np.array(sum_evol))
 # np.save(outloc + dirname + '/testloss_step_' + str(len(trainset.testpath)) + '.npy', np.array(sum_step))
-np.save(outloc+dirname + '/testloss_step_logerr_' + str(len(trainset.testpath))+'.npy', np.array(sum_log_err_evol))
+np.save(outloc+dirname + '/testloss_step_logerr_' + str(len(trainset.testpath))+'.npy', np.array(sum_log_err_step))
 np.save(outloc+dirname + '/testloss_evol_logerr_' + str(len(trainset.testpath))+'.npy', np.array(sum_log_err_evol))
 
 # np.save(outloc + dirname + '/calctime_evol_' + str(len(trainset.testpath)) + '.npy', evol_calctime)
