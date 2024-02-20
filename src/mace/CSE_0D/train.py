@@ -234,7 +234,7 @@ def test_evolution(model, input, start_idx):
         mace_time.append(solve_time)
     toc_tot = time()
 
-    print('Solving time [s]:', np.array(solve_time).sum())
+    print('Solving time [s]:', np.array(mace_time).sum())
     print('Total   time [s]:', toc_tot-tic_tot)
 
-    return np.array(n_evol).reshape(-1,468), np.array(solve_time)
+    return np.array(n_evol).reshape(-1,468), np.array(mace_time)
