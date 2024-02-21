@@ -92,7 +92,7 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
         else:
             ax1.set_ylim(limits)
 
-    ax1.set_xlim(5,150)
+    ax1.set_xlim(5,100)
 
     fs= 12
     ax1.set_xlabel('epoch')

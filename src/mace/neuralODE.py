@@ -4,6 +4,7 @@ import numpy as np
 import torchode     as to
 import autoencoder  as ae
 from scipy.stats    import gmean
+from time           import time
 
 
 class A(nn.Module):
@@ -178,7 +179,10 @@ class Solver(nn.Module):
             x_0 = torch.cat((p, n_0), axis=-1) # type: ignore
 
         ## Encode x_0, returning the encoded z_0 in latent space
+        tic = time()
         z_0 = self.encoder(x_0)
+        toc = time()
+        enc_time = toc-tic
         
         ## Create initial value problem
         problem = to.InitialValueProblem(
@@ -187,14 +191,24 @@ class Solver(nn.Module):
         )
 
         ## Solve initial value problem. Details are set in the __init__() of this class.
+        tic = time()
         solution = self.jit_solver.solve(problem, args=p)
+        toc = time()
+        solve_time = toc-tic
         z_s = solution.ys.view(-1, self.z_dim)  ## want batches 
 
         ## Decode the resulting values from latent space z_s back to physical space
+        tic = time()
         n_s_ravel = self.decoder(z_s)
+        toc = time()
+        dec_time = toc-tic
 
         ## Reshape correctly
         n_s = n_s_ravel.reshape(1,tstep.shape[-1], self.n_dim)
+
+        print('\nencoder time:', enc_time)
+        print('solver  time:', solve_time)
+        print('decoder time:', dec_time)
 
         return n_s, z_s, solution.status
 
