@@ -15,18 +15,30 @@ import CSE_0D.loss as loss_scipt
 
 def process_loss_one_epoch(loss_dict, n, n_hat, z_hat, p, model, loss_obj):
     ## Calculate losses
-            ## n[:,1:] = abundances[1:k+1] with k=last-1; In this way we can compare if the predicted abundances are correct
-            ## the whole array n in passed along, since this is needed to compute the grd loss
-    mse_loss, rel_loss, grd_loss, idn_loss, elm_loss  = loss_function(loss_obj, model, n, n_hat,z_hat, p) 
-    ## The total loss depends upon the type of losses, set in the loss_obj
-    loss = get_loss(mse_loss, rel_loss, grd_loss,idn_loss,elm_loss, loss_obj.type)
+    #         ## n[:,1:] = abundances[1:k+1] with k=last-1; In this way we can compare if the predicted abundances are correct
+    #         ## the whole array n in passed along, since this is needed to compute the grd loss
+    # mse_loss, rel_loss, grd_loss, idn_loss, elm_loss  = loss_function(loss_obj, model, n, n_hat,z_hat, p) 
+    # ## The total loss depends upon the type of losses, set in the loss_obj
+    # loss = get_loss(mse_loss, rel_loss, grd_loss,idn_loss,elm_loss, loss_obj.type)
 
+    # loss_dict['tot']  += loss.item()
+    # loss_dict['mse']  += mse_loss.mean().item()
+    # loss_dict['rel']  += rel_loss.mean().item()
+    # loss_dict['grd']  += grd_loss.mean().item()
+    # loss_dict['idn']  += idn_loss.mean().item()
+    # loss_dict['elm']  += elm_loss.mean().item()
+
+    mse = loss_scipt.mse_loss(n[1:], n_hat)          /loss_obj.norm['mse']* loss_obj.fract['mse']
+    grd = loss_scipt.grd_loss(n, n_hat)              /loss_obj.norm['grd']* loss_obj.fract['grd']
+    idn = loss_scipt.idn_loss(n[:-1], p, model)      /loss_obj.norm['idn']* loss_obj.fract['idn']
+
+    loss = mse.mean() + idn.mean() + grd.mean()
+    # print(loss)
     loss_dict['tot']  += loss.item()
-    loss_dict['mse']  += mse_loss.mean().item()
-    loss_dict['rel']  += rel_loss.mean().item()
-    loss_dict['grd']  += grd_loss.mean().item()
-    loss_dict['idn']  += idn_loss.mean().item()
-    loss_dict['elm']  += elm_loss.mean().item()
+    loss_dict['mse']  += mse.mean().item()
+    loss_dict['grd']  += grd.mean().item()
+    loss_dict['idn']  += idn.mean().item()
+
 
     return loss,loss_dict
 
@@ -56,7 +68,6 @@ def train_one_epoch(data_loader, model, loss_obj, DEVICE, optimizer):
     loss_dict['grd'] = 0
     loss_dict['idn'] = 0
     loss_dict['elm'] = 0
-    # loss_dict['grd'] = 0
     loss_dict['tot'] = 0
 
     status = 0

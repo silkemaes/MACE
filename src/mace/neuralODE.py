@@ -206,9 +206,9 @@ class Solver(nn.Module):
         ## Reshape correctly
         n_s = n_s_ravel.reshape(1,tstep.shape[-1], self.n_dim)
 
-        print('\nencoder time:', enc_time)
-        print('solver  time:', solve_time)
-        print('decoder time:', dec_time)
+        # print('\nencoder time:', enc_time)
+        # print('solver  time:', solve_time)
+        # print('decoder time:', dec_time)
 
         return n_s, z_s, solution.status
 

@@ -6,7 +6,7 @@ import matplotlib.lines     as mlines
 from matplotlib          import rcParams
 rcParams.update({'figure.dpi': 200})
 # mpl.rcParams.update({'font.size': 10})
-plt.rcParams['figure.dpi'] = 150
+# plt.rcParams['figure.dpi'] = 150
 
 ## own scripts
 import utils
@@ -102,7 +102,7 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
     ax1.grid(True, linestyle = '--', linewidth = 0.2)
 
     fs1 = 10
-    # ax1.legend(handles=handles,loc = 'upper right', fontsize = fs1)
+    ax1.legend(handles=handles,loc = 'upper right', fontsize = fs1)
     
     plt.tight_layout()
 
@@ -291,7 +291,7 @@ def plot_abs(r,n, n_hat, plots_path, rho,T,title = '',specs_lg=dict(), specs = [
             ax2.plot(r[1:],((np.log10(n[1:])-np.log10(n_hat))[:,idx]/np.log10(n[1:][:,idx])), '-', label = specs_lg[spec], ms = ms, lw = lw, color = line.get_color())
             # ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
             # ax2.plot(r[1:],((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
-            ax1.legend(fontsize = 9,loc = 'lower left')
+            ax1.legend(fontsize = 10,loc = 'lower left')
     ## plot all species
     else:
         for i in range(n_hat.shape[1]):
@@ -301,8 +301,8 @@ def plot_abs(r,n, n_hat, plots_path, rho,T,title = '',specs_lg=dict(), specs = [
             ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,i]/n[1:][:,i]), '-', ms = ms, lw = lw, color = line.get_color())
        
     ax2.plot([1e14,1e18],[0,0], '--k', lw = 0.5)
-    ax3.plot(r,rho, 'k--', lw =lw)
-    tempc = 'sienna'
+    ax3.plot(r,rho, 'k-.', lw =lw)
+    tempc = 'darkgrey'
     ax4.plot(r, T, ls='-', c=tempc, lw=lw)
 
 
@@ -310,11 +310,11 @@ def plot_abs(r,n, n_hat, plots_path, rho,T,title = '',specs_lg=dict(), specs = [
 
     ax1.xaxis.set_ticklabels([])
 
-    ax1.set_ylabel('Abundance relative to H$_2$') 
-    ax2.set_ylabel('log relative error')
-    ax2.set_xlabel('Radius [cm]')
-    ax3.set_ylabel('$\\rho$ [cm$^{-3}$]')
-    ax4.set_ylabel('$T$ [K]', color = tempc)
+    ax1.set_ylabel('Abundance relative to H$_2$', fontsize = 12) 
+    ax2.set_ylabel('Error', fontsize = 12)
+    ax2.set_xlabel('Radius [cm]', fontsize = 12)
+    ax3.set_ylabel('$\\rho$ [cm$^{-3}$]', fontsize = 12)
+    ax4.set_ylabel('$T$ [K]', color = tempc, fontsize = 12)
 
     for ax in axs:
         ax.set_yscale('log')
@@ -341,9 +341,9 @@ def plot_abs(r,n, n_hat, plots_path, rho,T,title = '',specs_lg=dict(), specs = [
 
     if save == True:
         if len(specs) != 0:
-            plt.savefig(plots_path+title+'_abs_specs.png')
+            plt.savefig(plots_path+title+'_abs_specs.png', dpi=300)
         else:
-            plt.savefig(plots_path+title+'_abs.png')
+            plt.savefig(plots_path+title+'_abs.png', dpi=300)
 
     return 
 

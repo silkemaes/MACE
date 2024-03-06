@@ -56,11 +56,17 @@ nb_test = 3000
 
 
 idx = str(sys.argv[1])
+
+
 ## idx from 1 - 5
 # dirname = '20240207_093243_66618_1'
 # dirname = '20240207_134859_66656_'+idx
 ## idx from 6 - 9
 dirname = '20240208_135604_66879_'+idx
+
+
+## new local models
+# dirname = '20240305_123238_103131_'+idx
 print('\n__'+dirname+'_______________________________________________')  
 
 sum_step = 0
@@ -72,6 +78,8 @@ step_calctime = list()
 
 epoch = '14'
 
+# epoch = ''
+
 meta, model_testing, trainloss_, testloss_ = utils.load_all(outloc, dirname, epoch = epoch) # type: ignore
 trainset, testset, data_loader, test_loader = ds.get_data(dt_fract=dt_fracts[meta['z_dim']],nb_samples=meta['nb_samples'], nb_test = nb_test,batch_size=batch_size, kwargs=kwargs)
 
@@ -79,13 +87,6 @@ trainset, testset, data_loader, test_loader = ds.get_data(dt_fract=dt_fracts[met
 for i in range(len(trainset.testpath)):
     print(i)
 
-    # Save the original standard output
-    original_stdout = sys.stdout 
-
-    # Redirect standard output to a null device
-    sys.stdout = open(os.devnull, 'w')
-
-    # --- CODE
     testpath = trainset.testpath[i]
     # print(testpath)
 
@@ -105,28 +106,23 @@ for i in range(len(trainset.testpath)):
 
     # print('>> Calculating & saving losses...')
     # print('per time step:')
-    # mse = loss.mse_loss(n[1:], n_hat)
-    # sum_step += mse.sum()
+    mse = loss.mse_loss(n[1:], n_hat)
+    sum_step += mse.sum()
     log_err_step = np.abs((np.log10(n[1:])-np.log10(n_hat))/np.log10(n[1:]))
     sum_log_err_step += log_err_step.sum()
 
-
     # print('    evolution:')
-    # mse_evol = loss.mse_loss(n[1:], n_evol)
-    # sum_evol += mse_evol.sum()
-    log_err = np.abs((np.log10(n[1:])-np.log10(n_evol))/np.log10(n[1:]))
-    sum_log_err_evol += log_err.sum()
+    mse_evol = loss.mse_loss(n[1:], n_evol)
+    sum_evol += mse_evol.sum()
+    log_err_evol = np.abs((np.log10(n[1:])-np.log10(n_evol))/np.log10(n[1:]))
+    sum_log_err_evol += log_err_evol.sum()
 
-    # Restore standard output
-    sys.stdout = original_stdout
+path = outloc + dirname
+np.save(path+ '/2testloss_evol_' + str(len(trainset.testpath)) + '.npy', np.array(sum_evol))
+np.save(path+ '/2testloss_step_' + str(len(trainset.testpath)) + '.npy', np.array(sum_step))
 
-    # np.save(outloc+dirname+'/testloss_evol_' + str(len(trainset.testpath))+'.npy', np.array(sum_evol))
-    # np.save(outloc+dirname + '/testloss_step_' + str(len(trainset.testpath))+'.npy', np.array(sum_step))
-    np.save(outloc+dirname + '/testloss_step_logerr_'+epoch+'_' + str(len(trainset.testpath))+'.npy', np.array(sum_log_err_step))
-    np.save(outloc+dirname + '/testloss_evol_logerr_'+epoch+'_'+ str(len(trainset.testpath))+'.npy', np.array(sum_log_err_evol))
-    # np.save(outloc + dirname + '/calctime_evol_' + str(len(trainset.testpath)) + '.npy', evol_calctime)
-    # np.save(outloc + dirname + '/calctime_step_' + str(len(trainset.testpath)) + '.npy', step_calctime)  
-    loss_evol.append(sum_evol)
-    loss_step.append(sum_step)
-    time_evol.append(np.array(evol_calctime))
-    time_step.append(np.array(step_calctime))
+np.save(path+ '/2testloss_evol_logerr_' + str(len(trainset.testpath))+'.npy', np.array(sum_log_err_evol))
+np.save(path+ '/2testloss_step_logerr_' + str(len(trainset.testpath))+'.npy', np.array(sum_log_err_step))
+
+np.save(path+ '/2calctime_evol_' + str(len(trainset.testpath)) + '.npy', evol_calctime)
+np.save(path+ '/2calctime_step_' + str(len(trainset.testpath)) + '.npy', step_calctime)  
