@@ -10,7 +10,7 @@ import rates as rate
 
 sys.path.insert(1, '/STER/silkem/MACE/src/mace')
 from CSE_0D.loss  import Loss_analyse
-from mace    import Solver_old, Solver
+import mace     as mace
 
 
 def makeOutputDir(path):
@@ -116,7 +116,7 @@ def load_model(loc, meta, epoch, sepr):
     n_dim = 468
     cuda   = False
     DEVICE = torch.device("cuda" if cuda else "cpu")
-    model = Solver(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, nb_hidden=meta['nb_hidden'], ae_type=meta['ae_type'], DEVICE = DEVICE)
+    model = mace.Solver(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, nb_hidden=meta['nb_hidden'], ae_type=meta['ae_type'], DEVICE = DEVICE)
 
     if sepr == True:
         file = 'nn/nn'+str(epoch)+'.pt'
@@ -182,7 +182,7 @@ def load_model_old(loc, meta, epoch, sepr):
     n_dim = 468
     cuda   = False
     DEVICE = torch.device("cuda" if cuda else "cpu")
-    model = Solver_old(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, DEVICE = DEVICE)
+    model = mace.Solver_old(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, DEVICE = DEVICE)
 
     if sepr == True:
         file = 'nn/nn'+str(epoch)+'.pt'

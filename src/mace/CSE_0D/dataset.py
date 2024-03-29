@@ -347,18 +347,21 @@ class CSEmod():
         '''
         return self.n
     
-    def get_abs_spec(self,spec):
+    def get_abs_spec(self, spec):
         '''
         Return the abundance of a specific species of the 1D model.
         '''
         i = specs_dict[spec]
-        return self.n.T[i]
-    
+        abs = self.get_abs()
+        if abs is not None:
+            abs = abs.T[i]
+        return abs
+
     def get_dens(self):
         '''
         Return the density of the 1D model.
         '''
-        return self.dens
+        return self.dens 
     
     def get_temp(self):
         '''
@@ -406,12 +409,10 @@ class CSEmod():
         '''
         Split the 1D model in 0D models.
         '''
-        Δt = self.get_dt()
-        n_0D = self.n
-        y=1.e-100
-        p = np.array([self.get_dens()[:-1], self.get_temp()[:-1], self.get_xi()[:-1]+y, self.get_Av()[:-1]])
-        # print(self.get_xi()[:-1]+y)
-        # print(self.xi)
+        Δt   = self.get_dt()
+        n_0D = self.get_abs()
+        y    = 1.e-100  ## this number is added to xi, since it contains zeros
+        p    = np.array([self.get_dens()[:-1], self.get_temp()[:-1], self.get_xi()[:-1]+y, self.get_Av()[:-1]])
 
         return Δt.astype(np.float64), n_0D.astype(np.float64), p.T.astype(np.float64)
         

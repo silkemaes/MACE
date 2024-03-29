@@ -172,11 +172,11 @@ class Solver_old(nn.Module):
         ## Setting the neural ODE
         input_ae_dim  = n_dim
         if not self.g_nn:
-            self.g = G(z_dim)
+            self.g = lODE.G(z_dim)
             input_ae_dim  = input_ae_dim+p_dim
             self.odeterm = to.ODETerm(self.g, with_args=False)
         if self.g_nn:
-            self.g = Gnn(p_dim, z_dim)
+            self.g = lODE.Gnn(p_dim, z_dim)
             self.odeterm = to.ODETerm(self.g, with_args=True)
 
         self.step_method          = to.Dopri5(term=self.odeterm)

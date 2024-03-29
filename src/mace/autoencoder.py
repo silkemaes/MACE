@@ -338,15 +338,15 @@ def overview(model):
     print_overview(model.Decoder)
     return
     
-def build(input_dim, hidden_dim, latent_dim,output_dim, nb_hidden, type, DEVICE):
-    '''
-    Build an autoencoder, given the input, output and latent dimensions.
-    '''
-    encoder = Encoder( input_dim, hidden_dim, latent_dim, nb_hidden=nb_hidden, ae_type = type)
-    decoder = Decoder(latent_dim, hidden_dim, output_dim, nb_hidden=nb_hidden, ae_type = type)
-    model = Autoencoder(Encoder=encoder, Decoder=decoder).to(DEVICE)  
+# def build(input_dim, hidden_dim, latent_dim,output_dim, nb_hidden, type, DEVICE):
+#     '''
+#     Build an autoencoder, given the input, output and latent dimensions.
+#     '''
+#     encoder = Encoder( input_dim, hidden_dim, latent_dim, nb_hidden=nb_hidden, ae_type = type)
+#     decoder = Decoder(latent_dim, hidden_dim, output_dim, nb_hidden=nb_hidden, ae_type = type)
+#     model = Autoencoder(Encoder=encoder, Decoder=decoder).to(DEVICE)  
 
-    return model
+#     return model
 
 def name(model, encoder_name, decoder_name, model_name):
     model.set_name(model_name)

@@ -17,7 +17,8 @@ rcParams.update({'figure.dpi': 200})
 sys.path.insert(1, '/STER/silkem/MACE/src/mace')
 import CSE_0D.dataset    as ds
 import CSE_0D.intregr_train      as tr
-import latentODE         as nODE
+import latentODE         as lODE
+import mace              as mace
 import utils             as utils
 import CSE_0D.plotting   as pl
 import CSE_0D.loss       as loss
@@ -130,7 +131,7 @@ kwargs = {'num_workers': 1, 'pin_memory': True}
 trainset, testset, data_loader, test_loader = ds.get_data(dt_fract=dt_fract,nb_samples=nb_samples, batch_size=batch_size, nb_test=nb_test,kwargs=kwargs)
 
 ## Make model
-model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=n_dim, nb_hidden=nb_hidden, ae_type=ae_type, DEVICE = DEVICE)
+model = mace.Solver(p_dim=4,z_dim = z_dim, n_dim=n_dim, nb_hidden=nb_hidden, ae_type=ae_type, DEVICE = DEVICE)
 # print(model.encoder)
 
 ## --------------------------------------- TRAINING ----------------
