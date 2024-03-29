@@ -94,21 +94,28 @@ class G(nn.Module):
     '''
     The G class gives the evolution in latent space.
         
-        g(z:t)_i = A_ij * z_j(t) + B_ijk * z_j(t) * z_k(t)
+        g(z:t)_i = C_i  + A_ij * z_j(t) + B_ijk * z_j(t) * z_k(t)
+        with einstein summation.
         
             Here 
                 - z(t) are the encoded species + physical parameters
+                - C is a vector with adjustable/trainable elements (1D), constant term
                 - A is a matrix with adjustable/trainable elements (2D)
                 - B is a tensor with adjustable/trainable elements (3D)
     '''
     def __init__(self, z_dim):
+        '''
+        Initialising the tensors C, A and B.
+        '''
         super(G, self).__init__()
         self.C = nn.Parameter(torch.randn(z_dim).requires_grad_(True))
         self.A = nn.Parameter(torch.randn(z_dim, z_dim).requires_grad_(True))
         self.B = nn.Parameter(torch.randn(z_dim, z_dim, z_dim).requires_grad_(True))
 
     def forward(self,t, z):     ## t has also be given to the forward function, in order that the ODE solver can read it properly
-
+        '''
+        Forward function of the G class, einstein summations over indices.
+        '''
         return self.C + torch.einsum("ij, bj -> bi", self.A, z) + torch.einsum("ijk, bj, bk -> bi", self.B, z, z)  ## b is the index of the batchsize
         # return  torch.einsum("ij, bj -> bi", self.A, z) + torch.einsum("ijk, bj, bk -> bi", self.B, z, z)  ## b is the index of the batchsize
 
@@ -117,10 +124,10 @@ class G(nn.Module):
 
 class Solver(nn.Module):
     '''
-    The Solver class presents the architecture of MACE.
+    The Solver class presents the full architecture of MACE.
     Components:
         1) Encoder; neural network with adjustable amount of nodes and layers
-        2) Neural ODE; ODE given by function g, with trainable elements 
+        2) Latent ODE; ODE given by function g, with trainable elements 
         3) Decoder; neural network with adjustable amount of nodes and layers
 
     '''
