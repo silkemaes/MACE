@@ -143,13 +143,14 @@ def train(model, lr, data_loader, test_loader,nb_evol, path, end_epochs, DEVICE,
 
         
         ## save model every epoch temporarily
-        torch.save(model.state_dict(),path+'/nn/nn-1'+'.pt')
-        np.save(path+'/nb_epoch.npy',np.array([epoch+1]))
-        ## losses
-        trainpath = path+'/train'
-        testpath  = path+'/test'
-        trainloss.save(trainpath)
-        testloss.save(testpath)
+        if path != None:
+            torch.save(model.state_dict(),path+'/nn/nn-1'+'.pt')
+            np.save(path+'/nb_epoch.npy',np.array([epoch+1]))
+            ## losses
+            trainpath = path+'/train'
+            testpath  = path+'/test'
+            trainloss.save(trainpath)
+            testloss.save(testpath)
         ## plot
         # plotting.plot_loss(trainloss, testloss, log = log, show = show)
         # plt.savefig(path+'/loss.png')
