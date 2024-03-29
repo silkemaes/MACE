@@ -17,7 +17,7 @@ rcParams.update({'figure.dpi': 200})
 sys.path.insert(1, '/STER/silkem/MACE/src/mace')
 import CSE_0D.dataset    as ds
 import CSE_0D.train      as tr
-import neuralODE         as nODE
+import latentODE         as nODE
 import utils             as utils
 import CSE_0D.plotting   as pl
 import CSE_0D.loss       as loss

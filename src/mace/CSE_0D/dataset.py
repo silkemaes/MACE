@@ -16,16 +16,50 @@ specs_dict, idx_specs = utils.get_specs()
 
 class CSEdata(Dataset):
     '''
-    Class to initialise the dataset to train & test emulator
+    Class to initialise the dataset to train & test emulator.
 
-    Get data from textfiles (output CSE model)
-    
-    Preprocess:
-        - set all abundances < cutoff to cutoff
-        - take np.log10 of abudances
-
+    More specifically, this Dataset uses 1D CSE models, and splits them in 0D models.
     '''
     def __init__(self, nb_samples,dt_fract, nb_test, train=True, fraction=0.7, cutoff = 1e-20, scale = 'norm'):
+        '''
+        Initialising the attributes of the dataset.
+
+        Input:
+            - nb_samples [int]: number of 1D models to use for training & validation
+            - dt_fract [float]: fraction of the timestep to use, depends on number of latent species 
+                (see latent dynamics in paper)
+            - nb_test [int]: number of 1D models to uses for testing
+            - train [boolean]: True if training, False if testing
+            - fraction [float]: fraction of the dataset to use for training, 1-fraction is used for validation,
+                default = 0.7
+            - cutoff [float]: cutoff value for the abundances, depends on tolerances of classical chemistry kinetics solver, 
+                default = 1e-20
+            - scale [str]: type of scaling to use, default = 'norm'
+
+        Preprocess on data:
+            - clip all abundances to cutoff
+            - take np.log10 of abudances
+
+        Structure:
+            1. Load the paths of the 1D models
+            2. Select a certain number of paths, given by nb_samples 
+                --> self.path
+            3. Select a random test path, that is not in the training set 
+                --> self.testpath
+            4. Load the rates matrix M (matrix needed for the 'element loss', see appendix of paper)
+                (Currently not used) 
+                --> self.M
+            5. Set the min and max values of the physical parameters and abundances, 
+                resulting from a search through the full dataset; see 'minmax.json' file.
+                These values are used for normalisation of the data. 
+                --> self.mins, self.maxs
+            6. Set the cutoff value for the abundances 
+                --> self.cutoff
+            7. Set the fraction of the dataset to use for training 
+                --> self.fraction
+            8. Split the dataset in train and test set 
+        '''
+
         loc = '/STER/silkem/MACE/'
         paths = np.loadtxt(loc+'data/paths_data_C.txt', dtype=str)
 
@@ -50,13 +84,12 @@ class CSEdata(Dataset):
 
         self.M = np.load('/STER/silkem/ChemTorch/rates/M_rate16.npy')       
 
-
         ## These values are the results from a search through the full dataset; see 'minmax.json' file
         self.logρ_min = np.log10(0.008223)
         self.logρ_max = np.log10(5009000000.0)
         self.logT_min = np.log10(10.)
         self.logT_max = np.log10(1851.0)   
-        y = 1.e-100   ## this number is added to delta, since it contains zeros    
+        y = 1.e-100   ## this number is added to xi, since it contains zeros    
         self.logδ_min = np.log10(y)
         self.logδ_max = np.log10(y+0.9999)
         self.Av_min = np.log10(2.141e-05)
@@ -73,7 +106,6 @@ class CSEdata(Dataset):
         self.fraction = fraction
         self.train = train
 
-
         ## Split in train and test set        
         N = int(self.fraction*len(self.path))
         if self.train:
@@ -83,9 +115,30 @@ class CSEdata(Dataset):
             
             
     def __len__(self):
+        '''
+        Return the length of the dataset (number of 1D models used for training or validation).
+        '''
         return len(self.path)
 
     def __getitem__(self, idx):
+        '''
+        Get the data of the idx-th 1D model.
+
+        The CSEmod class is used to get the data of the 1D model.
+        Subsequently, this data is preprocessed:
+            - abundances (n) are
+                - clipped to the cutoff value
+                - np.log10 is taken 
+                - normalised to [0,1]
+            - physical parameters (p) are
+                - np.log10 is taken
+                - normalised to [0,1]
+            - timesteps (Δt) are 
+                - scaled to [0,1]
+                - multiplied with dt_fract
+
+        Returns the preprocessed data in torch tensors.
+        '''
         mod = CSEmod(self.path[idx])
 
         Δt, n, p = mod.split_in_0D()
@@ -107,30 +160,40 @@ class CSEdata(Dataset):
         return torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)
     
 
-    def get_test(self):
-        print(self.testpath)
-        mod = CSEmod(self.testpath[0])
+    # def get_test(self):
+    #     '''
+        
+    #     '''
+    #     print(self.testpath)
+    #     mod = CSEmod(self.testpath[0])
 
-        Δt, n, p = mod.split_in_0D()
+    #     Δt, n, p = mod.split_in_0D()
 
-        ## physical parameters
-        p_transf = np.empty_like(p)
-        for j in range(p.shape[1]):
-            # print(j)
-            p_transf[:,j] = utils.normalise(np.log10(p[:,j]), self.mins[j], self.maxs[j])
+    #     ## physical parameters
+    #     p_transf = np.empty_like(p)
+    #     for j in range(p.shape[1]):
+    #         # print(j)
+    #         p_transf[:,j] = utils.normalise(np.log10(p[:,j]), self.mins[j], self.maxs[j])
 
-        ## abundances
-        n_transf = np.clip(n, self.cutoff, None)
-        n_transf = np.log10(n_transf)
-        n_transf = utils.normalise(n_transf, self.n_min, self.n_max)       ## max boundary = rel. abundance of He
+    #     ## abundances
+    #     n_transf = np.clip(n, self.cutoff, None)
+    #     n_transf = np.log10(n_transf)
+    #     n_transf = utils.normalise(n_transf, self.n_min, self.n_max)       ## max boundary = rel. abundance of He
 
-        ## timesteps
-        Δt_transf = Δt/self.dt_max * self.dt_fract             ## scale to [0,1] and multiply with dt_fract
+    #     ## timesteps
+    #     Δt_transf = Δt/self. dt_max * self.dt_fract             ## scale to [0,1] and multiply with dt_fract
 
-        return torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)
+    #     return torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)
     
 
 def get_test_data(testpath, dataset):
+    '''
+    Get the data of the test 1D model, given a path and a dataset.
+
+    Similar procedure as in the __getitem__() of the CSEdata class.
+
+    The specifics of the 1D test model are stored in the 'name' dictionary.
+    '''
     # print(testpath)
     mod = CSEmod(testpath)
 
@@ -160,8 +223,10 @@ def get_test_data(testpath, dataset):
     return (torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)), name
 
 
-
 def get_abs(n):
+    '''
+    Reverse the normalisation of the abundances.
+    '''
     cutoff = 1e-20
     nmin = np.log10(cutoff)
     nmax = np.log10(0.85e-1)
@@ -169,6 +234,9 @@ def get_abs(n):
     return 10**utils.unscale(n,nmin, nmax)
 
 def get_phys(p_transf,dataset):
+    '''
+    Reverse the normalisation of the physical parameters.
+    '''
     p = torch.empty_like(p_transf)
     for j in range(p_transf.shape[1]):
         p[:,j] = 10**utils.unscale(p_transf[:,j],dataset.mins[j], dataset.maxs[j])
@@ -177,37 +245,62 @@ def get_phys(p_transf,dataset):
 
 
 def get_data( nb_samples, dt_fract, nb_test, batch_size, kwargs):
+    '''
+    Prepare the data for training and validating the emulator.
+
+    1. Make PyTorch dataset for the training and validation set.
+    2. Make PyTorch dataloader for the 
+        training 
+            - batch size = batch_size
+            - shuffle = True
+        and validation set.
+            - batch size = 1
+            - shuffle = False 
+
+    kwargs = {'num_workers': 1, 'pin_memory': True} for the DataLoader        
+    '''
     ## Make PyTorch dataset
     train = CSEdata( nb_samples=nb_samples, dt_fract=dt_fract, nb_test = nb_test, train = True)
-    test  = CSEdata( nb_samples=nb_samples, dt_fract=dt_fract, nb_test = nb_samples,train = False)
+    valid = CSEdata( nb_samples=nb_samples, dt_fract=dt_fract, nb_test = nb_samples,train = False)
     
     print('Dataset:')
     print('------------------------------')
-    print('  total # of samples:',len(train)+len(test))
+    print('  total # of samples:',len(train)+len(valid))
     print('#   training samples:',len(train))
-    print('# validation samples:',len(test) )
-    print('               ratio:',np.round(len(test)/(len(train)+len(test)),2))
+    print('# validation samples:',len(valid) )
+    print('               ratio:',np.round(len(valid)/(len(train)+len(valid)),2))
     print('     #  test samples:',train.nb_test)
 
     data_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=True ,  **kwargs)
-    test_loader = DataLoader(dataset=test , batch_size=1 , shuffle=False,  **kwargs)
+    test_loader = DataLoader(dataset=valid , batch_size=1 , shuffle=False,  **kwargs)
 
-    return train, test, data_loader, test_loader
+    return train, valid, data_loader, test_loader
 
 
 
 class CSEmod():
     '''
-    Class to initialise the dataset to train & test emulator
-
-    Get data from textfiles (output CSE model)
-    
-    Preprocess:
-        - set all abundances < cutoff to cutoff
-        - take np.log10 of abudances
-
+    Class to load a 1D CSE model.
     '''
     def __init__(self, path):
+        '''
+        Load the 1D CSE model, given a path.
+
+        The abundances are stored in a file 'csfrac_smooth.out', 
+        the physical parameters are stored in a file 'csphyspar_smooth.out'.
+        The input of the 1D CSE model is stored in a file 'inputChemistry_*.txt'.
+
+        From these paths, retrieve
+            - the abundances            --> self.n
+            - the physical parameters (for more info on the parameters, see the paper)
+                - radius                --> self.radius
+                - density               --> self.dens
+                - temperature           --> self.temp
+                - visual extinction     --> self.Av
+                - radiation parameter   --> self.xi
+            - the time steps            --> self.time
+            - input --> self.Rstar, self.Tstar, self.Mdot, self.v, self.eps, self.rtol, self.atol
+        '''
 
         self.path = '/STER/silkem/CSEchem/' + path[34:-17]
         self.model = path[34:-51]
@@ -225,63 +318,109 @@ class CSEmod():
 
         ## retrieve physical parameters
         arr = np.loadtxt(self.path+phys_path, skiprows=4, usecols=(0,1,2,3,4))
-        self.radius, self.dens, self.temp, self.Av, self.delta = arr[:,0], arr[:,1], arr[:,2], arr[:,3], arr[:,4]
+        self.radius, self.dens, self.temp, self.Av, self.xi = arr[:,0], arr[:,1], arr[:,2], arr[:,3], arr[:,4]
         self.time = self.radius/(self.v) 
                 
 
     def __len__(self):
+        '''
+        Return the length of the time array, which indicates the length of the 1D model.
+        '''
+
         return len(self.time)
 
     def get_time(self):
+        '''
+        Return the time array of the 1D model.
+        '''
         return self.time
     
     def get_phys(self):
-        return self.dens, self.temp, self.delta, self.Av
+        '''
+        Return the physical parameters of the 1D model.
+        '''
+        return self.dens, self.temp, self.xi, self.Av
     
     def get_abs(self):
+        '''
+        Return the abundances of the 1D model.
+        '''
         return self.n
     
     def get_abs_spec(self,spec):
+        '''
+        Return the abundance of a specific species of the 1D model.
+        '''
         i = specs_dict[spec]
         return self.n.T[i]
     
     def get_dens(self):
+        '''
+        Return the density of the 1D model.
+        '''
         return self.dens
     
     def get_temp(self):
+        '''
+        Return the temperature of the 1D model.
+        '''
         return self.temp
 
     def get_Av(self):
+        '''
+        Return the visual extinction of the 1D model.
+        '''
         return self.Av
     
-    def get_delta(self):
-        return self.delta
+    def get_xi(self):
+        '''
+        Return the radiation parameter of the 1D model.
+        '''
+        return self.xi
 
     def get_vel(self):
+        '''
+        Return the velocity of the 1D model.
+        '''
         return self.v
     
     def get_path(self):
+        '''
+        Return the path of the 1D model.
+        '''
         return self.path
 
     def get_name(self):
+        '''
+        Return the name of the 1D model.
+        '''
         return self.name
     
     def get_dt(self):
+        '''
+        Return the time steps of the 1D model.
+        '''
         return self.time[1:] - self.time[:-1]
     
     def split_in_0D(self):
+        '''
+        Split the 1D model in 0D models.
+        '''
         Δt = self.get_dt()
         n_0D = self.n
         y=1.e-100
-        p = np.array([self.get_dens()[:-1], self.get_temp()[:-1], self.get_delta()[:-1]+y, self.get_Av()[:-1]])
-        # print(self.get_delta()[:-1]+y)
-        # print(self.delta)
+        p = np.array([self.get_dens()[:-1], self.get_temp()[:-1], self.get_xi()[:-1]+y, self.get_Av()[:-1]])
+        # print(self.get_xi()[:-1]+y)
+        # print(self.xi)
 
         return Δt.astype(np.float64), n_0D.astype(np.float64), p.T.astype(np.float64)
         
 
 
 def read_input_1Dmodel(file_name):
+    '''
+    Read input text file of 1D CSE models, given the filename.
+    '''
     with open(file_name, 'r') as file:
         lines = file.readlines()
         lines = [item.rstrip() for item in lines]
@@ -301,27 +440,39 @@ def read_input_1Dmodel(file_name):
 def read_data_1Dmodel(file_name):
     '''
     Read data text file of output abundances of 1D CSE models.
+
+    This data text file is build up in an inconvenient way,
+    hence the data is read in this specific way.
+
+    The data is stored in a numpy array.
     '''
     with open(file_name, 'r') as file:
-        dirty = []
-        proper = None
+        part = []
+        full = None
         for line in file:
             try:  
                 if len(line) > 1: 
-                    dirty.append([float(el) for el in line.split()])
+                    part.append([float(el) for el in line.split()])
             except:
-                if len(dirty) != 0:
-                    dirty = np.array(dirty)[:,1:]
-                    if proper is None:
-                        proper = dirty
+                if len(part) != 0:
+                    part = np.array(part)[:,1:]
+                    if full is None:
+                        full = part
                     else:
-                        proper = np.concatenate((proper, dirty), axis = 1)
-                dirty = []
-    return proper
+                        full = np.concatenate((full, part), axis = 1)
+                part = []
+    return full
 
 
 
 def retrieve_file(dir_name):
+    '''
+    Function to retrieve the paths of the all 1D CSE models.
+
+    Originally these models are not stored in a convenient way,
+    hence with this function, the paths are collected in a list, 
+    separate for C-rich and O-rich models.
+    '''
     all_paths_C = []
     all_paths_O = []
 

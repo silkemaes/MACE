@@ -10,7 +10,7 @@ import rates as rate
 
 sys.path.insert(1, '/STER/silkem/MACE/src/mace')
 from CSE_0D.loss  import Loss_analyse
-from neuralODE    import Solver_old, Solver
+from mace    import Solver_old, Solver
 
 
 def makeOutputDir(path):

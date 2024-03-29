@@ -195,7 +195,8 @@ class Autoencoder(nn.Module):
         return
     
 
-
+## ------------------- OLD VERSION ------------------- ##
+## The architecture of these encoder and decoder differs from the version used in Maes et al. (2024)
 class Encoder_old(nn.Module):
     """
     Encoder neural network.
