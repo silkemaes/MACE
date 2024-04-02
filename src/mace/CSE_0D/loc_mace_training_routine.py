@@ -16,8 +16,8 @@ rcParams.update({'figure.dpi': 200})
 ## import own functions
 sys.path.insert(1, '/STER/silkem/MACE/src/mace')
 import CSE_0D.dataset    as ds
-import CSE_0D.train      as tr
-import latentODE         as nODE
+import CSE_0D.local_train      as tr
+import latentODE         as lODE
 import utils             as utils
 import CSE_0D.plotting   as pl
 import CSE_0D.loss       as loss
@@ -133,18 +133,18 @@ kwargs = {'num_workers': 1, 'pin_memory': True}
 trainset, testset, data_loader, test_loader = ds.get_data(dt_fract=dt_fract,nb_samples=nb_samples, batch_size=batch_size, nb_test=nb_test,kwargs=kwargs)
 
 ## Make model
-model = nODE.Solver(p_dim=4,z_dim = z_dim, n_dim=n_dim, nb_hidden=nb_hidden, ae_type=ae_type, DEVICE = DEVICE)
+model = lODE.Solver(p_dim=4,z_dim = z_dim, n_dim=n_dim, nb_hidden=nb_hidden, ae_type=ae_type, DEVICE = DEVICE)
 # print(model.encoder)
 
 ## --------------------------------------- TRAINING ----------------
 
 ## ------------- PART 1: unnormalised losses ----------------
-norm = {'mse' : 1,
+norm = {'abs' : 1,
         'rel' : 1,
         'grd' : 1,
         'idn' : 1}
 
-fract = {'mse' : 1, 
+fract = {'abs' : 1, 
          'rel' : 1,
          'grd' : 1,
          'idn' : 1}
@@ -166,11 +166,11 @@ train_time1 = toc-tic
 ## ------------- PART 2: normalised losses, but reinitialise model ----------------
 
 ## Change the ratio of losses via the fraction
-mse1 = float(inputfile['mse1'])
+abs1 = float(inputfile['abs1'])
 rel1 = float(inputfile['rel1'])
 grd1 = float(inputfile['evo1'])
 idn1 = float(inputfile['idn1'])
-fract = {'mse' : mse1, 
+fract = {'abs' : abs1, 
          'rel' : rel1, 
          'grd' : grd1, 
          'idn' : idn1}
@@ -178,7 +178,7 @@ trainloss.change_fract(fract)
 testloss.change_fract(fract)
 
 ## normalise the losses
-new_norm = {'mse' :np.mean(trainloss.get_loss('mse')), # type: ignore
+new_norm = {'abs' :np.mean(trainloss.get_loss('abs')), # type: ignore
             'rel' :np.mean(trainloss.get_loss('rel')), # type: ignore
             'grd' :np.mean(trainloss.get_loss('grd')), # type: ignore
             'idn' :np.mean(trainloss.get_loss('idn'))}   # type: ignore
@@ -194,11 +194,11 @@ train_time2 = toc-tic
 ## ------------- PART 3: increase losses with factor & train further ----------------
 
 ## Change the ratio of losses again via the fraction, but keep the normalisation
-mse2 = float(inputfile['mse2'])
+abs2 = float(inputfile['abs2'])
 rel2 = float(inputfile['rel2'])
 grd2 = float(inputfile['evo2'])
 idn2 = float(inputfile['idn2'])
-fract = {'mse' : mse1*mse2, 
+fract = {'abs' : abs1*abs2, 
          'rel' : rel1*rel2, 
          'grd' : grd1*grd2, 
          'idn' : idn1*idn2}
@@ -311,14 +311,14 @@ for i in range(len(trainset.testpath)):
 
     # print('>> Calculating & saving losses...')
     # print('per time step:')
-    mse = loss.mse_loss(n[1:], n_hat)
-    sum_step += mse.sum()
+    abs = loss.abs_loss(n[1:], n_hat)
+    sum_step += abs.sum()
     log_err_step = np.abs((np.log10(n[1:])-np.log10(n_hat))/np.log10(n[1:]))
     sum_log_err_step += log_err_step.sum()
 
     # print('    evolution:')
-    mse_evol = loss.mse_loss(n[1:], n_evol)
-    sum_evol += mse_evol.sum()
+    abs_evol = loss.abs_loss(n[1:], n_evol)
+    sum_evol += abs_evol.sum()
     log_err_evol = np.abs((np.log10(n[1:])-np.log10(n_evol))/np.log10(n[1:]))
     sum_log_err_evol += log_err_evol.sum()
 

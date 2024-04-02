@@ -190,16 +190,16 @@ class Solver_old(nn.Module):
         self.encoder = ae.Encoder_old(input_dim=input_ae_dim, hidden_dim=hidden_ae_dim, latent_dim=z_dim)
         self.decoder = ae.Decoder_old(latent_dim=z_dim      , hidden_dim=hidden_ae_dim, output_dim=n_dim)
 
-    def set_status(self, status, type):
-        if type == 'train':
+    def set_status(self, status, phase):
+        if phase == 'train':
             self.status_train.append(status)
-        elif type == 'test':
+        elif phase == 'test':
             self.status_test.append(status)
 
-    def get_status(self, type):
-        if type == 'train':
+    def get_status(self, phase):
+        if phase == 'train':
             return np.array(self.status_train)
-        elif type == 'test':
+        elif phase == 'test':
             return np.array(self.status_test)
 
 
