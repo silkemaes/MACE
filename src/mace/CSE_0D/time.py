@@ -19,7 +19,7 @@ sys.path.insert(1, '/STER/silkem/MACE/src/mace')
 import dataset          as ds
 import loss             as loss
 import utils            as utils
-import intregr_train            as train
+import CSE_0D.integrated            as train
 # import train            as train
 
 

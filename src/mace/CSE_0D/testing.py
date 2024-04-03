@@ -19,7 +19,7 @@ sys.path.insert(1, '/STER/silkem/MACE/src/mace')
 import dataset          as ds
 import loss             as loss
 import utils            as utils
-import CSE_0D.local_train            as local_train
+import CSE_0D.local            as local
 
 
 
@@ -94,9 +94,9 @@ for i in range(len(trainset.testpath)):
     physpar, info = ds.get_test_data(testpath,trainset)
 
     # print('>> Running model')
-    n, n_hat, t, mace_step_time = local_train.test(model_testing, physpar)
+    n, n_hat, t, mace_step_time = local.test(model_testing, physpar)
     step_calctime.append(mace_step_time)
-    n_evol, mace_evol_time = local_train.test_evolution(model_testing, physpar, start_idx=0)
+    n_evol, mace_evol_time = local.test_evolution(model_testing, physpar, start_idx=0)
     evol_calctime.append(mace_evol_time)
 
     # print('>> Den ormalising abundances...')

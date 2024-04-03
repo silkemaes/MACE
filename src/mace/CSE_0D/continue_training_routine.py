@@ -16,7 +16,7 @@ rcParams.update({'figure.dpi': 200})
 ## import own functions
 sys.path.insert(1, '/STER/silkem/MACE/src/mace')
 import CSE_0D.dataset    as ds
-import CSE_0D.local_train      as tr
+import CSE_0D.local      as tr
 import latentODE         as nODE
 import utils             as utils
 import CSE_0D.plotting   as pl

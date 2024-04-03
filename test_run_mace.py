@@ -8,7 +8,8 @@ from time import time
 sys.path.insert(1, '/STER/silkem/MACE/src/mace')
 
 import src.mace.CSE_0D.dataset          as ds
-import src.mace.CSE_0D.local_train      as local
+import CSE_0D.train                     as train
+import CSE_0D.test                      as test
 import src.mace.mace                    as mace
 from src.mace.CSE_0D.loss               import Loss
 import src.mace.utils                   as utils
@@ -29,7 +30,7 @@ DEVICE = torch.device("cuda" if cuda else "cpu")
 kwargs = {'num_workers': 1, 'pin_memory': True} 
 
 lr = 1.e-4
-epochs = 20
+epochs = 10
 batch_size = 1
 nb_test = 300
 n_dim = 468
@@ -37,9 +38,10 @@ n_dim = 468
 
 losstype = 'abs_idn'
 z_dim = 8
-nb_samples = 300
+nb_samples = 100
 nb_hidden = 1
 ae_type = 'simple'
+nb_evol = 8
 
 
 print('------------------------------')
@@ -51,7 +53,7 @@ print('     loss type:', losstype)
 print('')
 
 
-train, test, data_loader, test_loader = ds.get_data(dt_fract=dt_fracts[z_dim],nb_samples=nb_samples,nb_test = nb_test, batch_size=batch_size, kwargs=kwargs)
+traindata, testdata, data_loader, test_loader = ds.get_data(dt_fract=dt_fracts[z_dim],nb_samples=nb_samples,nb_test = nb_test, batch_size=batch_size, kwargs=kwargs)
 
 ## Local model
 
@@ -78,24 +80,27 @@ testloss  = Loss(norm, fract, losstype)
 
 
 tic = time()
-opt = local.train(model, lr, data_loader, test_loader, path = None, end_epochs = epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_time = time(), plot=plot, show = False)
+opt = train.train(model, lr, data_loader, test_loader, nb_evol=nb_evol ,path = None, end_epochs = epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_time = time(), plot=plot, show = False)
 toc = time()
 
 print('Total time [s]:',toc-tic)
 
 
-print(model.get_status('train'))
+# print(model.get_status('train'))
 
-testpath = test.testpath[0]
+testpath = testdata.testpath[5]
 # print(testpath)
 
 # print('>> Loading test data...')
-input_data, info = ds.get_test_data(testpath,test)
+input_data, info = ds.get_test_data(testpath,testdata)
 
-n_evol, mace_evol_time = local.test_evolution(model, input_data, start_idx=0)
+n_evol, mace_evol_time = test.test_evolution(model, input_data, start_idx=0)
 
-plt.plot(n_evol, lw = 1)
-plt.plot(input_data[0], 'k--', alpha = 0.2, lw = 0.5)
+
+fig = plt.figure(figsize=(6,5))
+ax1 = fig.add_subplot(111)
+ax1.plot(n_evol, lw = 1)
+ax1.plot(input_data[0], 'k--', alpha = 0.2, lw = 0.5)
 
 
 plt.show()
