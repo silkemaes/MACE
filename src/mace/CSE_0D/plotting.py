@@ -11,7 +11,7 @@ rcParams.update({'figure.dpi': 200})
 ## own scripts
 import utils
 sys.path.insert(1, '/STER/silkem/MACE/src/mace')
-import CSE_0D.loss             as loss_script
+import loss             as loss_script
 
 specs_dict, idx_specs = utils.get_specs()
 
@@ -39,14 +39,6 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
     ax1.plot(train.get_tot_loss(), ls = '-', marker = 'None', lw = lw, c='k')
 
 
-    
-    ## ------------- REL -------------
-    c_rel = 'firebrick'
-    if 'rel' in train.type:
-        ax1.plot(test.get_loss('rel'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_rel, alpha = a)
-        ax1.plot(train.get_loss('rel'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_rel, alpha = a)
-        l_rel = mlines.Line2D([],[], color = c_rel, ls = '-', label='rel',lw = lw2, alpha = 1)
-        handles.append(l_rel)
 
     ## ------------- GRD -------------
     c_grd = 'gold'
@@ -72,13 +64,13 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
         l_elm = mlines.Line2D([],[], color = c_elm, ls = '-', label='elm',lw = lw2, alpha = 1)
         handles.append(l_elm)
 
-    ## ------------- MSE -------------
-    c_mse = 'cornflowerblue'
-    if 'mse' in train.type:
-        ax1.plot(test.get_loss('mse'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_mse, alpha = a)
-        ax1.plot(train.get_loss('mse'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_mse, alpha = a)
-        l_mse   = mlines.Line2D([],[], color = c_mse, ls = '-',label='ABS',lw = lw2, alpha = 1)
-        handles.append(l_mse)
+    ## ------------- ABS -------------
+    c_abs = 'cornflowerblue'
+    if 'abs' in train.type:
+        ax1.plot(test.get_loss('abs'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_abs, alpha = a)
+        ax1.plot(train.get_loss('abs'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_abs, alpha = a)
+        l_abs   = mlines.Line2D([],[], color = c_abs, ls = '-',label='ABS',lw = lw2, alpha = 1)
+        handles.append(l_abs)
 
     ## ------------ settings --------------
     plt.rcParams.update({'font.size': 12})    
@@ -131,7 +123,7 @@ def get_grd(n, n_hat):
     return Δn, Δn_hat, limits, x
 
 
-def plot_mse(n, n_hat,ax1, color, alpha, title = None, j = -1):
+def plot_abs(n, n_hat,ax1, color, alpha, title = None, j = -1):
 
     x = np.linspace(1e-20,1e-1,100)
 
@@ -197,14 +189,14 @@ def plot_compare(n, n_hat, plots_path,  title, alpha = 0.5, j = -1, save=True):
     ax2 = axs[1]
 
     j=-1
-    plot_mse(n, n_hat, ax1, colors, alpha = 0.5, title = "metric for mse loss", j = j)
+    plot_abs(n, n_hat, ax1, colors, alpha = 0.5, title = "metric for abs loss", j = j)
     plot_grd(n, n_hat, ax2, colors, alpha = 0.5, title = "metric for gradient loss", j = j)
     if save:
         plt.savefig(plots_path+title+'_comparison.png')
 
     return
 
-def plot_mse_specs(n, n_hat, ax1,specs, alpha, title = None):
+def plot_abs_specs(n, n_hat, ax1,specs, alpha, title = None):
     n, n_hat,x = get_abs(n, n_hat)
 
     ax1.set_title(title)
@@ -285,8 +277,8 @@ def plot_abs(r,n, n_hat, plots_path, rho,T,title = '',specs_lg=dict(), specs = [
             
             ax1.plot(r[1:],n[1:,idx], '--',  lw = lw, color = line.get_color(), alpha = a)
             ## relative error
-            # mse = loss_script.mse_loss(n[1:], n_hat)
-            # ax2.plot(r[1:], mse[:,idx], '-', label = spec, ms = ms, lw = lw, color = line.get_color())
+            # abs = loss_script.abs_loss(n[1:], n_hat)
+            # ax2.plot(r[1:], abs[:,idx], '-', label = spec, ms = ms, lw = lw, color = line.get_color())
             # ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
             ax2.plot(r[1:],((np.log10(n[1:])-np.log10(n_hat))[:,idx]/np.log10(n[1:][:,idx])), '-', label = specs_lg[spec], ms = ms, lw = lw, color = line.get_color())
             # ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())

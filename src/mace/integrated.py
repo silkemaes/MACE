@@ -1,4 +1,4 @@
-import CSE_0D.loss as ls
+import loss as ls
 import torch
 
 

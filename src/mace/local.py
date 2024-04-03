@@ -5,8 +5,9 @@
 # from torch.optim  import Adam
 
 # ## own scripts
-# import chempy_0D.plotting as plotting 
-import CSE_0D.loss as ls
+# impor
+# t chempy_0D.plotting as plotting 
+import loss as ls
 
 
 

@@ -6,7 +6,7 @@ import torch
 from torch.optim  import Adam
 
 ## own scripts
-import chempy_0D.plotting       as plotting 
+import CSE_0D.plotting       as plotting 
 
 
 def train(model, lr, data_loader, test_loader, nb_evol, path, end_epochs, DEVICE, trainloss, testloss, start_epochs = 0, plot = False, log = True, show = True, start_time = 0.):
@@ -52,10 +52,10 @@ def train(model, lr, data_loader, test_loader, nb_evol, path, end_epochs, DEVICE
 
     if nb_evol == 0:
         print('\nLocal training scheme in use.')
-        from CSE_0D.local import run_epoch
+        from local import run_epoch
     elif nb_evol > 0:
         print('\nIntegrated training scheme in use.')
-        from CSE_0D.integrated import run_epoch
+        from integrated import run_epoch
     else:
         print('\nInvalid number of evolution steps (nb_evol). Please choose a number >= 0.')
         
@@ -104,6 +104,6 @@ def train(model, lr, data_loader, test_loader, nb_evol, path, end_epochs, DEVICE
 
     if plot == True:
         print('\n >>> Plotting...')
-        plotting.plot_loss(trainloss, testloss, log = log, show = show)
+        plotting.plot_loss(trainloss, testloss, ylim = False, log = log, show = show)
 
     return optimizer

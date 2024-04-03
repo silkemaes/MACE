@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import matplotlib        as mpl
 import sys
 import torch
 from time import time
@@ -7,12 +6,12 @@ from time import time
 ## import own functions
 sys.path.insert(1, '/STER/silkem/MACE/src/mace')
 
-import src.mace.CSE_0D.dataset          as ds
-import CSE_0D.train                     as train
-import CSE_0D.test                      as test
+import CSE_0D.dataset          as ds
+import train                     as train
+import test                      as test
 import src.mace.mace                    as mace
-from src.mace.CSE_0D.loss               import Loss
-import src.mace.utils                   as utils
+from loss               import Loss
+import utils                   as utils
 
 
 
@@ -30,7 +29,7 @@ DEVICE = torch.device("cuda" if cuda else "cpu")
 kwargs = {'num_workers': 1, 'pin_memory': True} 
 
 lr = 1.e-4
-epochs = 10
+epochs = 2
 batch_size = 1
 nb_test = 300
 n_dim = 468
@@ -41,7 +40,7 @@ z_dim = 8
 nb_samples = 100
 nb_hidden = 1
 ae_type = 'simple'
-nb_evol = 8
+nb_evol = 0
 
 
 print('------------------------------')

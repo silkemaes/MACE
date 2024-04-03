@@ -9,7 +9,7 @@ sys.path.append('/STER/silkem/ChemTorch/src')
 import rates as rate
 
 sys.path.insert(1, '/STER/silkem/MACE/src/mace')
-from CSE_0D.loss  import Loss_analyse
+from loss  import Loss_analyse
 import mace     as mace
 
 
