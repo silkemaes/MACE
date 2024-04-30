@@ -19,10 +19,10 @@ specs_dict, idx_specs = utils.get_specs()
 
 def plot_loss(train, test, log = True, ylim = False, limits = None, show = False):
 
-    fig = plt.figure(figsize = (6,2.5))
+    fig = plt.figure(figsize = (6,3))
     ax1 = fig.add_subplot((111))
 
-    lw = 1
+    lw = 1.5
     a = 0.8
     lw2 = 4
     ms = 0.1
@@ -66,14 +66,14 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
 
     ## ------------- ABS -------------
     c_abs = 'cornflowerblue'
-    if 'abs' in train.type:
+    if 'mse' in train.type:
         ax1.plot(test.get_loss('abs'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_abs, alpha = a)
         ax1.plot(train.get_loss('abs'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_abs, alpha = a)
         l_abs   = mlines.Line2D([],[], color = c_abs, ls = '-',label='ABS',lw = lw2, alpha = 1)
         handles.append(l_abs)
 
     ## ------------ settings --------------
-    plt.rcParams.update({'font.size': 12})    
+    plt.rcParams.update({'font.size': 14})    
 
     if log == True:
         ax1.set_yscale('log') 
@@ -93,8 +93,9 @@ def plot_loss(train, test, log = True, ylim = False, limits = None, show = False
 
     ax1.grid(True, linestyle = '--', linewidth = 0.2)
 
-    fs1 = 10
+    fs1 = 13
     # ax1.legend(handles=handles,loc = 'upper right', fontsize = fs1)
+
     
     plt.tight_layout()
 
@@ -263,7 +264,7 @@ def plot_abs(r,n, n_hat, plots_path, rho,T,title = '',specs_lg=dict(), specs = [
     
 
     if len(n_hat) == 0:
-        n_hat = n[1:]
+        n_hat = n
 
     ## ------------------- plot abundance profile -------------------
     ## plot individual species
@@ -271,19 +272,19 @@ def plot_abs(r,n, n_hat, plots_path, rho,T,title = '',specs_lg=dict(), specs = [
         for spec in specs:
             idx = specs_dict[spec]
             if step == True:
-                line, = ax1.plot(r[1:],n_hat[:,idx], ls ='none',  marker = 'o', label = specs_lg[spec], ms = ms,  lw = lw)
+                line, = ax1.plot(r,n_hat[:,idx], ls ='none',  marker = 'o', label = specs_lg[spec], ms = ms,  lw = lw)
             else:
-                line, = ax1.plot(r[1:],n_hat[:,idx], ls ='-', label = specs_lg[spec], ms = ms,  lw = lw)
+                line, = ax1.plot(r,n_hat[:,idx], ls ='-', label = specs_lg[spec], ms = ms,  lw = lw)
             
-            ax1.plot(r[1:],n[1:,idx], '--',  lw = lw, color = line.get_color(), alpha = a)
+            ax1.plot(r,n[:,idx], '--',  lw = lw, color = line.get_color(), alpha = a)
             ## relative error
             # abs = loss_script.abs_loss(n[1:], n_hat)
             # ax2.plot(r[1:], abs[:,idx], '-', label = spec, ms = ms, lw = lw, color = line.get_color())
             # ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
-            ax2.plot(r[1:],((np.log10(n[1:])-np.log10(n_hat))[:,idx]/np.log10(n[1:][:,idx])), '-', label = specs_lg[spec], ms = ms, lw = lw, color = line.get_color())
+            ax2.plot(r,((np.log10(n[:])-np.log10(n_hat))[:,idx]/np.log10(n[:][:,idx])), '-', label = specs_lg[spec], ms = ms, lw = lw, color = line.get_color())
             # ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
             # ax2.plot(r[1:],((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
-            ax1.legend(fontsize = 10,loc = 'lower left')
+            ax1.legend(fontsize = 12,loc = 'lower left')
     ## plot all species
     else:
         for i in range(n_hat.shape[1]):
@@ -302,16 +303,21 @@ def plot_abs(r,n, n_hat, plots_path, rho,T,title = '',specs_lg=dict(), specs = [
 
     ax1.xaxis.set_ticklabels([])
 
-    ax1.set_ylabel('Abundance relative to H$_2$', fontsize = 12) 
-    ax2.set_ylabel('Error', fontsize = 12)
-    ax2.set_xlabel('Radius [cm]', fontsize = 12)
-    ax3.set_ylabel('$\\rho$ [cm$^{-3}$]', fontsize = 12)
-    ax4.set_ylabel('$T$ [K]', color = tempc, fontsize = 12)
+    fs = 16
+
+    
+
+    ax1.set_ylabel('abundance relative to H$_2$', fontsize = fs) 
+    ax2.set_ylabel('error', fontsize = fs)
+    ax2.set_xlabel('radius [cm]', fontsize = fs)
+    ax3.set_ylabel('$\\rho$ [cm$^{-3}$]', fontsize = fs)
+    ax4.set_ylabel('$T$ [K]', color = tempc, fontsize = fs)
 
     for ax in axs:
         ax.set_yscale('log')
         ax.set_xscale('log')
         ax.set_xlim([1e14, 1e18])
+        ax.tick_params(labelsize = 14)
     ax4.set_xscale('log')
     ax3.set_yscale('linear')
 

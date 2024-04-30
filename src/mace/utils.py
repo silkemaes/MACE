@@ -90,11 +90,11 @@ def get_specs():
 
 
 def normalise(x,min,max):
-        '''
-        Normalise the data to the range [0,1]
-        '''
-        norm = (x - min)*(1/np.abs( min - max ))
-        return norm
+    '''
+    Normalise the data to the range [0,1]
+    '''
+    norm = (x - min)*(1/np.abs( min - max ))
+    return norm
 
 def generate_random_numbers(n, start, end):
     '''
@@ -175,6 +175,15 @@ def load_meta(outloc,loc):
 
     return meta
 
+def count_parameters(model):
+    '''
+    Count the number of trainable parameters in a model.
+    '''
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+
+## ------------------------------------------------------
     
 
 
@@ -221,8 +230,3 @@ def load_all_noevol(outloc, dirname, sepr = False, epoch = ''):
     else:
         return meta, model
 
-def count_parameters(model):
-    '''
-    Count the number of trainable parameters in a model.
-    '''
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)

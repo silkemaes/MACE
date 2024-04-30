@@ -51,7 +51,7 @@ def test_step(model, input):
 
 
 
-def test_evolution(model, input, start_idx):
+def test_evolution(model, input, start_idx=0):
     '''
     Function to test the evolution of a MACE model.
     
@@ -61,7 +61,7 @@ def test_evolution(model, input, start_idx):
             - [0] = n: abundances
             - [1] = p: physical parameters
             - [2] = dt: time steps
-        - start_idx = index to start the evolution
+        - start_idx = index to start the evolution, default = 0
     
     Method:
         1. pass the input through the model
