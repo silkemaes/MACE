@@ -1,6 +1,6 @@
 # MACE
 
-***MACE = Machine (learning) Approach to Chemistry Emulating***, by Maes et al. (*in prep*)
+***MACE = Machine (learning) Approach to Chemistry Emulating***, by Maes et al. (*in press.*): https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract
 
 Currently still under development. 
 Planned usable release: Sept 2024
