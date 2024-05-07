@@ -5,6 +5,10 @@ from torch.autograd.functional import jacobian
 from time import time
 import os
 
+import matplotlib.pyplot as plt
+import matplotlib        as mpl
+import matplotlib.lines     as mlines
+
 class Loss():
     def __init__(self, norm, fract, losstype):
         '''
@@ -339,36 +343,18 @@ def get_loss(abs, rel, grd, idn, elm, type):
 
 
 class Loss_analyse():
-    def __init__(self):
+    def __init__(self, loc, meta, type):
         '''
         Initialise the loss object, used for analysing a trained model
         '''
+        # self.norm  = meta['norm']
+        # self.fract = meta['fract']
+        self.losstype  = meta['losstype']
+        
+        self.type = type
+
+        self.load(loc)
     
-    def set_norm(self, norm):
-        '''
-        Set the normalisation factors for the losses.
-        '''
-        self.norm = norm
-
-    def set_fract(self, fract):
-        '''
-        Set the factors to multiply the losses with.
-        '''
-        self.fract = fract
-
-    def set_losstype(self, losstype):
-        '''
-        Set the type of loss used.
-            losstype:   string with the type of loss used
-                - 'abs':                            mean squared error
-                - 'rel':                            relative change in abundance
-                - 'grd':                            relative grdlution
-                - 'abs_rel' or 'rel_abs':           abs + rel
-                - 'abs_grd' or 'grd_rel':           abs + grd
-                - 'rel_grd' or 'grd_rel':           rel + grd
-                - 'abs_rel_grd' or permutations:    abs + rel + grd
-        '''
-        self.type = losstype
 
     def get_losstype(self):
         return self.type
@@ -398,13 +384,13 @@ class Loss_analyse():
         elif type == 'idn':
             self.idn = loss
 
-    def set_idv_loss(self,loss,type):
-        if type == 'abs':
-            self.abs_idv = loss
-        elif type == 'rel':
-            self.rel_idv = loss
-        elif type == 'grd':
-            self.grd_idv = loss 
+    # def set_idv_loss(self,loss,type):
+    #     if type == 'abs':
+    #         self.abs_idv = loss
+    #     elif type == 'rel':
+    #         self.rel_idv = loss
+    #     elif type == 'grd':
+    #         self.grd_idv = loss 
         
     def get_loss(self,type):
         '''
@@ -422,41 +408,122 @@ class Loss_analyse():
     def get_all_losses(self):
         return self.get_loss('abs'), self.get_loss('rel'), self.get_loss('grd'), self.get_loss('idn')
         
-    def get_idv_loss(self,type):
-        if type == 'abs':
-            return self.abs_idv
-        elif type == 'rel':
-            return self.rel_idv
-        elif type == 'grd':
-            return self.grd_idv
-        
-    def get_all_idv_losses(self):
-        return self.get_idv_loss('abs'), self.get_idv_loss('rel'), self.get_idv_loss('grd')
 
-    def load(self, loc, type, meta):
+    def load(self, loc):
         '''
         Load the losses from a .npy file in the given path.
         '''
-        self.set_loss(np.load(loc+type+'/abs.npy'), 'abs')
-        self.set_loss(np.load(loc+type+'/rel.npy'), 'rel')
-        self.set_loss(np.load(loc+type+'/grd.npy'), 'grd')
-        if os.path.exists(loc+type+'/idn.npy'):
-            self.set_loss(np.load(loc+type+'/idn.npy'), 'idn')
-        self.set_tot_loss(np.load(loc+type+'/tot.npy'))
+        if os.path.exists(loc+self.type+'/abs.npy'):
+            self.set_loss(np.load(loc+self.type+'/abs.npy'), 'abs')
+        else:
+            self.abs = None
 
-        # self.set_idv_loss(np.load(loc+type+'/abs_idv.npy'), 'abs')
-        # self.set_idv_loss(np.load(loc+type+'/rel_idv.npy'), 'rel')
-        # self.set_idv_loss(np.load(loc+type+'/grd_idv.npy'), 'grd')
+        if os.path.exists(loc+self.type+'/rel.npy'):
+            self.set_loss(np.load(loc+self.type+'/rel.npy'), 'rel')
+        else:
+            self.rel = None
 
-        # self.set_norm(meta['norm'])
-        # self.set_fract(meta['fract'])
+        if os.path.exists(loc+self.type+'/grd.npy'):
+            self.set_loss(np.load(loc+self.type+'/grd.npy'), 'grd')
+        else:
+            self.grd = None
 
-        self.set_losstype(meta['losstype'])
+        if os.path.exists(loc+self.type+'/idn.npy'):
+            self.set_loss(np.load(loc+self.type+'/idn.npy'), 'idn')
+        else:
+            self.idn = None
+        
+        self.set_tot_loss(np.load(loc+self.type+'/tot.npy'))
+
 
         return
 
     
+def plot(train, test, log = True, ylim = False, limits = None, show = False):
 
+    fig = plt.figure(figsize = (6,3))
+    ax1 = fig.add_subplot((111))
+
+    lw = 1.5
+    a = 0.8
+    lw2 = 4
+    ms = 0.1
+    ## ------------ legend ----------------
+
+    l_train = mlines.Line2D([],[], color = 'grey', ls = '-' , marker = 'none', label='train',lw = lw, alpha = 1)
+    l_test  = mlines.Line2D([],[], color = 'grey', ls = '--', marker = 'none', label='validation' ,lw = lw, alpha = 1)
+    l_tot   = mlines.Line2D([],[], color = 'k'   , ls = '-' , label='total',lw = lw2, alpha = 1)
+    
+    handles = [l_train, l_test, l_tot]
+
+    ## ------------- TOTAL ------------
+    ax1.plot(test.get_tot_loss(), ls = '--', marker = 'None', lw = lw, c='k')
+    ax1.plot(train.get_tot_loss(), ls = '-', marker = 'None', lw = lw, c='k')
+
+    ## ------------- GRD -------------
+    c_grd = 'gold'
+    if 'evo' in train.losstype or 'grd' in train.losstype:
+        ax1.plot(test.get_loss('grd'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_grd, alpha = a)
+        ax1.plot(train.get_loss('grd'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_grd, alpha = a)
+        l_grd = mlines.Line2D([],[], color = c_grd, ls = '-', label='GRD',lw = lw2, alpha = 1)
+        handles.append(l_grd)
+
+    ## ------------- IDN -------------
+    c_idn = 'salmon'
+    if 'idn' in train.losstype:
+        ax1.plot(test.get_loss('idn'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_idn, alpha = a)
+        ax1.plot(train.get_loss('idn'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_idn, alpha = a)
+        l_idn = mlines.Line2D([],[], color = c_idn, ls = '-', label='IDN',lw = lw2, alpha = 1)
+        handles.append(l_idn)
+
+    ## ------------- ELM -------------
+    c_elm = 'darkorchid'
+    if 'elm' in train.losstype:
+        ax1.plot(test.get_loss('elm'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_elm, alpha = a)
+        ax1.plot(train.get_loss('elm'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_elm, alpha = a)
+        l_elm = mlines.Line2D([],[], color = c_elm, ls = '-', label='elm',lw = lw2, alpha = 1)
+        handles.append(l_elm)
+
+    ## ------------- ABS -------------
+    c_abs = 'cornflowerblue'
+    if 'mse' in train.losstype or 'abs' in train.losstype:
+        ax1.plot(test.get_loss('abs'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_abs, alpha = a)
+        ax1.plot(train.get_loss('abs'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_abs, alpha = a)
+        l_abs   = mlines.Line2D([],[], color = c_abs, ls = '-',label='ABS',lw = lw2, alpha = 1)
+        handles.append(l_abs)
+
+    ## ------------ settings --------------
+    plt.rcParams.update({'font.size': 14})    
+
+    if log == True:
+        ax1.set_yscale('log') 
+
+    if ylim == True:
+        if limits == None:
+            ax1.set_ylim(1e-2,1e0)
+        else:
+            ax1.set_ylim(limits)
+
+    ax1.set_xlim(5,100)
+
+    fs= 12
+    ax1.set_xlabel('epoch')
+    ax1.set_ylabel('loss')
+    # ax1.set_xlim([5.5,7.5])
+
+    ax1.grid(True, linestyle = '--', linewidth = 0.2)
+
+    fs1 = 10
+    ax1.legend(handles=handles,loc = 'upper right', fontsize = fs1)
+
+    
+    plt.tight_layout()
+
+    if show == True:
+        plt.show()
+
+
+    return fig
     
 
 

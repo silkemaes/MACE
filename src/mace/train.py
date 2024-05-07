@@ -18,6 +18,9 @@ def train(model, lr, data_loader, test_loader, nb_evol, path, end_epochs, DEVICE
         - lr            = learning rate
         - data_loader   = training data, torch tensor
         - test_loader   = validation data, torch tensor
+        - nb_evol       = number of evolution steps
+            == 0: local training
+             > 0: integrated training
         - path          = path to save the model
         - end_epochs    = number of epochs to train
         - DEVICE        = device to train on (CPU or GPU)

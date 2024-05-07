@@ -9,7 +9,7 @@ sys.path.append('/STER/silkem/ChemTorch/src')
 import rates as rate
 
 sys.path.insert(1, '/STER/silkem/MACE/src/mace')
-from loss  import Loss_analyse
+from loss       import Loss_analyse
 import mace     as mace
 
 
@@ -102,7 +102,11 @@ def generate_random_numbers(n, start, end):
     '''
     return np.random.randint(start, end, size=n)
 
-def load_model(loc, meta, epoch, sepr):
+
+
+### ---
+
+def load_model(loc, meta, epoch):
     '''
     Load a MACE model.
 
@@ -118,7 +122,7 @@ def load_model(loc, meta, epoch, sepr):
     DEVICE = torch.device("cuda" if cuda else "cpu")
     model = mace.Solver(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, nb_hidden=meta['nb_hidden'], ae_type=meta['ae_type'], DEVICE = DEVICE)
 
-    if sepr == True:
+    if epoch >= 0:
         file = 'nn/nn'+str(epoch)+'.pt'
     else:
         file = 'nn/nn.pt'
@@ -128,11 +132,11 @@ def load_model(loc, meta, epoch, sepr):
     num_params = count_parameters(model)
     print(f'The model has {num_params} trainable parameters')
 
-    return model
+    return model, num_params
 
 
     
-def load_all(outloc, dirname,epoch = ''):
+def load_all(outloc, dirname, epoch = ''):
     '''
     Load all the components of a MACE model,
     given the output location (outloc) and the name of the directory (dirname).
@@ -163,17 +167,19 @@ def load_all(outloc, dirname,epoch = ''):
     return meta, model, trainloss, testloss
 
 
-def load_meta(outloc,loc):
+def load_meta(loc):
     '''
     Load the meta file of a MACE model,
     given the output location (outloc) and the name of the directory (loc).
     '''
     ## loading meta file
-    with open(outloc+loc+'/meta.json', 'r') as f:
+    with open(loc+'/meta.json', 'r') as f:
         meta=f.read()
     meta  = json.loads(meta)
 
     return meta
+
+
 
 def count_parameters(model):
     '''

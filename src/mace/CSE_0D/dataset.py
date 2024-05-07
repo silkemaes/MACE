@@ -186,7 +186,7 @@ class CSEdata(Dataset):
     #     return torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)
     
 
-def get_test_data(testpath, dataset):
+def get_test_data(testpath, meta):
     '''
     Get the data of the test 1D model, given a path and a dataset.
 
@@ -195,6 +195,8 @@ def get_test_data(testpath, dataset):
     The specifics of the 1D test model are stored in the 'name' dictionary.
     '''
     # print(testpath)
+    data = CSEdata(meta['nb_samples'],meta['dt_fract'], 1000, train=True, fraction=0.7, cutoff = 1e-20, scale = 'norm')
+    
     mod = CSEmod(testpath)
 
     Δt, n, p = mod.split_in_0D()
@@ -210,17 +212,17 @@ def get_test_data(testpath, dataset):
     p_transf = np.empty_like(p)
     for j in range(p.shape[1]):
         # print(j)
-        p_transf[:,j] = utils.normalise(np.log10(p[:,j]), dataset.mins[j], dataset.maxs[j])
+        p_transf[:,j] = utils.normalise(np.log10(p[:,j]), data.mins[j], data.maxs[j])
 
     ## abundances
-    n_transf = np.clip(n, dataset.cutoff, None)
+    n_transf = np.clip(n, data.cutoff, None)
     n_transf = np.log10(n_transf)
-    n_transf = utils.normalise(n_transf, dataset.n_min, dataset.n_max)       ## max boundary = rel. abundance of He
+    n_transf = utils.normalise(n_transf, data.n_min, data.n_max)       ## max boundary = rel. abundance of He
 
     ## timesteps
-    Δt_transf = Δt/dataset.dt_max * dataset.dt_fract             ## scale to [0,1] and multiply with dt_fract
+    Δt_transf = Δt/data.dt_max * data.dt_fract             ## scale to [0,1] and multiply with dt_fract
 
-    return (torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)), name
+    return mod, (torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)), name
 
 
 def get_abs(n):

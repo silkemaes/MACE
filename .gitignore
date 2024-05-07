@@ -133,3 +133,4 @@ dmypy.json
 runs/
 models/
 figs/
+data/

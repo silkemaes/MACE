@@ -17,94 +17,6 @@ specs_dict, idx_specs = utils.get_specs()
 
 
 
-def plot_loss(train, test, log = True, ylim = False, limits = None, show = False):
-
-    fig = plt.figure(figsize = (6,3))
-    ax1 = fig.add_subplot((111))
-
-    lw = 1.5
-    a = 0.8
-    lw2 = 4
-    ms = 0.1
-    ## ------------ legend ----------------
-
-    l_train = mlines.Line2D([],[], color = 'grey', ls = '-' , marker = 'none', label='train',lw = lw, alpha = 1)
-    l_test  = mlines.Line2D([],[], color = 'grey', ls = '--', marker = 'none', label='validation' ,lw = lw, alpha = 1)
-    l_tot   = mlines.Line2D([],[], color = 'k'   , ls = '-' , label='total',lw = lw2, alpha = 1)
-    
-    handles = [l_train, l_test, l_tot]
-
-    ## ------------- TOTAL ------------
-    ax1.plot(test.get_tot_loss(), ls = '--', marker = 'None', lw = lw, c='k')
-    ax1.plot(train.get_tot_loss(), ls = '-', marker = 'None', lw = lw, c='k')
-
-
-
-    ## ------------- GRD -------------
-    c_grd = 'gold'
-    if 'evo' in train.type or 'grd' in train.type:
-        ax1.plot(test.get_loss('grd'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_grd, alpha = a)
-        ax1.plot(train.get_loss('grd'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_grd, alpha = a)
-        l_grd = mlines.Line2D([],[], color = c_grd, ls = '-', label='GRD',lw = lw2, alpha = 1)
-        handles.append(l_grd)
-
-    ## ------------- IDN -------------
-    c_idn = 'salmon'
-    if 'idn' in train.type:
-        ax1.plot(test.get_loss('idn'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_idn, alpha = a)
-        ax1.plot(train.get_loss('idn'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_idn, alpha = a)
-        l_idn = mlines.Line2D([],[], color = c_idn, ls = '-', label='IDN',lw = lw2, alpha = 1)
-        handles.append(l_idn)
-
-    ## ------------- ELM -------------
-    c_elm = 'darkorchid'
-    if 'elm' in train.type:
-        ax1.plot(test.get_loss('elm'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_elm, alpha = a)
-        ax1.plot(train.get_loss('elm'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_elm, alpha = a)
-        l_elm = mlines.Line2D([],[], color = c_elm, ls = '-', label='elm',lw = lw2, alpha = 1)
-        handles.append(l_elm)
-
-    ## ------------- ABS -------------
-    c_abs = 'cornflowerblue'
-    if 'mse' in train.type:
-        ax1.plot(test.get_loss('abs'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_abs, alpha = a)
-        ax1.plot(train.get_loss('abs'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_abs, alpha = a)
-        l_abs   = mlines.Line2D([],[], color = c_abs, ls = '-',label='ABS',lw = lw2, alpha = 1)
-        handles.append(l_abs)
-
-    ## ------------ settings --------------
-    plt.rcParams.update({'font.size': 14})    
-
-    if log == True:
-        ax1.set_yscale('log') 
-
-    if ylim == True:
-        if limits == None:
-            ax1.set_ylim(1e-2,1e0)
-        else:
-            ax1.set_ylim(limits)
-
-    ax1.set_xlim(5,100)
-
-    fs= 12
-    ax1.set_xlabel('epoch')
-    ax1.set_ylabel('loss')
-    # ax1.set_xlim([5.5,7.5])
-
-    ax1.grid(True, linestyle = '--', linewidth = 0.2)
-
-    fs1 = 13
-    # ax1.legend(handles=handles,loc = 'upper right', fontsize = fs1)
-
-    
-    plt.tight_layout()
-
-    if show == True:
-        plt.show()
-
-
-    return fig
-
 
 def get_grd(n, n_hat):
     n0 = n[:-1]
@@ -244,7 +156,112 @@ def plot_evol_specs(n, n_hat, ax1,specs, alpha, title = None):
     return
 
 
-def plot_abs(r,n, n_hat, plots_path, rho,T,title = '',specs_lg=dict(), specs = [], save = True, step = False):
+def plot_abs_old(r,n, n_hat, plots_path, rho,T,title = '',specs_lg=dict(), specs = [], save = True, step = False):
+
+    a = 0.7
+    ms = 1
+    lw = 1
+
+    fig, axs = plt.subplots(3,1, gridspec_kw={'height_ratios': [1,4,1.5]},figsize=(6, 5))
+    ax1 = axs[1]
+    ax2 = axs[2]
+    ax3 = axs[0]
+
+    ax4 = ax3.twinx()
+
+    # axs = np.array([ax1,ax2,ax3,ax4])
+
+    # ax3.set_title(title) 
+
+    
+
+    if len(n_hat) == 0:
+        n_hat = n
+
+    ## ------------------- plot abundance profile -------------------
+    ## plot individual species
+    if len(specs) != 0:
+        for spec in specs:
+            idx = specs_dict[spec]
+            if step == True:
+                line, = ax1.plot(r,n_hat[:,idx], ls ='none',  marker = 'o', label = specs_lg[spec], ms = ms,  lw = lw)
+            else:
+                line, = ax1.plot(r,n_hat[:,idx], ls ='-', label = specs_lg[spec], ms = ms,  lw = lw)
+            
+            ax1.plot(r,n[:,idx], '--',  lw = lw, color = line.get_color(), alpha = a)
+            ## relative error
+            # abs = loss_script.abs_loss(n[1:], n_hat)
+            # ax2.plot(r[1:], abs[:,idx], '-', label = spec, ms = ms, lw = lw, color = line.get_color())
+            # ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
+            ax2.plot(r,((np.log10(n[:])-np.log10(n_hat))[:,idx]/np.log10(n[:][:,idx])), '-', label = specs_lg[spec], ms = ms, lw = lw, color = line.get_color())
+            # ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
+            # ax2.plot(r[1:],((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
+            ax1.legend(fontsize = 12,loc = 'lower left')
+    ## plot all species
+    else:
+        for i in range(n_hat.shape[1]):
+            line, = ax1.plot(n_hat[:,i], '-',  ms = ms,  lw = lw)
+            ax1.plot(r[1:],n[1:,i], '--',  lw = lw, color = line.get_color())
+            ## relative error
+            ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,i]/n[1:][:,i]), '-', ms = ms, lw = lw, color = line.get_color())
+       
+    ax2.plot([1e14,1e18],[0,0], '--k', lw = 0.5)
+    ax3.plot(r,rho, 'k-.', lw =lw)
+    tempc = 'darkgrey'
+    ax4.plot(r, T, ls='-', c=tempc, lw=lw)
+
+
+    ## ------------------- settings -------------------
+
+    ax1.xaxis.set_ticklabels([])
+
+    fs = 16
+
+    
+
+    ax1.set_ylabel('abundance relative to H$_2$', fontsize = fs) 
+    ax2.set_ylabel('error', fontsize = fs)
+    ax2.set_xlabel('radius [cm]', fontsize = fs)
+    ax3.set_ylabel('$\\rho$ [cm$^{-3}$]', fontsize = fs)
+    ax4.set_ylabel('$T$ [K]', color = tempc, fontsize = fs)
+
+    for ax in axs:
+        ax.set_yscale('log')
+        ax.set_xscale('log')
+        ax.set_xlim([1e14, 1e18])
+        ax.tick_params(labelsize = 14)
+    ax4.set_xscale('log')
+    ax3.set_yscale('linear')
+
+    ax2.set_yscale('linear')
+
+    for ax in [ax1,ax3,ax4]:
+        ax.set_xticklabels([])
+
+    ax1.grid(True, linestyle = '--', linewidth = 0.2)
+    ax2.grid(True, linestyle = '--', linewidth = 0.2)
+
+    ax1.set_ylim([1e-20, 1e-2])
+    # ax2.set_ylim([-2,2])
+         
+
+    plt.subplots_adjust(hspace = 0.00001)
+
+    plt.tight_layout()
+
+    if save == True:
+        if len(specs) != 0:
+            plt.savefig(plots_path+title+'_abs_specs.png', dpi=300)
+        else:
+            plt.savefig(plots_path+title+'_abs.png', dpi=300)
+
+    return 
+
+def plot_abs(model1D, n, n_hat, plots_path, specs = [], save = True, step = False):
+
+    r = model1D.radius
+    rho = model1D.get_dens()
+    T = model1D.get_temp()
 
     a = 0.7
     ms = 1
