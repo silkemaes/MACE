@@ -6,7 +6,8 @@ import torch
 from torch.optim  import Adam
 
 ## own scripts
-import CSE_0D.plotting       as plotting 
+# import CSE_0D.plotting       as plotting 
+import loss
 
 
 def train(model, lr, data_loader, test_loader, nb_evol, path, end_epochs, DEVICE, trainloss, testloss, start_epochs = 0, plot = False, log = True, show = True, start_time = 0.):
@@ -94,7 +95,7 @@ def train(model, lr, data_loader, test_loader, nb_evol, path, end_epochs, DEVICE
             trainloss.save(trainpath)
             testloss.save(testpath)
             ## plot
-            plotting.plot_loss(trainloss, testloss, log = log, show = show)
+            loss.plot(trainloss, testloss, log = log, show = show)
             plt.savefig(path+'/loss.png')
         
         print("Epoch", epoch + 1, "complete!", "\tAverage loss train: ", np.round(trainloss.get_loss('tot')[epoch], 5), "\tAverage loss test: ", np.round(testloss.get_loss('tot')[epoch],5))
@@ -107,6 +108,6 @@ def train(model, lr, data_loader, test_loader, nb_evol, path, end_epochs, DEVICE
 
     if plot == True:
         print('\n >>> Plotting...')
-        plotting.plot_loss(trainloss, testloss, ylim = False, log = log, show = show)
+        loss.plot(trainloss, testloss, ylim = False, log = log, show = show)
 
     return optimizer

@@ -33,6 +33,19 @@ def relative_error(x,x_hat):
     res = np.abs((x[1:]-x_hat)/x[1:])
     return res
 
+def error(n,n_hat):
+    '''
+    Computes the error between the true and predicted values.
+
+    The error is defined as 
+            error = ( log10(n) - log10(n_hat) ) / log10(n) in an element-wise way. 
+        See Maes et al. (2024), Eq. (23) for more information.
+    '''
+    err = np.abs((np.log10(n[:])-np.log10(n_hat))[:]/np.log10(n[:][:]))
+    nb_samples = len(n[:,0])
+
+    return err.sum()/nb_samples
+
 
 def get_absolute_residuals(real, pred):
     '''

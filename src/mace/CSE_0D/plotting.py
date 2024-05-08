@@ -257,7 +257,28 @@ def plot_abs_old(r,n, n_hat, plots_path, rho,T,title = '',specs_lg=dict(), specs
 
     return 
 
-def plot_abs(model1D, n, n_hat, plots_path, specs = [], save = True, step = False):
+def plot_abs(model1D, n, n_hat, specs, step = False):
+    '''
+    Function to plot the 1D abundance profiles of a model (middle panel, ax1), 
+    together with the density (rho) and temperature (T) profile (upper panel, ax3 & ax4, respectively).
+    Also the error between the real and predicted abundances is plotted (lower panel, ax2).
+        The error is defined as 
+            error = ( log10(n) - log10(n_hat) ) / log10(n) in an element-wise way. 
+        See Maes et al. (2024), Eq. (23) for more information.
+
+    The real model will be plotted in dashed lines, 
+    the predicted step model by MACE in dotted lines,
+    the predicted evolution model by MACE in solid lines.
+
+    Input:
+        - model1D: 1D model
+        - n: real abundances
+        - n_hat: predicted abundances
+        - specs: list of species to plot
+        - step: boolean that indicated which type of MACE prediction is plotted.
+            - False (default) = evolution
+            - True = step
+    '''
 
     r = model1D.radius
     rho = model1D.get_dens()
@@ -274,55 +295,36 @@ def plot_abs(model1D, n, n_hat, plots_path, specs = [], save = True, step = Fals
 
     ax4 = ax3.twinx()
 
-    # axs = np.array([ax1,ax2,ax3,ax4])
-
-    # ax3.set_title(title) 
-
-    
-
     if len(n_hat) == 0:
         n_hat = n
 
     ## ------------------- plot abundance profile -------------------
-    ## plot individual species
-    if len(specs) != 0:
-        for spec in specs:
-            idx = specs_dict[spec]
-            if step == True:
-                line, = ax1.plot(r,n_hat[:,idx], ls ='none',  marker = 'o', label = specs_lg[spec], ms = ms,  lw = lw)
-            else:
-                line, = ax1.plot(r,n_hat[:,idx], ls ='-', label = specs_lg[spec], ms = ms,  lw = lw)
-            
-            ax1.plot(r,n[:,idx], '--',  lw = lw, color = line.get_color(), alpha = a)
-            ## relative error
-            # abs = loss_script.abs_loss(n[1:], n_hat)
-            # ax2.plot(r[1:], abs[:,idx], '-', label = spec, ms = ms, lw = lw, color = line.get_color())
-            # ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
-            ax2.plot(r,((np.log10(n[:])-np.log10(n_hat))[:,idx]/np.log10(n[:][:,idx])), '-', label = specs_lg[spec], ms = ms, lw = lw, color = line.get_color())
-            # ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
-            # ax2.plot(r[1:],((n[1:]-n_hat)[:,idx]/n[1:][:,idx]), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
-            ax1.legend(fontsize = 12,loc = 'lower left')
-    ## plot all species
-    else:
-        for i in range(n_hat.shape[1]):
-            line, = ax1.plot(n_hat[:,i], '-',  ms = ms,  lw = lw)
-            ax1.plot(r[1:],n[1:,i], '--',  lw = lw, color = line.get_color())
-            ## relative error
-            ax2.plot(r[1:],np.abs((n[1:]-n_hat)[:,i]/n[1:][:,i]), '-', ms = ms, lw = lw, color = line.get_color())
+
+    for spec in specs:
+        idx = specs_dict[spec]
+        if step == True:
+            ls = 'none'
+            marker = 'o'
+        else:
+            ls = '-'
+            marker = 'none'
+
+        line, = ax1.plot(r,n_hat[:,idx], ls =ls, marker = marker, label = spec, ms = ms,  lw = lw)
+        
+        ax1.plot(r,n[:,idx], '--',  lw = lw, color = line.get_color(), alpha = a)
+        ## relative error
+        ax2.plot(r,((np.log10(n[:])-np.log10(n_hat))[:,idx]/np.log10(n[:][:,idx])), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
        
     ax2.plot([1e14,1e18],[0,0], '--k', lw = 0.5)
     ax3.plot(r,rho, 'k-.', lw =lw)
     tempc = 'darkgrey'
     ax4.plot(r, T, ls='-', c=tempc, lw=lw)
 
-
     ## ------------------- settings -------------------
 
     ax1.xaxis.set_ticklabels([])
 
-    fs = 16
-
-    
+    fs = 14
 
     ax1.set_ylabel('abundance relative to H$_2$', fontsize = fs) 
     ax2.set_ylabel('error', fontsize = fs)
@@ -348,19 +350,15 @@ def plot_abs(model1D, n, n_hat, plots_path, specs = [], save = True, step = Fals
 
     ax1.set_ylim([1e-20, 1e-2])
     # ax2.set_ylim([-2,2])
-         
+
+    ax1.legend(fontsize = 12,loc = 'lower left')
 
     plt.subplots_adjust(hspace = 0.00001)
 
     plt.tight_layout()
 
-    if save == True:
-        if len(specs) != 0:
-            plt.savefig(plots_path+title+'_abs_specs.png', dpi=300)
-        else:
-            plt.savefig(plots_path+title+'_abs.png', dpi=300)
 
-    return 
+    return fig
 
 
 
