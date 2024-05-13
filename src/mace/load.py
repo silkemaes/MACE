@@ -95,8 +95,8 @@ class Trained_MACE():
         n_hat = ds.get_abs(n_hat)
         n_evol = ds.get_abs(n_evol)
 
-        err_test = utils.error(n, n_hat)
-        err_evol = utils.error(n, n_evol)
+        err, err_test = utils.error(n, n_hat)
+        err, err_evol = utils.error(n, n_evol)
 
         print('\n>>> Errors:')
         print('     Step      error:', np.round(err_test,3))

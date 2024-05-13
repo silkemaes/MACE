@@ -299,6 +299,8 @@ def plot_abs(model1D, n, n_hat, specs, step = False):
         n_hat = n
 
     ## ------------------- plot abundance profile -------------------
+        
+    err, err_mean = utils.error(n, n_hat)
 
     for spec in specs:
         idx = specs_dict[spec]
@@ -308,14 +310,16 @@ def plot_abs(model1D, n, n_hat, specs, step = False):
         else:
             ls = '-'
             marker = 'none'
-
+        ## predicted abundances
         line, = ax1.plot(r,n_hat[:,idx], ls =ls, marker = marker, label = spec, ms = ms,  lw = lw)
-        
+        ## real abundances
         ax1.plot(r,n[:,idx], '--',  lw = lw, color = line.get_color(), alpha = a)
         ## relative error
-        ax2.plot(r,((np.log10(n[:])-np.log10(n_hat))[:,idx]/np.log10(n[:][:,idx])), '-', label = spec, ms = ms, lw = lw, color = line.get_color())
-       
+        ax2.plot(r,err[:,idx], '-', label = spec, ms = ms, lw = lw, color = line.get_color())
+    ## indicate where 0 is on the error plot
     ax2.plot([1e14,1e18],[0,0], '--k', lw = 0.5)
+    
+    ## plot the physical parameters (density, rho, and temperature, T)
     ax3.plot(r,rho, 'k-.', lw =lw)
     tempc = 'darkgrey'
     ax4.plot(r, T, ls='-', c=tempc, lw=lw)
