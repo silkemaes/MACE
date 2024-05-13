@@ -2,7 +2,7 @@ import loss as ls
 
 
 
-def calc_losses(n, n_hat, z_hat, p, model, loss_obj):
+def calc_loss(n, n_hat, z_hat, p, model, loss_obj):
     '''
     Function to calculate the different losses.
 
@@ -26,7 +26,7 @@ def calc_losses(n, n_hat, z_hat, p, model, loss_obj):
     '''
 
     abs = ls.abs_loss(n[1:], n_hat)          /loss_obj.norm['abs']* loss_obj.fract['abs']
-    grd = ls.grd_loss(n, n_hat)              /loss_obj.norm['grd']* loss_obj.fract['grd']
+    grd = ls.grd_loss(n[1:], n_hat)              /loss_obj.norm['grd']* loss_obj.fract['grd']
     idn = ls.idn_loss(n[:-1], p, model)      /loss_obj.norm['idn']* loss_obj.fract['idn']
 
     loss = abs.mean() + idn.mean() + grd.mean()
@@ -41,7 +41,7 @@ def calc_losses(n, n_hat, z_hat, p, model, loss_obj):
 
 
 
-def run_epoch(data_loader, model, loss_obj, DEVICE, optimizer, training, nb_evol = 0):
+def run_epoch(data_loader, model, loss_obj, DEVICE, optimizer, training):
     '''
     Function to train 1 epoch.
 
@@ -79,7 +79,7 @@ def run_epoch(data_loader, model, loss_obj, DEVICE, optimizer, training, nb_evol
         n_hat, z_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
 
         ## Calculate losses
-        loss = calc_losses(n, n_hat, z_hat, p, model, loss_obj)
+        loss = calc_loss(n, n_hat, z_hat, p, model, loss_obj)
         status += modstatus.sum().item()
 
         if training == True:

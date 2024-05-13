@@ -2,11 +2,9 @@ import torch
 import numpy as np
 import utils
 from torch.autograd.functional import jacobian
-from time import time
 import os
 
-import matplotlib.pyplot as plt
-import matplotlib        as mpl
+import matplotlib.pyplot    as plt
 import matplotlib.lines     as mlines
 
 class Loss():
@@ -16,6 +14,9 @@ class Loss():
 
         norm:       dict with normalisation factors for each loss
         fract:      dict with factors to multiply each loss with
+        scheme:     choice of training scheme, 
+            - 'loc' = local 
+            - 'int' = integrated
 
         Different types of losses:
             - 'abs':    mean squared error
@@ -37,7 +38,7 @@ class Loss():
 
         ## initialise
         self.set_losstype(losstype)
-
+        
 
     def set_losstype(self, losstype):
         '''
@@ -59,6 +60,7 @@ class Loss():
                 - 'grd_idn_elm' or permutations:    grd + idn + elm
                 - 'abs_elm_grd_idn' or permutations: abs + grd + idn + elm
         '''
+
         self.type = losstype
 
     def get_losstype(self):
@@ -168,6 +170,57 @@ class Loss():
                     'elm': self.get_loss('elm')}
 
         return all_loss
+    
+
+    def calc_loss(self, n, n_evol, nhat_evol,z_hat, p, model):
+        '''
+        Function to calculate the losses of the model.
+
+        Input:
+        - n         = abundances
+        - n_evol    = real evolution
+        - nhat_evol = predicted evolution
+        - p         = physical parameters
+        - model     = ML architecture to be trained
+        - loss_obj  = loss object to store losses of training
+
+        Returns:
+        - mse of the abs and idn losses
+        '''
+
+        if 'abs' in self.type:
+            abs = abs_loss(n_evol, nhat_evol)  /self.norm['abs']* self.fract['abs']
+        if 'abs' not in self.type:
+            abs = torch.from_numpy(np.array([0]))
+
+        if 'grd' in self.type:
+            grd = grd_loss(n_evol,nhat_evol)   /self.norm['grd']* self.fract['grd']
+        if 'grd' not in self.type:
+            grd = torch.from_numpy(np.array([0]))
+
+        if 'idn' in self.type:
+            idn = idn_loss(n[:-1], p, model)   /self.norm['idn']* self.fract['idn']
+        if 'idn' not in self.type:
+            idn = torch.from_numpy(np.array([0]))
+
+        if 'elm' in self.type:
+            elm = elm_loss(z_hat,model, self.M) /self.norm['elm']* self.fract['elm']
+        if 'elm' not in self.type:
+            elm = torch.from_numpy(np.array([0]))
+
+
+        # abs = ls.abs_loss(n_evol, nhat_evol)   /loss_obj.norm['abs']* loss_obj.fract['abs']
+        # idn = ls.idn_loss(n[:-1], p, model)    /loss_obj.norm['idn']* loss_obj.fract['idn']
+
+        loss = abs.mean() + grd.mean() + idn.mean() + elm.mean()
+        # print(loss)
+        self.adjust_loss('tot', loss.item())
+        self.adjust_loss('abs', abs.mean().item())
+        self.adjust_loss('grd', grd.mean().item())
+        self.adjust_loss('idn', idn.mean().item())
+        self.adjust_loss('elm', elm.mean().item())
+
+        return loss
         
 
     def save(self, path):
@@ -209,8 +262,6 @@ def grd_loss(x,x_hat):
     '''
     Return the squared gradient loss per x_i, using the gradient function of PyTorch. 
     '''
-
-    x   = x[1:]   ## ignore initial abundances
 
     loss = (torch.gradient(x)[0] - torch.gradient(x_hat[0])[0])**2
     

@@ -10,7 +10,7 @@ from torch.optim  import Adam
 import loss
 
 
-def train(model, lr, data_loader, test_loader, nb_evol, path, end_epochs, DEVICE, trainloss, testloss, start_epochs = 0, plot = False, log = True, show = True, start_time = 0.):
+def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainloss, testloss, start_epochs = 0, plot = False, log = True, show = True, start_time = 0.):
     '''
     Train the model for a number of epochs in the local way (for details; see paper).
     
@@ -54,14 +54,14 @@ def train(model, lr, data_loader, test_loader, nb_evol, path, end_epochs, DEVICE
     print('learning rate: '+str(lr))
     print('loss type:     '+str(trainloss.type))
 
-    if nb_evol == 0:
+    if model.scheme == 'loc':
         print('\nLocal training scheme in use.')
         from local import run_epoch
-    elif nb_evol > 0:
+    elif model.scheme == 'int':
         print('\nIntegrated training scheme in use.')
         from integrated import run_epoch
     else:
-        print('\nInvalid number of evolution steps (nb_evol). Please choose a number >= 0.')
+        print('\nInvalid training scheme input. Please choose either "loc" or "int".')
         
 
     print('\n>>> Training model...')
@@ -72,7 +72,7 @@ def train(model, lr, data_loader, test_loader, nb_evol, path, end_epochs, DEVICE
         ## --- Training ---
         
         model.train()
-        nb, status = run_epoch(data_loader, model, trainloss, DEVICE, optimizer, training=True, nb_evol=nb_evol)
+        nb, status = run_epoch(data_loader, model, trainloss, DEVICE, optimizer, training=True)
         
         ## save status
         model.set_status(status/4, 'train')
@@ -80,7 +80,7 @@ def train(model, lr, data_loader, test_loader, nb_evol, path, end_epochs, DEVICE
         ## ---- Validating ----
 
         model.eval() ## zelfde als torch.no_grad
-        nb, status = run_epoch(test_loader, model, testloss, DEVICE, optimizer, training=False, nb_evol=nb_evol)
+        nb, status = run_epoch(test_loader, model, testloss, DEVICE, optimizer, training=False)
         
         ## save status
         model.set_status(status/4, 'test')

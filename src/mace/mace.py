@@ -17,9 +17,12 @@ class Solver(nn.Module):
         3) Decoder; neural network with adjustable amount of nodes and layers
 
     '''
-    def __init__(self, p_dim, z_dim, DEVICE, n_dim,nb_hidden, ae_type, g_nn = False, atol = 1e-5, rtol = 1e-2):
+    def __init__(self, scheme, p_dim, z_dim, DEVICE, n_dim, nb_hidden, ae_type, nb_evol, g_nn = False, atol = 1e-5, rtol = 1e-2):
         '''
         Initialising the Solver class with the hyperparameters.
+        - scheme: type of scheme used to train the model 
+            - 'loc': local training scheme
+            - 'int': integrated training scheme
         - p_dim: number of dimension of the physical input
         - z_dim: number of dimension of the latent space
         - DEVICE: device to run the model on (cuda or cpu)
@@ -37,6 +40,8 @@ class Solver(nn.Module):
         '''
         super(Solver, self).__init__()
 
+        self.scheme = scheme
+
         self.status_train = list()
         self.status_test = list()
 
@@ -44,6 +49,7 @@ class Solver(nn.Module):
         self.n_dim = n_dim
         self.DEVICE = DEVICE
         self.g_nn = g_nn
+        self.nb_evol = nb_evol
 
         ## Setting the neural ODE
         input_ae_dim  = n_dim

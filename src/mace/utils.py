@@ -4,9 +4,8 @@ import sys
 import json
 import torch
 
+from pathlib import Path
 
-sys.path.append('/STER/silkem/ChemTorch/src')
-import rates as rate
 
 sys.path.insert(1, '/STER/silkem/MACE/src/mace')
 from loss       import Loss_analyse
@@ -32,6 +31,7 @@ def relative_error(x,x_hat):
     '''
     res = np.abs((x[1:]-x_hat)/x[1:])
     return res
+
 
 def error(n,n_hat):
     '''
@@ -100,7 +100,11 @@ def get_specs():
         and a dictionary with the index and the species.
 
     '''
-    specs, parnt, convs = rate.read_specs_file(chemtype= 'C', rate=16)
+    loc_specs = '/STER/silkem/MACE/data/rate16.specs'
+    
+    specs = np.loadtxt(loc_specs, usecols=(1), dtype=str, skiprows = 1, max_rows=466)  
+
+    # print(specs)
     specs_dict = dict()
     idx_specs  = dict()
     for i in range(len(specs)):

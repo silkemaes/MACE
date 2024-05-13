@@ -64,13 +64,13 @@ def evaluate(n,p,dt, model, nb_evol,  loss_obj, status,  DEVICE):
     n_evol = torch.stack(n_evol).permute(1,0,2)
 
     ## 5.
-    loss = get_loss(n, n_evol, nhat_evol, p, model, loss_obj)
+    loss = calc_loss(n, n_evol, nhat_evol, p, model, loss_obj)
 
     ## 6.
     return loss, status
 
 
-def get_loss(n, n_evol, nhat_evol, p, model, loss_obj):
+def calc_loss(n, n_evol, nhat_evol, p, model, loss_obj):
     '''
     Function to calculate the losses of the model.
 
@@ -96,7 +96,7 @@ def get_loss(n, n_evol, nhat_evol, p, model, loss_obj):
 
     return loss
 
-def run_epoch(data_loader, model, loss_obj, DEVICE, optimizer, training, nb_evol):
+def run_epoch(data_loader, model, loss_obj, DEVICE, optimizer, training):
     '''
     Function to train 1 epoch.
 
@@ -105,7 +105,7 @@ def run_epoch(data_loader, model, loss_obj, DEVICE, optimizer, training, nb_evol
     - nb_evol       = number of evolution steps
     - loss_obj      = loss object to store losses of training
     - DEVICE        = device to run the model on
-    - optimizer     = type of optimizer to update the weights of the model
+    - optimizer     = type of optimizer to uspdate the weights of the model
     - training      = boolean to indicate if the model is training
     - nb_evol       = number of evolution steps
 
@@ -117,6 +117,8 @@ def run_epoch(data_loader, model, loss_obj, DEVICE, optimizer, training, nb_evol
     loss_obj.init_loss()
 
     status = 0
+
+    nb_evol = model.nb_evol
 
     for i, (n,p,dt) in enumerate(data_loader):
 
