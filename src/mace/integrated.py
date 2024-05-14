@@ -1,5 +1,4 @@
 import loss as ls
-from loss import calc_loss
 import torch
 
 

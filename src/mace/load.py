@@ -66,7 +66,9 @@ class Trained_MACE():
     
     def plot_loss(self, log=True, ylim=False, limits=None, save = True):
 
-        fig = loss.plot(self.trainloss, self.testloss, log = log, ylim = ylim, limits = limits)
+        len = self.get_meta()['epochs']
+
+        fig = loss.plot(self.trainloss, self.testloss, len, log = log, ylim = ylim, limits = limits)
 
         if save == True:
             plt.savefig(self.plotpath+'loss.png')

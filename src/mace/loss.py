@@ -14,15 +14,12 @@ class Loss():
 
         norm:       dict with normalisation factors for each loss
         fract:      dict with factors to multiply each loss with
-        scheme:     choice of training scheme, 
-            - 'loc' = local 
-            - 'int' = integrated
 
         Different types of losses:
-            - 'abs':    mean squared error
+            - 'abs':    absolute
             - 'grd':    gradient
-            - 'idn':    identity loss = losses due to autoencoder
-            - 'elm':    element conservation loss
+            - 'idn':    identity = losses due to autoencoder
+            - 'elm':    element conservation 
         '''
         self.norm  = norm
         self.fract = fract
@@ -34,7 +31,7 @@ class Loss():
         self.idn = list()
         self.elm = list()
 
-        self.M = np.load('/STER/silkem/ChemTorch/rates/M_rate16.npy')
+        self.M = np.load('/STER/silkem/MACE/data_info/M_rate16.npy')
 
         ## initialise
         self.set_losstype(losstype)
@@ -163,6 +160,9 @@ class Loss():
 
     
     def get_all_losses(self):
+        '''
+        Get all losses.
+        '''
         all_loss = {'tot': self.get_loss('tot'),
                     'abs': self.get_loss('abs'), 
                     'grd': self.get_loss('grd'),
@@ -179,7 +179,7 @@ class Loss():
         Input:
         - n         = abundances
         - n_evol    = real evolution
-        - nhat_evol = predicted evolution
+        - nhat_evol = predicted abundances/evolution
         - p         = physical parameters
         - model     = ML architecture to be trained
         - loss_obj  = loss object to store losses of training
@@ -289,7 +289,11 @@ def elm_loss(z_hat,model, M):
             as d(M x D(g(z_hat)))/dt = Mgrad(D)g = Mgrad(D)(C+A+B).
         The einsum summation takes into account the right indexing.
 
-    (More in paper)
+    (For more details, see Maes et al., 2024)
+
+    NOTE:
+        This function is not used in the current version of MACE, since it 
+        is found to be computationally to slow in the way it is currently implemented.
     '''
     # tic = time()
 
@@ -313,79 +317,6 @@ def elm_loss(z_hat,model, M):
     loss = (L0 + L1 + L2)**2
     return loss
 
-
-def loss_function(loss_obj, model, x, x_hat,z_hat, p):
-    ## wordt niet gebruikt
-    '''
-    Get the abs loss and the relative loss, normalised to the maximum lossvalue.
-        - fracts are scaling factors, put to 0 if you want to exclude one of both losses.
-    Returns the abs loss per species, and the relative loss per species.
-    '''
-    abs = (abs_loss(x[1:],x_hat))     ## Compare with the final abundances for that model
-    grd = (grd_loss(x,x_hat))
-    idn = (idn_loss(x[:-1],p,model))
-    if 'elm' in loss_obj.losstype:
-        elm = (elm_loss(z_hat,model, loss_obj.M))
-    else:
-        elm = torch.tensor([0.0,0.0])
-
-    abs = abs/loss_obj.norm['abs']* loss_obj.fract['abs']
-    grd = grd/loss_obj.norm['grd']* loss_obj.fract['grd']
-    if 'idn' in loss_obj.norm:
-        idn = idn/loss_obj.norm['idn']* loss_obj.fract['idn']
-
-    return abs, grd, idn, elm
-
-
-def get_loss(abs, rel, grd, idn, elm, type):
-    ## wordt niet gebruikt
-    abs = abs.mean()
-    rel = rel.mean()
-    grd = grd.mean()
-    idn = idn.mean()
-    elm = elm.mean()
-    # print(elm.grad,elm)
-    # elm.grad.zero_()
-
-    ## only 1 type of loss
-    if type == 'abs':
-        return abs
-    elif type =='grd':
-        return grd
-    elif type =='idn':
-        return idn
-    elif type =='elm':
-        return elm
-    
-    ## 2 types of losses
-    elif type =='abs_grd' or type == 'grd_abs':
-        return abs+grd
-    elif type =='abs_idn' or type == 'idn_abs':
-        return abs+idn
-    elif type =='grd_idn' or type == 'idn_grd':
-        return grd+idn
-    elif type =='elm_idn' or type == 'idn_elm':
-        return elm+idn
-    elif type =='elm_grd' or type == 'grd_elm':
-        return elm+grd
-    elif type =='elm_abs' or type == 'abs_elm':
-        return elm+abs
-    
-    ## 3 types of losses
-    elif type =='abs_grd_idn' or type == 'abs_idn_grd' or type == 'grd_abs_idn' or type == 'grd_idn_abs' or type == 'idn_abs_grd' or type == 'idn_grd_abs':
-        return abs+grd+idn
-    elif type =='elm_grd_idn' or type == 'elm_idn_grd' or type == 'grd_elm_idn' or type == 'grd_idn_elm' or type == 'idn_elm_grd' or type == 'idn_grd_elm':
-        return elm+grd+idn
-    elif type =='elm_abs_idn' or type == 'elm_idn_abs' or type == 'abs_elm_idn' or type == 'abs_idn_elm' or type == 'idn_elm_abs' or type == 'idn_abs_elm':
-        return elm+abs+idn
-    elif type =='elm_abs_rel' or type == 'elm_rel_abs' or type == 'abs_elm_rel' or type == 'abs_rel_elm' or type == 'rel_elm_abs' or type == 'rel_abs_elm':
-        return elm+abs+rel
-    elif type =='elm_abs_grd' or type == 'elm_grd_abs' or type == 'abs_elm_grd' or type == 'abs_grd_elm' or type == 'grd_elm_abs' or type == 'grd_abs_elm':
-        return elm+abs+grd
-
-    ## 4 types of losses
-    elif type =='abs_grd_idn_elm' or type == 'abs_grd_elm_idn' or type == 'abs_idn_grd_elm' or type == 'abs_idn_elm_grd' or type == 'abs_elm_grd_idn' or type == 'abs_elm_idn_grd' or type == 'grd_abs_idn_elm' or type == 'grd_abs_elm_idn' or type == 'grd_idn_abs_elm' or type == 'grd_idn_elm_abs' or type == 'grd_elm_abs_idn' or type == 'grd_elm_idn_abs' or type == 'idn_abs_grd_elm' or type == 'idn_abs_elm_grd' or type == 'idn_grd_abs_elm' or type == 'idn_grd_elm_abs' or type == 'idn_elm_abs_grd' or type == 'idn_elm_grd_abs' or type == 'elm_abs_grd_idn' or type == 'elm_abs_idn_grd' or type == 'elm_grd_abs_idn' or type == 'elm_grd_idn_abs' or type == 'elm_idn_abs_grd' or type == 'elm_idn_grd_abs':
-        return abs+grd+idn+elm      ## no rel
 
 
 
@@ -492,15 +423,20 @@ class Loss_analyse():
         return
 
     
-def plot(train, test, log = True, ylim = False, limits = None, show = False):
+def plot(train, test, len=10, log = True, ylim = False, limits = None, show = False):
 
     fig = plt.figure(figsize = (6,3))
     ax1 = fig.add_subplot((111))
 
-    lw = 1
     a = 0.8
     lw2 = 4
-    ms = 5
+
+    if len >= 50:
+        ms = 0.1
+        lw = 1.5
+    else:
+        ms = 5
+        lw = 1
     m1 = '.'
     m2 = 'x'
 
@@ -516,8 +452,8 @@ def plot(train, test, log = True, ylim = False, limits = None, show = False):
     handles = [l_train, l_test, l_tot]
 
     ## ------------- TOTAL ------------
-    ax1.plot(test.get_tot_loss() , ls = l2, marker = m2, lw = lw, c='k')
-    ax1.plot(train.get_tot_loss(), ls = l1, marker = m1, lw = lw, c='k')
+    ax1.plot(test.get_tot_loss() , ls = l2, marker = m2, ms = ms, lw = lw, c='k')
+    ax1.plot(train.get_tot_loss(), ls = l1, marker = m1, ms = ms, lw = lw, c='k')
 
     ## ------------- GRD -------------
     c_grd = 'gold'

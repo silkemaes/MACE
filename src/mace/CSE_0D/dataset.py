@@ -162,92 +162,6 @@ class CSEdata(Dataset):
         return torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)
     
 
-    # def get_test(self):
-    #     '''
-        
-    #     '''
-    #     print(self.testpath)
-    #     mod = CSEmod(self.testpath[0])
-
-    #     Δt, n, p = mod.split_in_0D()
-
-    #     ## physical parameters
-    #     p_transf = np.empty_like(p)
-    #     for j in range(p.shape[1]):
-    #         # print(j)
-    #         p_transf[:,j] = utils.normalise(np.log10(p[:,j]), self.mins[j], self.maxs[j])
-
-    #     ## abundances
-    #     n_transf = np.clip(n, self.cutoff, None)
-    #     n_transf = np.log10(n_transf)
-    #     n_transf = utils.normalise(n_transf, self.n_min, self.n_max)       ## max boundary = rel. abundance of He
-
-    #     ## timesteps
-    #     Δt_transf = Δt/self. dt_max * self.dt_fract             ## scale to [0,1] and multiply with dt_fract
-
-    #     return torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)
-    
-
-def get_test_data(testpath, meta):
-    '''
-    Get the data of the test 1D model, given a path and a dataset.
-
-    Similar procedure as in the __getitem__() of the CSEdata class.
-
-    The specifics of the 1D test model are stored in the 'name' dictionary.
-    '''
-    print(meta)
-    data = CSEdata(nb_samples=meta['nb_samples'],dt_fract=meta['dt_fract'],nb_test= meta['nb_test'], train=True, fraction=0.7, cutoff = 1e-20, scale = 'norm')
-    
-    mod = CSEmod(testpath)
-
-    Δt, n, p = mod.split_in_0D()
-
-    name = {'path' : testpath[49:-57],
-            'name' : mod.name,
-            'Tstar' : mod.Tstar,
-            'Mdot' : mod.Mdot,
-            'v' : mod.v,
-            'eps' : mod.eps}
-
-    ## physical parameters
-    p_transf = np.empty_like(p)
-    for j in range(p.shape[1]):
-        # print(j)
-        p_transf[:,j] = utils.normalise(np.log10(p[:,j]), data.mins[j], data.maxs[j])
-
-    ## abundances
-    n_transf = np.clip(n, data.cutoff, None)
-    n_transf = np.log10(n_transf)
-    n_transf = utils.normalise(n_transf, data.n_min, data.n_max)       ## max boundary = rel. abundance of He
-
-    ## timesteps
-    Δt_transf = Δt/data.dt_max * data.dt_fract             ## scale to [0,1] and multiply with dt_fract
-
-    return mod, (torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)), name
-
-
-def get_abs(n):
-    '''
-    Reverse the normalisation of the abundances.
-    '''
-    cutoff = 1e-20
-    nmin = np.log10(cutoff)
-    nmax = np.log10(0.85e-1)
-
-    return 10**utils.unscale(n,nmin, nmax)
-
-def get_phys(p_transf,dataset):
-    '''
-    Reverse the normalisation of the physical parameters.
-    '''
-    p = torch.empty_like(p_transf)
-    for j in range(p_transf.shape[1]):
-        p[:,j] = 10**utils.unscale(p_transf[:,j],dataset.mins[j], dataset.maxs[j])
-    
-    return p
-
-
 def get_data( nb_samples, dt_fract, nb_test, batch_size, kwargs):
     '''
     Prepare the data for training and validating the emulator.
@@ -281,10 +195,76 @@ def get_data( nb_samples, dt_fract, nb_test, batch_size, kwargs):
     return train, valid, data_loader, test_loader
 
 
+def get_test_data(testpath, meta):
+    '''
+    Get the data of the test 1D model, given a path and meta-data from a training setup.
+
+    Similar procedure as in the __getitem__() of the CSEdata class.
+
+    The specifics of the 1D test model are stored in the 'name' dictionary.
+
+    Input:
+        - testpath [str]: path of the 1D test model
+        - meta [dict]: meta data from the training setup
+    '''
+    
+    data = CSEdata(nb_samples=meta['nb_samples'],dt_fract=meta['dt_fract'],nb_test= 100, train=True, fraction=0.7, cutoff = 1e-20, scale = 'norm')
+    
+    mod = CSEmod(testpath)
+
+    Δt, n, p = mod.split_in_0D()
+
+    name = {'path' : testpath[49:-57],
+            'name' : mod.name,
+            'Tstar' : mod.Tstar,
+            'Mdot' : mod.Mdot,
+            'v' : mod.v,
+            'eps' : mod.eps}
+
+    ## physical parameters
+    p_transf = np.empty_like(p)
+    for j in range(p.shape[1]):
+        p_transf[:,j] = utils.normalise(np.log10(p[:,j]), data.mins[j], data.maxs[j])
+
+    ## abundances
+    n_transf = np.clip(n, data.cutoff, None)
+    n_transf = np.log10(n_transf)
+    n_transf = utils.normalise(n_transf, data.n_min, data.n_max)       ## max boundary = rel. abundance of He
+
+    ## timesteps
+    Δt_transf = Δt/data.dt_max * data.dt_fract             ## scale to [0,1] and multiply with dt_fract
+
+    return mod, (torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)), name
+
+
+def get_abs(n):
+    '''
+    Get the abundances, given the normalised abundances.
+
+    This function reverses the normalisation of the abundances.
+    '''
+    cutoff = 1e-20
+    nmin = np.log10(cutoff)
+    nmax = np.log10(0.85e-1)
+
+    return 10**utils.unscale(n,nmin, nmax)
+
+def get_phys(p_transf,dataset):
+    '''
+    Reverse the normalisation of the physical parameters.
+    '''
+    p = torch.empty_like(p_transf)
+    for j in range(p_transf.shape[1]):
+        p[:,j] = 10**utils.unscale(p_transf[:,j],dataset.mins[j], dataset.maxs[j])
+    
+    return p
+
+
 
 class CSEmod():
     '''
-    Class to load a 1D CSE model.
+    Class to load a 1D CSE model, calculated with the classical fortan code.
+    For more info on this model, see https://github.com/MarieVdS/rate22_cse_code.
     '''
     def __init__(self, path):
         '''
@@ -470,30 +450,6 @@ def read_data_1Dmodel(file_name):
 
 
 
-def retrieve_file(dir_name):
-    '''
-    Function to retrieve the paths of the all 1D CSE models.
 
-    Originally these models are not stored in a convenient way,
-    hence with this function, the paths are collected in a list, 
-    separate for C-rich and O-rich models.
-    '''
-    all_paths_C = []
-    all_paths_O = []
-
-    path = '/lhome/silkem/CHEM/'+dir_name+'/'
-    locs = utils.get_files_in(path)
-    
-    for loc in locs:
-        if loc[-3:-1] == 'ep':
-            path_mods = utils.get_files_in(path+loc+'/models/')
-            for mod in path_mods:
-                if mod[-1] != 't':
-                    if loc[13] == 'O':
-                        all_paths_O.append(path+loc+'/models/'+mod+'/csfrac_smooth.out')
-                    if loc[13] == 'C':
-                        all_paths_C.append(path+loc+'/models/'+mod+'/csfrac_smooth.out')
-    
-    return all_paths_O, all_paths_C
 
 
