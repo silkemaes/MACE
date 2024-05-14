@@ -23,12 +23,14 @@ class Solver(nn.Module):
         - scheme: type of scheme used to train the model 
             - 'loc': local training scheme
             - 'int': integrated training scheme
+            (see Maes et al., 2024 for more details)
         - p_dim: number of dimension of the physical input
         - z_dim: number of dimension of the latent space
         - DEVICE: device to run the model on (cuda or cpu)
         - n_dim: number of dimensions of the physical output
         - nb_hidden: number of hidden layers in the encoder and decoder
         - ae_type: type of autoencoder used
+        - nb_evol: number of evolutions used during the integrated training scheme
         - g_nn: boolean:
             True: use a neural network version of G (Gnn class)
             False: use the G class (default)
@@ -67,7 +69,7 @@ class Solver(nn.Module):
 
         self.jit_solver = torch.compile(self.adjoint)
 
-        ## Setting the autoencoder (enocder + decoder)
+        ## Setting the autoencoder (encoder + decoder)
         self.encoder = ae.Encoder(input_dim=input_ae_dim, latent_dim=z_dim, nb_hidden=nb_hidden, ae_type=ae_type)
         self.decoder = ae.Decoder(latent_dim=z_dim      , output_dim=n_dim, nb_hidden=nb_hidden, ae_type=ae_type)
 

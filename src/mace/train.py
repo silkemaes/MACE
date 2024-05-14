@@ -51,8 +51,10 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
     ## initialise lists for statistics of training
 
     print('Model:         ')
+    print('--------------')
+    print('     # epochs: '+str(end_epochs))
     print('learning rate: '+str(lr))
-    print('loss type:     '+str(trainloss.type))
+    print('    loss type: '+str(trainloss.losstype))
 
     if model.scheme == 'loc':
         print('\nLocal training scheme in use.')
@@ -99,7 +101,14 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
             plt.savefig(path+'/loss.png')
         
         print("Epoch", epoch + 1, "complete!", "\tAverage loss train: ", np.round(trainloss.get_loss('tot')[epoch], 5), "\tAverage loss test: ", np.round(testloss.get_loss('tot')[epoch],5))
-        print("              time [hours]: ", np.round((time()-start_time)/(60*60),5))
+        
+        calc_time = (time()-start_time)     ## in seconds
+        if calc_time < 60:
+            print("              time [secs]: ", np.round(calc_time,5))
+        elif calc_time >= 60:
+            print("              time [mins]: ", np.round(calc_time/60,5))
+        elif calc_time > 3600:
+            print("              time [hours]: ", np.round((time()-start_time)/(60*60),5))
     
     trainloss.normalise_loss(nb)
     testloss.normalise_loss(nb)

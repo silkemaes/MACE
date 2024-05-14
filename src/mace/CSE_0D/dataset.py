@@ -61,7 +61,7 @@ class CSEdata(Dataset):
         '''
 
         loc = '/STER/silkem/MACE/'
-        paths = np.loadtxt(loc+'data/paths_data_C.txt', dtype=str)
+        paths = np.loadtxt(loc+'data_info/paths_data_C.txt', dtype=str)
 
         ## select a certain number of paths, given by nb_samples
         np.random.seed(0)
@@ -82,7 +82,7 @@ class CSEdata(Dataset):
 
         # print('test path:', self.testpath)
 
-        self.M = np.load('/STER/silkem/ChemTorch/rates/M_rate16.npy')       
+        self.M = np.load(loc+'data_info/M_rate16.npy')       
 
         ## These values are the results from a search through the full dataset; see 'minmax.json' file
         self.logρ_min = np.log10(0.008223)
@@ -139,6 +139,8 @@ class CSEdata(Dataset):
 
         Returns the preprocessed data in torch tensors.
         '''
+        # print(len(self))
+        # print(idx)
         mod = CSEmod(self.path[idx])
 
         Δt, n, p = mod.split_in_0D()
@@ -194,8 +196,8 @@ def get_test_data(testpath, meta):
 
     The specifics of the 1D test model are stored in the 'name' dictionary.
     '''
-    # print(testpath)
-    data = CSEdata(meta['nb_samples'],meta['dt_fract'], 1000, train=True, fraction=0.7, cutoff = 1e-20, scale = 'norm')
+    print(meta)
+    data = CSEdata(nb_samples=meta['nb_samples'],dt_fract=meta['dt_fract'],nb_test= meta['nb_test'], train=True, fraction=0.7, cutoff = 1e-20, scale = 'norm')
     
     mod = CSEmod(testpath)
 
@@ -262,8 +264,8 @@ def get_data( nb_samples, dt_fract, nb_test, batch_size, kwargs):
     kwargs = {'num_workers': 1, 'pin_memory': True} for the DataLoader        
     '''
     ## Make PyTorch dataset
-    train = CSEdata( nb_samples=nb_samples, dt_fract=dt_fract, nb_test = nb_test, train = True)
-    valid = CSEdata( nb_samples=nb_samples, dt_fract=dt_fract, nb_test = nb_samples,train = False)
+    train = CSEdata(nb_samples=nb_samples, dt_fract=dt_fract, nb_test = nb_test   , train = True)
+    valid = CSEdata(nb_samples=nb_samples, dt_fract=dt_fract, nb_test = nb_samples, train = False)
     
     print('Dataset:')
     print('------------------------------')

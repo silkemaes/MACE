@@ -1,4 +1,5 @@
 import loss as ls
+from loss import calc_loss
 import torch
 
 
@@ -64,37 +65,37 @@ def evaluate(n,p,dt, model, nb_evol,  loss_obj, status,  DEVICE):
     n_evol = torch.stack(n_evol).permute(1,0,2)
 
     ## 5.
-    loss = calc_loss(n, n_evol, nhat_evol, p, model, loss_obj)
+    loss = loss_obj.calc_loss(n, n_evol, nhat_evol, z_hat, p, model)
 
     ## 6.
     return loss, status
 
 
-def calc_loss(n, n_evol, nhat_evol, p, model, loss_obj):
-    '''
-    Function to calculate the losses of the model.
+# def calc_loss(n, n_evol, nhat_evol, p, model, loss_obj):
+#     '''
+#     Function to calculate the losses of the model.
 
-    Input:
-    - n         = abundances
-    - n_evol    = real evolution
-    - nhat_evol = predicted evolution
-    - p         = physical parameters
-    - model     = ML architecture to be trained
-    - loss_obj  = loss object to store losses of training
+#     Input:
+#     - n         = abundances
+#     - n_evol    = real evolution
+#     - nhat_evol = predicted evolution
+#     - p         = physical parameters
+#     - model     = ML architecture to be trained
+#     - loss_obj  = loss object to store losses of training
 
-    Returns:
-    - mse of the abs and idn losses
-    '''
-    abs = ls.abs_loss(n_evol, nhat_evol)   /loss_obj.norm['abs']* loss_obj.fract['abs']
-    idn = ls.idn_loss(n[:-1], p, model)    /loss_obj.norm['idn']* loss_obj.fract['idn']
+#     Returns:
+#     - mse of the abs and idn losses
+#     '''
+#     abs = ls.abs_loss(n_evol, nhat_evol)   /loss_obj.norm['abs']* loss_obj.fract['abs']
+#     idn = ls.idn_loss(n[:-1], p, model)    /loss_obj.norm['idn']* loss_obj.fract['idn']
 
-    loss = abs.mean() + idn.mean()
-    # print(loss)
-    loss_obj.adjust_loss('tot', loss.item())
-    loss_obj.adjust_loss('abs', abs.mean().item())
-    loss_obj.adjust_loss('idn', idn.mean().item())
+#     loss = abs.mean() + idn.mean()
+#     # print(loss)
+#     loss_obj.adjust_loss('tot', loss.item())
+#     loss_obj.adjust_loss('abs', abs.mean().item())
+#     loss_obj.adjust_loss('idn', idn.mean().item())
 
-    return loss
+#     return loss
 
 def run_epoch(data_loader, model, loss_obj, DEVICE, optimizer, training):
     '''

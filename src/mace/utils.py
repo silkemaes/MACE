@@ -100,7 +100,7 @@ def get_specs():
         and a dictionary with the index and the species.
 
     '''
-    loc_specs = '/STER/silkem/MACE/data/rate16.specs'
+    loc_specs = '/STER/silkem/MACE/data_info/rate16.specs'
     
     specs = np.loadtxt(loc_specs, usecols=(1), dtype=str, skiprows = 1, max_rows=466)  
 

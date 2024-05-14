@@ -1,43 +1,41 @@
-import loss as ls
 
 
+# def calc_loss(n, n_hat, z_hat, p, model, loss_obj):
+#     '''
+#     Function to calculate the different losses.
 
-def calc_loss(n, n_hat, z_hat, p, model, loss_obj):
-    '''
-    Function to calculate the different losses.
+#     Input:
+#     - n         = true abundances
+#     - n_hat     = predicted abundances
+#     - z_hat     = predicted latent variables  (needed for elm loss, not included here)
+#     - p         = physical parameters
+#     - model     = MACE model
+#     - loss_obj  = object that stores the losses
 
-    Input:
-    - n         = true abundances
-    - n_hat     = predicted abundances
-    - z_hat     = predicted latent variables  (needed for elm loss, not included here)
-    - p         = physical parameters
-    - model     = MACE model
-    - loss_obj  = object that stores the losses
+#     Method:
+#     1. calculate the absolute loss, normalised (given by norm) and weighted (given by fract)
+#     2. calculate the gradient loss, normalised (given by norm) and weighted (given by fract)
+#     3. calculate the identity loss, normalised (given by norm) and weighted (given by fract)
+#     4. calculate the total loss, which is the sum of the absolute, gradient and identity loss
+#     5. stores the losses in the loss object
 
-    Method:
-    1. calculate the absolute loss, normalised (given by norm) and weighted (given by fract)
-    2. calculate the gradient loss, normalised (given by norm) and weighted (given by fract)
-    3. calculate the identity loss, normalised (given by norm) and weighted (given by fract)
-    4. calculate the total loss, which is the sum of the absolute, gradient and identity loss
-    5. stores the losses in the loss object
+#     Returns:
+#     - mse of abs, idn and grd losses
+#     '''
 
-    Returns:
-    - mse of abs, idn and grd losses
-    '''
+#     abs = ls.abs_loss(n[1:], n_hat)          /loss_obj.norm['abs']* loss_obj.fract['abs']
+#     grd = ls.grd_loss(n[1:], n_hat)              /loss_obj.norm['grd']* loss_obj.fract['grd']
+#     idn = ls.idn_loss(n[:-1], p, model)      /loss_obj.norm['idn']* loss_obj.fract['idn']
 
-    abs = ls.abs_loss(n[1:], n_hat)          /loss_obj.norm['abs']* loss_obj.fract['abs']
-    grd = ls.grd_loss(n[1:], n_hat)              /loss_obj.norm['grd']* loss_obj.fract['grd']
-    idn = ls.idn_loss(n[:-1], p, model)      /loss_obj.norm['idn']* loss_obj.fract['idn']
+#     loss = abs.mean() + idn.mean() + grd.mean()
 
-    loss = abs.mean() + idn.mean() + grd.mean()
-
-    loss_obj.adjust_loss('tot', loss.item())
-    loss_obj.adjust_loss('abs', abs.mean().item())
-    loss_obj.adjust_loss('grd', grd.mean().item())
-    loss_obj.adjust_loss('idn', idn.mean().item())
+#     loss_obj.adjust_loss('tot', loss.item())
+#     loss_obj.adjust_loss('abs', abs.mean().item())
+#     loss_obj.adjust_loss('grd', grd.mean().item())
+#     loss_obj.adjust_loss('idn', idn.mean().item())
 
 
-    return loss
+#     return loss
 
 
 
@@ -79,7 +77,7 @@ def run_epoch(data_loader, model, loss_obj, DEVICE, optimizer, training):
         n_hat, z_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
 
         ## Calculate losses
-        loss = calc_loss(n, n_hat, z_hat, p, model, loss_obj)
+        loss = loss_obj.calc_loss(n,n[1:], n_hat, z_hat, p, model)
         status += modstatus.sum().item()
 
         if training == True:

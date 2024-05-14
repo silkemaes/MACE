@@ -61,10 +61,10 @@ class Loss():
                 - 'abs_elm_grd_idn' or permutations: abs + grd + idn + elm
         '''
 
-        self.type = losstype
+        self.losstype = losstype
 
     def get_losstype(self):
-        return self.type
+        return self.losstype
 
     def init_loss(self):
         '''
@@ -188,30 +188,27 @@ class Loss():
         - mse of the abs and idn losses
         '''
 
-        if 'abs' in self.type:
+        if 'abs' in self.losstype:
             abs = abs_loss(n_evol, nhat_evol)  /self.norm['abs']* self.fract['abs']
-        if 'abs' not in self.type:
-            abs = torch.from_numpy(np.array([0]))
+        if 'abs' not in self.losstype:
+            abs = torch.from_numpy(np.array([0.]))
 
-        if 'grd' in self.type:
+        if 'grd' in self.losstype:
             grd = grd_loss(n_evol,nhat_evol)   /self.norm['grd']* self.fract['grd']
-        if 'grd' not in self.type:
-            grd = torch.from_numpy(np.array([0]))
+        if 'grd' not in self.losstype:
+            grd = torch.from_numpy(np.array([0.]))
 
-        if 'idn' in self.type:
+        if 'idn' in self.losstype:
             idn = idn_loss(n[:-1], p, model)   /self.norm['idn']* self.fract['idn']
-        if 'idn' not in self.type:
-            idn = torch.from_numpy(np.array([0]))
+        if 'idn' not in self.losstype:
+            idn = torch.from_numpy(np.array([0.]))
 
-        if 'elm' in self.type:
+        if 'elm' in self.losstype:
             elm = elm_loss(z_hat,model, self.M) /self.norm['elm']* self.fract['elm']
-        if 'elm' not in self.type:
-            elm = torch.from_numpy(np.array([0]))
+        if 'elm' not in self.losstype:
+            elm = torch.from_numpy(np.array([0.]))
 
-
-        # abs = ls.abs_loss(n_evol, nhat_evol)   /loss_obj.norm['abs']* loss_obj.fract['abs']
-        # idn = ls.idn_loss(n[:-1], p, model)    /loss_obj.norm['idn']* loss_obj.fract['idn']
-
+        # print(grd) 
         loss = abs.mean() + grd.mean() + idn.mean() + elm.mean()
         # print(loss)
         self.adjust_loss('tot', loss.item())
@@ -327,7 +324,7 @@ def loss_function(loss_obj, model, x, x_hat,z_hat, p):
     abs = (abs_loss(x[1:],x_hat))     ## Compare with the final abundances for that model
     grd = (grd_loss(x,x_hat))
     idn = (idn_loss(x[:-1],p,model))
-    if 'elm' in loss_obj.type:
+    if 'elm' in loss_obj.losstype:
         elm = (elm_loss(z_hat,model, loss_obj.M))
     else:
         elm = torch.tensor([0.0,0.0])
@@ -396,7 +393,12 @@ def get_loss(abs, rel, grd, idn, elm, type):
 class Loss_analyse():
     def __init__(self, loc, meta, type):
         '''
-        Initialise the loss object, used for analysing a trained model
+        Initialise the loss object, used for analysing a trained model.
+
+        Input:
+            - loc:  location of the model
+            - meta: meta data of the model
+            - type: type of loss object, either 'train' or 'test'
         '''
         # self.norm  = meta['norm']
         # self.fract = meta['fract']
@@ -408,7 +410,7 @@ class Loss_analyse():
     
 
     def get_losstype(self):
-        return self.type
+        return self.losstype
 
     def set_tot_loss(self,loss):   
         '''
@@ -495,52 +497,58 @@ def plot(train, test, log = True, ylim = False, limits = None, show = False):
     fig = plt.figure(figsize = (6,3))
     ax1 = fig.add_subplot((111))
 
-    lw = 1.5
+    lw = 1
     a = 0.8
     lw2 = 4
-    ms = 0.1
+    ms = 5
+    m1 = '.'
+    m2 = 'x'
+
+    l1 = '-'
+    l2 = '--'
+
     ## ------------ legend ----------------
 
-    l_train = mlines.Line2D([],[], color = 'grey', ls = '-' , marker = 'none', label='train',lw = lw, alpha = 1)
-    l_test  = mlines.Line2D([],[], color = 'grey', ls = '--', marker = 'none', label='validation' ,lw = lw, alpha = 1)
-    l_tot   = mlines.Line2D([],[], color = 'k'   , ls = '-' , label='total',lw = lw2, alpha = 1)
+    l_train = mlines.Line2D([],[], color = 'grey', ls = l1, marker = m1, label='train',lw = lw, alpha = 1)
+    l_test  = mlines.Line2D([],[], color = 'grey', ls = l2, marker = m2, label='validation' ,lw = lw, alpha = 1)
+    l_tot   = mlines.Line2D([],[], color = 'k'   , ls = l1, label='total',lw = lw2, alpha = 1)
     
     handles = [l_train, l_test, l_tot]
 
     ## ------------- TOTAL ------------
-    ax1.plot(test.get_tot_loss(), ls = '--', marker = 'None', lw = lw, c='k')
-    ax1.plot(train.get_tot_loss(), ls = '-', marker = 'None', lw = lw, c='k')
+    ax1.plot(test.get_tot_loss() , ls = l2, marker = m2, lw = lw, c='k')
+    ax1.plot(train.get_tot_loss(), ls = l1, marker = m1, lw = lw, c='k')
 
     ## ------------- GRD -------------
     c_grd = 'gold'
     if 'evo' in train.losstype or 'grd' in train.losstype:
-        ax1.plot(test.get_loss('grd'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_grd, alpha = a)
-        ax1.plot(train.get_loss('grd'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_grd, alpha = a)
-        l_grd = mlines.Line2D([],[], color = c_grd, ls = '-', label='GRD',lw = lw2, alpha = 1)
+        ax1.plot(test.get_loss('grd') , ls = l2, marker = m2, ms=ms, lw = lw, c=c_grd, alpha = a)
+        ax1.plot(train.get_loss('grd'), ls = l1, marker = m1, ms=ms, lw = lw, c=c_grd, alpha = a)
+        l_grd = mlines.Line2D([],[], color = c_grd, ls = l1, label='GRD',lw = lw2, alpha = 1)
         handles.append(l_grd)
 
     ## ------------- IDN -------------
     c_idn = 'salmon'
     if 'idn' in train.losstype:
-        ax1.plot(test.get_loss('idn'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_idn, alpha = a)
-        ax1.plot(train.get_loss('idn'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_idn, alpha = a)
-        l_idn = mlines.Line2D([],[], color = c_idn, ls = '-', label='IDN',lw = lw2, alpha = 1)
+        ax1.plot(test.get_loss('idn') , ls = l2, marker = m2, ms=ms, lw = lw, c=c_idn, alpha = a)
+        ax1.plot(train.get_loss('idn'), ls = l1, marker = m1, ms=ms, lw = lw, c=c_idn, alpha = a)
+        l_idn = mlines.Line2D([],[], color = c_idn, ls = l1, label='IDN',lw = lw2, alpha = 1)
         handles.append(l_idn)
 
     ## ------------- ELM -------------
     c_elm = 'darkorchid'
     if 'elm' in train.losstype:
-        ax1.plot(test.get_loss('elm'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_elm, alpha = a)
-        ax1.plot(train.get_loss('elm'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_elm, alpha = a)
-        l_elm = mlines.Line2D([],[], color = c_elm, ls = '-', label='elm',lw = lw2, alpha = 1)
+        ax1.plot(test.get_loss('elm') , ls = l2, marker = m2, ms=ms, lw = lw, c=c_elm, alpha = a)
+        ax1.plot(train.get_loss('elm'), ls = l1, marker = m1, ms=ms, lw = lw, c=c_elm, alpha = a)
+        l_elm = mlines.Line2D([],[], color = c_elm, ls = l1, label='elm',lw = lw2, alpha = 1)
         handles.append(l_elm)
 
     ## ------------- ABS -------------
     c_abs = 'cornflowerblue'
     if 'mse' in train.losstype or 'abs' in train.losstype:
-        ax1.plot(test.get_loss('abs'), ls = '--', marker = 'x', ms=ms, lw = lw, c=c_abs, alpha = a)
-        ax1.plot(train.get_loss('abs'), ls = '-', marker = '.', ms=ms, lw = lw, c=c_abs, alpha = a)
-        l_abs   = mlines.Line2D([],[], color = c_abs, ls = '-',label='ABS',lw = lw2, alpha = 1)
+        ax1.plot(test.get_loss('abs') , ls = l2, marker = m2, ms=ms, lw = lw, c=c_abs, alpha = a)
+        ax1.plot(train.get_loss('abs'), ls = l1, marker = m1, ms=ms, lw = lw, c=c_abs, alpha = a)
+        l_abs   = mlines.Line2D([],[], color = c_abs, ls = l1,label='ABS',lw = lw2, alpha = 1)
         handles.append(l_abs)
 
     ## ------------ settings --------------
@@ -555,7 +563,7 @@ def plot(train, test, log = True, ylim = False, limits = None, show = False):
         else:
             ax1.set_ylim(limits)
 
-    ax1.set_xlim(5,100)
+    # ax1.set_xlim(5,100)
 
     fs= 12
     ax1.set_xlabel('epoch')
