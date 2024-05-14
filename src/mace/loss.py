@@ -424,6 +424,21 @@ class Loss_analyse():
 
     
 def plot(train, test, len=10, log = True, ylim = False, limits = None, show = False):
+    '''
+    Plot the loss of the model as a function of epoch.
+    The total loss is plotted, as well as the individual losses.
+
+    Input:
+    - train:    training loss object
+    - test:     test loss object
+    - len:      number of epochs                        [default = 10]
+    - log:      boolean, plot the y-axis in log scale   [default = True]
+    - ylim:     boolean, set the y-axis limits          [default = False]
+    - limits:   tuple with the limits of the y-axis     [default = None]
+    - show:     boolean, show the plot                  [default = False]
+
+    Returns the figure.
+    '''
 
     fig = plt.figure(figsize = (6,3))
     ax1 = fig.add_subplot((111))
