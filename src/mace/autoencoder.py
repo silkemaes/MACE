@@ -1,3 +1,14 @@
+'''
+This script contains the neural network architecture for the autoencoder.
+
+Classes:
+    - Encoder: neural network for the encoder
+    - Decoder: neural network for the decoder
+    - Autoencoder: neural network for the autoencoder
+'''
+
+
+
 import torch.nn          as nn
 import torch
 
@@ -79,13 +90,6 @@ class Encoder(nn.Module):
         return h
 
 
-    def set_name(self, name):
-        '''
-        Set the name of the encoder.
-        '''
-        self.name = name
-        return
-
 
 
 class Decoder(nn.Module):
@@ -159,12 +163,6 @@ class Decoder(nn.Module):
         h = self.LeakyReLU(self.layer_out(h))
         return h
 
-    def set_name(self, name):
-        '''
-        Set the name of the decoder.
-        '''
-        self.name = name
-        return
     
     
 class Autoencoder(nn.Module):
@@ -187,13 +185,71 @@ class Autoencoder(nn.Module):
         h = self.Decoder(h)
         return h
 
-    def set_name(self, name):
-        '''
-        Set the name of the autoencoder.
-        '''
-        self.name = name
-        return
+
     
+
+
+def get_overview(coder):
+    '''
+    Retrieve information on a coder.
+
+    Input:
+        - coder: neural network (encoder or decoder)
+    
+    Returns:
+        - the number of nodes in each layer
+        - the number of parameters in each layer
+    '''
+    input_nodes = coder.layer_in.in_features
+    hidden_nodes = list()
+    for layer in coder.hidden:
+        hidden_nodes.append(layer.in_features)
+    hidden_nodes.append(coder.layer_out.in_features)
+    output_nodes = coder.layer_out.out_features
+
+    ## Calculate the number of parameters to be trained in each layer
+    input_params = coder.layer_in.out_features * (coder.layer_in.in_features+1)
+    hidden_params = list()
+    for layer in coder.hidden:
+        hidden_params.append(layer.out_features * (layer.in_features+1))
+    output_params = coder.layer_out.out_features * (coder.layer_out.in_features+1)
+
+    return (input_nodes, hidden_nodes, output_nodes), (input_params,hidden_params,output_params)
+
+def print_overview(coder):
+    '''
+    Print the overview of the given coder.
+    '''
+    (input_nodes, hidden_nodes, output_nodes), (input_params,hidden_params,output_params) = get_overview(coder)
+    total_params = input_params + output_params
+
+    print('{:>8} | {:>5} | {:>10}'.format('#'  , 'nodes'    ,  'parameters'))
+    print('-----------------------------------')
+    print('{:>8} | {:>5} | {:>10}'.format('input'  ,   input_nodes,  input_params))
+    for i in range(len(hidden_params)):
+        print('{:>8} | {:>5} | {:>10}'.format('hidden'  ,   hidden_nodes[i],  hidden_params[i]))
+        total_params += hidden_params[i]
+    print('{:>8} | {:>5} | {:>10}'.format('hidden'  ,   hidden_nodes[i+1],  output_params))
+    print('{:>8} | {:>5} | {:>10}'.format('output'  ,   output_nodes, '/'))
+    print('-----------------------------------')
+    print('{:>8} | {:>5} | {:>10}'.format(' ', ' ', total_params))
+
+    return
+
+def overview(ae):
+    '''
+    Print the overview of the given autoencoder (ae).
+    '''
+    print('___________________________________\n')
+    print('Encoder')
+    print_overview(ae.Encoder)
+    print('')
+    print('Decoder')
+    print_overview(ae.Decoder)
+    print('___________________________________\n')
+    return
+    
+
 
 ## ------------------- OLD VERSION ------------------- ##
 ## The architecture of these encoder and decoder differs from the version used in Maes et al. (2024)
@@ -289,67 +345,3 @@ class Decoder_old(nn.Module):
         return
 
 
-
-def get_overview(coder):
-    '''
-    Retrieve the number of nodes in each layer.
-    '''
-    input_nodes = coder.layer_in.in_features
-    hidden_nodes = list()
-    for layer in coder.hidden:
-        hidden_nodes.append(layer.in_features)
-    hidden_nodes.append(coder.layer_out.in_features)
-    output_nodes = coder.layer_out.out_features
-
-    ## Calculate the number of parameters to be trained in each layer
-    input_params = coder.layer_in.out_features * (coder.layer_in.in_features+1)
-    hidden_params = list()
-    for layer in coder.hidden:
-        hidden_params.append(layer.out_features * (layer.in_features+1))
-    output_params = coder.layer_out.out_features * (coder.layer_out.in_features+1)
-
-    return (input_nodes, hidden_nodes, output_nodes), (input_params,hidden_params,output_params)
-
-def print_overview(coder):
-    '''
-    Print the overview of the given coder.
-    '''
-    (input_nodes, hidden_nodes, output_nodes), (input_params,hidden_params,output_params) = get_overview(coder)
-    total_params = input_params + output_params
-    print(str(coder.name)+':')
-    print('{:>8} | {:>5} | {:>10}'.format('#'  , 'nodes'    ,  'parameters'))
-    print('-----------------------------------')
-    print('{:>8} | {:>5} | {:>10}'.format('input'  ,   input_nodes,  input_params))
-    for i in range(len(hidden_params)):
-        print('{:>8} | {:>5} | {:>10}'.format('hidden'  ,   hidden_nodes[i],  hidden_params[i]))
-        total_params += hidden_params[i]
-    print('{:>8} | {:>5} | {:>10}'.format('hidden'  ,   hidden_nodes[i+1],  output_params))
-    print('{:>8} | {:>5} | {:>10}'.format('output'  ,   output_nodes, '/'))
-    print('-----------------------------------')
-    print('{:>8} | {:>5} | {:>10}'.format(' ', ' ', total_params))
-
-    return
-
-def overview(model):
-    print('Overview '+model.name+':')
-    print('___________________________________\n')
-    print_overview(model.Encoder)
-    print('')
-    print_overview(model.Decoder)
-    return
-    
-# def build(input_dim, hidden_dim, latent_dim,output_dim, nb_hidden, type, DEVICE):
-#     '''
-#     Build an autoencoder, given the input, output and latent dimensions.
-#     '''
-#     encoder = Encoder( input_dim, hidden_dim, latent_dim, nb_hidden=nb_hidden, ae_type = type)
-#     decoder = Decoder(latent_dim, hidden_dim, output_dim, nb_hidden=nb_hidden, ae_type = type)
-#     model = Autoencoder(Encoder=encoder, Decoder=decoder).to(DEVICE)  
-
-#     return model
-
-def name(model, encoder_name, decoder_name, model_name):
-    model.set_name(model_name)
-    model.Encoder.set_name(encoder_name)
-    model.Decoder.set_name(decoder_name)
-    return
