@@ -17,23 +17,42 @@ class Solver(nn.Module):
         3) Decoder; neural network with adjustable amount of nodes and layers
 
     '''
-    def __init__(self, scheme, p_dim, z_dim, DEVICE, n_dim, nb_hidden, ae_type, nb_evol, g_nn = False, atol = 1e-5, rtol = 1e-2):
+    def __init__(self, 
+                 n_dim, p_dim, z_dim,  
+                 nb_hidden, ae_type, 
+                 scheme, nb_evol, 
+                 lr,
+                 path,
+                 DEVICE,
+                 g_nn = False, 
+                 atol = 1e-5, rtol = 1e-2):
+        # def __init__(self,  p_dim, z_dim, DEVICE, n_dim, nb_hidden, ae_type, g_nn = False, atol = 1e-5, rtol = 1e-2):
         '''
         Initialising the Solver class with the hyperparameters.
+
+        - n_dim: number of dimensions of the physical output
+        - p_dim: number of dimension of the physical input
+        - z_dim: number of dimension of the latent space
+        
+        - nb_hidden: number of hidden layers in the encoder and decoder
+        - ae_type: type of autoencoder used
+
         - scheme: type of scheme used to train the model 
             - 'loc': local training scheme
             - 'int': integrated training scheme
             (see Maes et al., 2024 for more details)
-        - p_dim: number of dimension of the physical input
-        - z_dim: number of dimension of the latent space
-        - DEVICE: device to run the model on (cuda or cpu)
-        - n_dim: number of dimensions of the physical output
-        - nb_hidden: number of hidden layers in the encoder and decoder
-        - ae_type: type of autoencoder used
         - nb_evol: number of evolutions used during the integrated training scheme
+
+        - lr: learning rate of the training optimiser 
+
+        - path: path to the model. Here the model will be saved as well as its test results
+
+        - DEVICE: device to run the model on (cuda or cpu)
+        
         - g_nn: boolean:
             True: use a neural network version of G (Gnn class)
             False: use the G class (default)
+
         - atol: absolute tolerance of the ODE solver, default 1e-5
         - rtol: relative tolerance of the ODE solver, default 1e-2
 
@@ -43,15 +62,21 @@ class Solver(nn.Module):
         super(Solver, self).__init__()
 
         self.scheme = scheme
+        self.nb_evol = nb_evol
+
+        self.lr = lr
+
+        self.path = path
 
         self.status_train = list()
         self.status_test = list()
 
+        self.p_dim = p_dim
         self.z_dim = z_dim
         self.n_dim = n_dim
+
         self.DEVICE = DEVICE
         self.g_nn = g_nn
-        self.nb_evol = nb_evol
 
         ## Setting the neural ODE
         input_ae_dim  = n_dim
@@ -91,6 +116,14 @@ class Solver(nn.Module):
             return np.array(self.status_train)
         elif type == 'test':
             return np.array(self.status_test)
+        
+    def set_optimiser(self):
+        '''
+        Sets the optimiser for the model for its training.
+        '''
+        self.optimiser = torch.optim.Adam(self.parameters(), lr=self.lr)
+
+        return 
 
 
     def forward(self, n_0, p, tstep):

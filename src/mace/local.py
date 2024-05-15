@@ -1,45 +1,7 @@
 
 
-# def calc_loss(n, n_hat, z_hat, p, model, loss_obj):
-#     '''
-#     Function to calculate the different losses.
 
-#     Input:
-#     - n         = true abundances
-#     - n_hat     = predicted abundances
-#     - z_hat     = predicted latent variables  (needed for elm loss, not included here)
-#     - p         = physical parameters
-#     - model     = MACE model
-#     - loss_obj  = object that stores the losses
-
-#     Method:
-#     1. calculate the absolute loss, normalised (given by norm) and weighted (given by fract)
-#     2. calculate the gradient loss, normalised (given by norm) and weighted (given by fract)
-#     3. calculate the identity loss, normalised (given by norm) and weighted (given by fract)
-#     4. calculate the total loss, which is the sum of the absolute, gradient and identity loss
-#     5. stores the losses in the loss object
-
-#     Returns:
-#     - mse of abs, idn and grd losses
-#     '''
-
-#     abs = ls.abs_loss(n[1:], n_hat)          /loss_obj.norm['abs']* loss_obj.fract['abs']
-#     grd = ls.grd_loss(n[1:], n_hat)              /loss_obj.norm['grd']* loss_obj.fract['grd']
-#     idn = ls.idn_loss(n[:-1], p, model)      /loss_obj.norm['idn']* loss_obj.fract['idn']
-
-#     loss = abs.mean() + idn.mean() + grd.mean()
-
-#     loss_obj.adjust_loss('tot', loss.item())
-#     loss_obj.adjust_loss('abs', abs.mean().item())
-#     loss_obj.adjust_loss('grd', grd.mean().item())
-#     loss_obj.adjust_loss('idn', idn.mean().item())
-
-
-#     return loss
-
-
-
-def run_epoch(data_loader, model, loss_obj, DEVICE, optimizer, training):
+def run_epoch(data_loader, model, loss_obj, training):
     '''
     Function to train 1 epoch.
 
@@ -47,10 +9,7 @@ def run_epoch(data_loader, model, loss_obj, DEVICE, optimizer, training):
     - data_loader   = data, torchtensor
     - model         = ML architecture to be trained
     - loss_obj      = object that stores the losses
-    - DEVICE        = device to run the model on
-    - optimizer     = type of optimizer to update the weights of the model
     - training      = boolean to indicate if the model is training or validating
-    - nb_evol       == 0 ; needed to be compatible with 'run_epoch()' function in integrated.py
 
     Method:
     1. initialise loss for this epoch
@@ -65,6 +24,8 @@ def run_epoch(data_loader, model, loss_obj, DEVICE, optimizer, training):
     '''    
 
     loss_obj.init_loss()
+    DEVICE = model.DEVICE
+    optimiser = model.optimiser
 
     status = 0
 
@@ -82,9 +43,9 @@ def run_epoch(data_loader, model, loss_obj, DEVICE, optimizer, training):
 
         if training == True:
             ## Backpropagation
-            optimizer.zero_grad()
+            optimiser.zero_grad()
             loss.backward()
-            optimizer.step()
+            optimiser.step()
 
     return i+1, status
 

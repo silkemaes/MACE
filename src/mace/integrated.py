@@ -1,9 +1,7 @@
-import loss as ls
 import torch
 
 
-
-def evaluate(n,p,dt, model, nb_evol,  loss_obj, status,  DEVICE):
+def evaluate(n,p,dt, model, loss_obj, status):
     '''
     < Core of the integrated training scheme >
     The loop in this function makes that the absolute loss becomes integrated.
@@ -15,7 +13,6 @@ def evaluate(n,p,dt, model, nb_evol,  loss_obj, status,  DEVICE):
     - p         = parameters
     - dt        = time steps
     - model     = ML architecture to be trained
-    - nb_evol   = number of evolution steps
     - loss_obj  = loss object to store losses of training
     - status    = status of the solver
 
@@ -31,6 +28,8 @@ def evaluate(n,p,dt, model, nb_evol,  loss_obj, status,  DEVICE):
 
     Returns:
     '''
+    DEVICE = model.DEVICE
+    nb_evol = model.nb_evol
 
     ## 1.
     n  = n.view(n.shape[1], n.shape[2]).to(DEVICE)     
@@ -70,44 +69,15 @@ def evaluate(n,p,dt, model, nb_evol,  loss_obj, status,  DEVICE):
     return loss, status
 
 
-# def calc_loss(n, n_evol, nhat_evol, p, model, loss_obj):
-#     '''
-#     Function to calculate the losses of the model.
 
-#     Input:
-#     - n         = abundances
-#     - n_evol    = real evolution
-#     - nhat_evol = predicted evolution
-#     - p         = physical parameters
-#     - model     = ML architecture to be trained
-#     - loss_obj  = loss object to store losses of training
-
-#     Returns:
-#     - mse of the abs and idn losses
-#     '''
-#     abs = ls.abs_loss(n_evol, nhat_evol)   /loss_obj.norm['abs']* loss_obj.fract['abs']
-#     idn = ls.idn_loss(n[:-1], p, model)    /loss_obj.norm['idn']* loss_obj.fract['idn']
-
-#     loss = abs.mean() + idn.mean()
-#     # print(loss)
-#     loss_obj.adjust_loss('tot', loss.item())
-#     loss_obj.adjust_loss('abs', abs.mean().item())
-#     loss_obj.adjust_loss('idn', idn.mean().item())
-
-#     return loss
-
-def run_epoch(data_loader, model, loss_obj, DEVICE, optimizer, training):
+def run_epoch(data_loader, model, loss_obj, training):
     '''
     Function to train 1 epoch.
 
     - data_loader   = data, torchtensor
     - model         = ML architecture to be trained
-    - nb_evol       = number of evolution steps
     - loss_obj      = loss object to store losses of training
-    - DEVICE        = device to run the model on
-    - optimizer     = type of optimizer to uspdate the weights of the model
     - training      = boolean to indicate if the model is training
-    - nb_evol       = number of evolution steps
 
     Returns 
     - number of data samples
@@ -115,20 +85,19 @@ def run_epoch(data_loader, model, loss_obj, DEVICE, optimizer, training):
     '''    
         
     loss_obj.init_loss()
+    optimiser = model.optimiser
 
     status = 0
 
-    nb_evol = model.nb_evol
-
     for i, (n,p,dt) in enumerate(data_loader):
 
-        loss, status = evaluate(n, p, dt, model, nb_evol, loss_obj, status, DEVICE)
+        loss, status = evaluate(n, p, dt, model, loss_obj, status)
 
         if training == True:
             ## Backpropagation
-            optimizer.zero_grad()
+            optimiser.zero_grad()
             loss.backward()
-            optimizer.step()
+            optimiser.step()
 
 
     return i+1, status

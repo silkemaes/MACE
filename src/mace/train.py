@@ -3,28 +3,27 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import torch
-from torch.optim  import Adam
 
 ## own scripts
 # import CSE_0D.plotting       as plotting 
 import loss
 
 
-def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainloss, testloss, start_epochs = 0, plot = False, log = True, show = True, start_time = 0.):
+def train(model,
+          data_loader, test_loader, 
+          end_epochs, 
+          trainloss, testloss, 
+          start_epochs = 0,                 ## option to restart training from a certain epoch
+          plot = False, log = True, show = True, 
+          start_time = 0.):
     '''
     Train the model for a number of epochs in the local way (for details; see paper).
     
     Input:
         - model         = ML architecture to be trained    
-        - lr            = learning rate
         - data_loader   = training data, torch tensor
         - test_loader   = validation data, torch tensor
-        - nb_evol       = number of evolution steps
-            == 0: local training
-             > 0: integrated training
-        - path          = path to save the model
         - end_epochs    = number of epochs to train
-        - DEVICE        = device to train on (CPU or GPU)
         - trainloss     = object that stores the losses of the training
         - testloss      = object that stores the losses of the validation
         - start_epochs  = epoch to start from
@@ -34,7 +33,7 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
         - start_time    = time to start from (default = 0)
 
     Process:
-        1. initialise the optimizer --> Adam optimiser 
+        1. initialise the optimiser --> Adam optimiser 
         Per epoch:
         2. train the model
         3. validate the model
@@ -44,16 +43,17 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
         5. plot the losses if plot == True
 
     Returns:
-        - optimizer
+        - optimiser
     '''
-    optimizer = Adam(model.parameters(), lr=lr)
-
+    model.set_optimiser()
+    path = model.path
+    
     ## initialise lists for statistics of training
 
     print('Model:         ')
     print('--------------')
     print('     # epochs: '+str(end_epochs))
-    print('learning rate: '+str(lr))
+    print('learning rate: '+str(model.lr))
     print('    loss type: '+str(trainloss.losstype))
 
     if model.scheme == 'loc':
@@ -74,7 +74,7 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
         ## --- Training ---
         
         model.train()
-        nb, status = run_epoch(data_loader, model, trainloss, DEVICE, optimizer, training=True)
+        nb, status = run_epoch(data_loader, model, trainloss, training=True)
         
         ## save status
         model.set_status(status/4, 'train')
@@ -82,7 +82,7 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
         ## ---- Validating ----
 
         model.eval() ## zelfde als torch.no_grad
-        nb, status = run_epoch(test_loader, model, testloss, DEVICE, optimizer, training=False)
+        nb, status = run_epoch(test_loader, model, testloss, training=False)
         
         ## save status
         model.set_status(status/4, 'test')
@@ -119,4 +119,4 @@ def train(model, lr, data_loader, test_loader, path, end_epochs, DEVICE, trainlo
         print('\n >>> Plotting...')
         loss.plot(trainloss, testloss, ylim = False, log = log, show = show)
 
-    return optimizer
+    return 
