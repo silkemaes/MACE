@@ -13,6 +13,7 @@ def train(model,
           data_loader, test_loader, 
           end_epochs, 
           trainloss, testloss, 
+          continue_train = False,
           start_epochs = 0,                 ## option to restart training from a certain epoch
           plot = False, log = True, show = True, save_epoch = 10,
           start_time = 0.):
@@ -101,6 +102,7 @@ def train(model,
             loss.plot(trainloss, testloss, log = log, show = show)
             plt.savefig(path+'/loss.png')
         
+        # print(trainloss.get_loss('tot'))
         print("Epoch", epoch + 1, "complete!", "\tAverage loss train: ", np.round(trainloss.get_loss('tot')[epoch], 5), "\tAverage loss test: ", np.round(testloss.get_loss('tot')[epoch],5))
         
         calc_time = (time()-start_time)     ## in seconds
@@ -111,8 +113,8 @@ def train(model,
         elif calc_time > 3600:
             print("              time [hours]: ", np.round((time()-start_time)/(60*60),5))
     
-    trainloss.normalise_loss(nb)
-    testloss.normalise_loss(nb)
+    # trainloss.normalise_loss(nb)
+    # testloss.normalise_loss(nb)
 
     print('\n \tDONE!')
 

@@ -94,6 +94,7 @@ def run_epoch(data_loader, model, loss_obj, training):
     - status of the solver
     '''    
         
+
     loss_obj.init_loss()
     optimiser = model.optimiser
 

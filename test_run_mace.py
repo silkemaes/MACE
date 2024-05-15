@@ -1,105 +1,144 @@
 import matplotlib.pyplot as plt
+import numpy as np      
 import sys
 import torch
 from time import time
+import datetime             as dt
 
-## import own functions
-sys.path.insert(1, '/STER/silkem/MACE/src/mace')
-
-import CSE_0D.dataset          as ds
-import train                     as train
-import test                      as test
-import src.mace.mace                    as mace
-from loss               import Loss
-import utils                   as utils
+import src.mace.CSE_0D.dataset  as ds
+import src.mace.train           as train
+import src.mace.test            as test
+import src.mace.mace            as mace
+from src.mace.loss              import Loss
+import src.mace.loss            as loss  
+import src.mace.utils           as utils
+from src.mace.input             import Input
 
 
 
 specs_dict, idx_specs = utils.get_specs()
 
-dt_fracts = {4 : 0.296, 5: 0.269,8: 0.221,10: 0.175,12: 0.146,16: 0.117,20: 0.09,25: 0.078,32: 0.062,48: 0.043,64: 0.033,128: 0.017}
+start = time()
+now = dt.datetime.now()
+name = str(now.strftime("%Y%m%d")+'_'+now.strftime("%H%M%S"))
+path = '/STER/silkem/MACE/models/CSE_0D/'+name
 
 
+## ================================================== INPUT ========
+## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
 
+## READ INPUT FILE
+arg = sys.argv[1]
+
+infile = '/STER/silkem/MACE/input/'+arg+'.in'
+
+input = Input(infile, name)
+
+input.print()
+
+utils.makeOutputDir(path)
+utils.makeOutputDir(path+'/nn')
+
+input.make_meta(path)
+
+## ================================================== SETUP ========
 
 ## Set up PyTorch 
 cuda   = False
 DEVICE = torch.device("cuda" if cuda else "cpu")
-
+batch_size = 1 
 kwargs = {'num_workers': 1, 'pin_memory': True} 
 
-lr = 1.e-4
-epochs = 2
-batch_size = 1
-nb_test = 300
-n_dim = 468
 
+## Load train & test data sets 
+traindata, testdata, data_loader, test_loader = ds.get_data(dt_fract=input.dt_fract,nb_samples=input.nb_samples, batch_size=batch_size, nb_test=input.nb_test,kwargs=kwargs)
 
-losstype = 'abs_idn'
-z_dim = 8
-nb_samples = 100
-nb_hidden = 1
-ae_type = 'simple'
-nb_evol = 0
-
-
-print('------------------------------')
-print('      # epochs:', epochs)
-print(' learning rate:', lr)
-print('# z dimensions:', z_dim)
-print('     # samples:', nb_samples)
-print('     loss type:', losstype)
-print('')
-
-
-traindata, testdata, data_loader, test_loader = ds.get_data(dt_fract=dt_fracts[z_dim],nb_samples=nb_samples,nb_test = nb_test, batch_size=batch_size, kwargs=kwargs)
-
-## Local model
-
-model = mace.Solver(p_dim=4,z_dim = z_dim, n_dim=n_dim,nb_hidden=nb_hidden, ae_type=ae_type, DEVICE = DEVICE)
+## Make model
+model = mace.Solver(n_dim=input.n_dim, p_dim=4,z_dim = input.z_dim, 
+                    nb_hidden=input.nb_hidden, ae_type=input.ae_type, 
+                    scheme=input.scheme, nb_evol=input.nb_evol,
+                    path = path,
+                    DEVICE = DEVICE,
+                    lr=input.lr )
 
 num_params = utils.count_parameters(model)
 print(f'The model has {num_params} trainable parameters\n')
 
+## ================================================== TRAIN ========
 
-norm = {'abs' : 1,
-        'grd' : 1,
-        'idn' : 1}
-
-fract = {'abs' : 1,
-         'grd' : 1,
-         'idn' : 1}
-
-plot = True
-
+## ------------- PART 1: unnormalised losses ----------------
+norm, fract = loss.initialise()
 
 ## Make loss objects
-trainloss = Loss(norm, fract, losstype)
-testloss  = Loss(norm, fract, losstype)
+trainloss = Loss(norm, fract, input.losstype)
+testloss  = Loss(norm, fract, input.losstype)
 
-
+## Train
 tic = time()
-opt = train.train(model, lr, data_loader, test_loader, nb_evol=nb_evol ,path = None, end_epochs = epochs, DEVICE= DEVICE, trainloss=trainloss, testloss=testloss, start_time = time(), plot=plot, show = False)
+train.train(model, 
+            data_loader, test_loader, 
+            end_epochs = input.ini_epochs, 
+            trainloss=trainloss, testloss=testloss, 
+            start_time = start, 
+            plot=True, show = False)
 toc = time()
-
-print('Total time [s]:',toc-tic)
-
-
-# print(model.get_status('train'))
-
-testpath = testdata.testpath[5]
-# print(testpath)
-
-# print('>> Loading test data...')
-input_data, info = ds.get_test_data(testpath,testdata)
-
-n_evol, mace_evol_time = test.test_evolution(model, input_data, start_idx=0)
+train_time1 = toc-tic
 
 
-fig = plt.figure(figsize=(6,5))
-ax1 = fig.add_subplot(111)
-ax1.plot(n_evol, lw = 1)
-ax1.plot(input_data[0], 'k--', alpha = 0.2, lw = 0.5)
+## ------------- PART 2: normalised losses, but reinitialise model ----------------
+
+## Change the ratio of losses via the fraction
+
+fract = input.get_facts()
+trainloss.change_fract(fract)
+testloss.change_fract(fract)
+
+## Normalise the losses
+new_norm = trainloss.normalise()  
+testloss.change_norm(new_norm) 
 
 
-plt.show()
+## Continue training
+tic = time()
+train.train(model, 
+            data_loader, test_loader, 
+            start_epochs = input.ini_epochs, end_epochs = input.nb_epochs, 
+            trainloss=trainloss, testloss=testloss, 
+            start_time = start, 
+            plot=True, show = False, 
+            continue_train=True)
+toc = time()
+train_time2 = toc-tic
+
+train_time = train_time1 + train_time2
+
+
+## ================================================== SAVE ========
+
+
+## losses
+trainloss.save(path+'/train')
+testloss.save(path+'/valid')
+
+## dataset characteristics
+min_max = np.stack((traindata.mins, traindata.maxs), axis=1)
+np.save(path+'/minmax', min_max) 
+
+## model
+torch.save(model.state_dict(),path+'/nn/nn.pt')
+
+## status
+np.save(path+'/train/status', model.get_status('train')) # type: ignore
+np.save(path +'/valid/status', model.get_status('test') ) # type: ignore
+
+fig_loss = loss.plot(trainloss, testloss, len = input.nb_epochs)
+plt.savefig(path+'/loss.png')
+
+stop = time()
+
+overhead_time = (stop-start)-train_time
+
+## updating meta file
+input.update_meta(traindata, train_time, overhead_time, path)
+
+## ================================================== TEST ========

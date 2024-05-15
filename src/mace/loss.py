@@ -130,6 +130,8 @@ class Loss():
         elif type == 'elm':
             self.elm.append(loss)
 
+        return
+
     def normalise_loss(self,nb):
         '''
         Normalise all losses by number of samples (nb).
@@ -139,6 +141,8 @@ class Loss():
         self.grd = np.array(self.grd)/nb
         self.idn = np.array(self.idn)/nb
         self.elm = np.array(self.elm)/nb
+
+        return
 
     def get_loss(self,type):
         '''
@@ -256,6 +260,17 @@ class Loss():
         if elm_loss is not None:
             np.save(path+'/elm.npy', elm_loss)
 
+    def normalise(self):
+        ## normalise the losses
+        norm = {'abs' :np.mean(self.get_loss('abs')), # type: ignore
+                'grd' :np.mean(self.get_loss('grd')), # type: ignore
+                'idn' :np.mean(self.get_loss('idn')), # type: ignore
+                'elm' :np.mean(self.get_loss('elm'))}   # type: ignore
+        
+        self.change_norm(norm) 
+        
+        return norm
+
     
 
 def abs_loss(x, x_hat):
@@ -330,7 +345,18 @@ def elm_loss(z_hat,model, M):
     return loss
 
 
+def initialise():
+    norm = {'abs' : 1,
+            'grd' : 1,
+            'idn' : 1,
+            'elm' : 1}
 
+    fract = {'abs' : 1,
+            'grd' : 1,
+            'idn' : 1, 
+            'elm' : 1}
+    
+    return norm, fract
 
 
 class LoadedLoss():
