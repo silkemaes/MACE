@@ -1,10 +1,6 @@
 import torch.nn     as nn
 import torch    
 import numpy as np
-# import torchode     as to      # Lienen, M., & Günnemann, S. 2022, in The Symbiosis of Deep Learning and Differential Equations II, NeurIPS. https://openreview.net/forum?id=uiKVKTiUYB0
-# import autoencoder  as ae
-# from scipy.stats    import gmean
-# from time           import time
 
 
 class A(nn.Module):

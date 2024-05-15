@@ -4,9 +4,7 @@ import numpy as np
 
 import torch
 
-## own scripts
-# import CSE_0D.plotting       as plotting 
-import loss
+import src.mace.loss as loss
 
 
 def train(model,
@@ -14,7 +12,7 @@ def train(model,
           end_epochs, 
           trainloss, testloss, 
           start_epochs = 0,                 ## option to restart training from a certain epoch
-          plot = False, log = True, show = True, 
+          plot = False, log = True, show = True, save_epoch = 10,
           start_time = 0.):
     '''
     Train the model for a number of epochs in the local way (for details; see paper).
@@ -23,13 +21,14 @@ def train(model,
         - model         = ML architecture to be trained    
         - data_loader   = training data, torch tensor
         - test_loader   = validation data, torch tensor
-        - end_epochs    = number of epochs to train
+        - end_epochs    = total number of epochs to train
         - trainloss     = object that stores the losses of the training
         - testloss      = object that stores the losses of the validation
-        - start_epochs  = epoch to start from
+        - start_epochs  = epoch to start from (default = 0)
         - plot          = plot the losses (boolean)
         - log           = use logscale in plots (boolean)
         - show          = show the plots (boolean)
+        - save_epoch    = save the model every "save_epoch" epochs (default = 10)
         - start_time    = time to start from (default = 0)
 
     Process:
@@ -58,10 +57,10 @@ def train(model,
 
     if model.scheme == 'loc':
         print('\nLocal training scheme in use.')
-        from local import run_epoch
+        from src.mace.local import run_epoch
     elif model.scheme == 'int':
         print('\nIntegrated training scheme in use.')
-        from integrated import run_epoch
+        from src.mace.integrated import run_epoch
     else:
         print('\nInvalid training scheme input. Please choose either "loc" or "int".')
         
@@ -87,16 +86,16 @@ def train(model,
         ## save status
         model.set_status(status/4, 'test')
         
-        ## --- save model every 10 epochs ---
-        if (start_epochs+epoch)%10 == 0 and path != None:
+        ## --- save model every "save_epoch" epochs ---
+        if (start_epochs+epoch)%save_epoch == 0 and path != None:
             ## nn
-            torch.save(model.state_dict(),path+'/nn/nn'+str(int((epoch)/10))+'.pt')
+            torch.save(model.state_dict(),path+'/nn/nn'+str(int((epoch)/save_epoch))+'.pt')
             trainpath = path+'/train'
             testpath  = path+'/test'
             ## losses
             trainloss.save(trainpath)
             testloss.save(testpath)
-            ## plot
+            ## plot, every save this fig is updated
             loss.plot(trainloss, testloss, log = log, show = show)
             plt.savefig(path+'/loss.png')
         

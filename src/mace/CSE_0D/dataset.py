@@ -4,8 +4,7 @@ import torch
 
 from torch.utils.data    import Dataset, DataLoader
 
-## own scripts
-import utils
+import src.mace.utils as utils
 
 specs_dict, idx_specs = utils.get_specs()
 

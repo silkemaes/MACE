@@ -2,7 +2,7 @@ from time import time
 import numpy as np
 from tqdm import tqdm
 
-import src.mace.CSE_0D.dataset as ds
+
 
 def test_step(model, input):
     '''

@@ -1,15 +1,13 @@
 import os
 import numpy as np
-import sys
+
 import json
 import torch
 
-from pathlib import Path
 
-
-sys.path.insert(1, '/STER/silkem/MACE/src/mace')
-from loss       import Loss_analyse
-import mace     as mace
+# sys.path.insert(1, '/STER/silkem/MACE/src/mace')
+from src.mace.loss       import Loss_analyse
+import src.mace.mace     as mace
 
 
 def makeOutputDir(path):
@@ -104,7 +102,6 @@ def get_specs():
     
     specs = np.loadtxt(loc_specs, usecols=(1), dtype=str, skiprows = 1, max_rows=466)  
 
-    # print(specs)
     specs_dict = dict()
     idx_specs  = dict()
     for i in range(len(specs)):
@@ -129,8 +126,6 @@ def generate_random_numbers(n, start, end):
 
 
 
-### ---
-
 def load_model(loc, meta, epoch):
     '''
     Load a MACE model.
@@ -145,7 +140,10 @@ def load_model(loc, meta, epoch):
     n_dim = 468
     cuda   = False
     DEVICE = torch.device("cuda" if cuda else "cpu")
-    model = mace.Solver(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, nb_hidden=meta['nb_hidden'], ae_type=meta['ae_type'], DEVICE = DEVICE)
+
+    # model = mace.Solver(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, nb_hidden=meta['nb_hidden'], ae_type=meta['ae_type'], DEVICE = DEVICE)
+
+    model = mace.Solver(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, nb_hidden=meta['nb_hidden'], ae_type=meta['ae_type'], scheme = meta['scheme'],nb_evol=meta['nb_evol'] , lr = meta['lr'], path = loc,DEVICE = DEVICE)
 
     if epoch >= 0:
         file = 'nn/nn'+str(epoch)+'.pt'
@@ -159,6 +157,31 @@ def load_model(loc, meta, epoch):
 
     return model, num_params
 
+
+
+def load_meta(loc):
+    '''
+    Load the meta file of a MACE model,
+    given the output location (outloc) and the name of the directory (loc).
+    '''
+    ## loading meta file
+    with open(loc+'/meta.json', 'r') as f:
+        meta=f.read()
+    meta  = json.loads(meta)
+
+    return meta
+
+
+
+def count_parameters(model):
+    '''
+    Count the number of trainable parameters in a model.
+    '''
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+
+### ---
 
     
 def load_all(outloc, dirname, epoch = ''):
@@ -191,26 +214,6 @@ def load_all(outloc, dirname, epoch = ''):
 
     return meta, model, trainloss, testloss
 
-
-def load_meta(loc):
-    '''
-    Load the meta file of a MACE model,
-    given the output location (outloc) and the name of the directory (loc).
-    '''
-    ## loading meta file
-    with open(loc+'/meta.json', 'r') as f:
-        meta=f.read()
-    meta  = json.loads(meta)
-
-    return meta
-
-
-
-def count_parameters(model):
-    '''
-    Count the number of trainable parameters in a model.
-    '''
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 

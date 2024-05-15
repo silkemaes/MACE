@@ -1,6 +1,6 @@
-import utils
-import loss
-import test
+import src.mace.utils       as utils
+import src.mace.loss        as loss
+import src.mace.test        as test
 import matplotlib.pyplot    as plt
 import src.mace.CSE_0D.dataset       as ds
 from src.mace.CSE_0D.plotting        import plot_abs
@@ -100,9 +100,9 @@ class Trained_MACE():
         err, err_test = utils.error(n, n_hat)
         err, err_evol = utils.error(n, n_evol)
 
-        print('\n>>> Errors:')
-        print('     Step      error:', np.round(err_test,3))
-        print('     Evolution error:', np.round(err_evol,3))
+        print('\nErrors (following Eq. 23 of Maes et al., 2024):')
+        print('      Step error:', np.round(err_test,3))
+        print(' Evolution error:', np.round(err_evol,3))
 
         if plotting == True:
             print('\n>>> Plotting...')

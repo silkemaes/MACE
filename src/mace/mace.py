@@ -2,8 +2,8 @@ import torch.nn     as nn
 import torch    
 import numpy as np
 import torchode     as to      # Lienen, M., & Günnemann, S. 2022, in The Symbiosis of Deep Learning and Differential Equations II, NeurIPS. https://openreview.net/forum?id=uiKVKTiUYB0
-import autoencoder  as ae
-import latentODE    as lODE
+import src.mace.autoencoder  as ae
+import src.mace.latentODE    as lODE
 from scipy.stats    import gmean
 from time           import time
 
@@ -26,7 +26,7 @@ class Solver(nn.Module):
                  DEVICE,
                  g_nn = False, 
                  atol = 1e-5, rtol = 1e-2):
-        # def __init__(self,  p_dim, z_dim, DEVICE, n_dim, nb_hidden, ae_type, g_nn = False, atol = 1e-5, rtol = 1e-2):
+    # def __init__(self,  p_dim, z_dim, DEVICE, n_dim, nb_hidden, ae_type, g_nn = False, atol = 1e-5, rtol = 1e-2):
         '''
         Initialising the Solver class with the hyperparameters.
 

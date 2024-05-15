@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-import utils
+import src.mace.utils as utils
 from torch.autograd.functional import jacobian
 import os
 
@@ -331,8 +331,7 @@ class Loss_analyse():
             - meta: meta data of the model
             - type: type of loss object, either 'train' or 'test'
         '''
-        # self.norm  = meta['norm']
-        # self.fract = meta['fract']
+
         self.losstype  = meta['losstype']
         
         self.type = type
@@ -368,13 +367,6 @@ class Loss_analyse():
         elif type == 'idn':
             self.idn = loss
 
-    # def set_idv_loss(self,loss,type):
-    #     if type == 'abs':
-    #         self.abs_idv = loss
-    #     elif type == 'rel':
-    #         self.rel_idv = loss
-    #     elif type == 'grd':
-    #         self.grd_idv = loss 
         
     def get_loss(self,type):
         '''

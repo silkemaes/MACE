@@ -9,9 +9,8 @@ rcParams.update({'figure.dpi': 200})
 # plt.rcParams['figure.dpi'] = 150
 
 ## own scripts
-import utils
-sys.path.insert(1, '/STER/silkem/MACE/src/mace')
-import loss             as loss_script
+import src.mace.utils as utils
+
 
 specs_dict, idx_specs = utils.get_specs()
 
