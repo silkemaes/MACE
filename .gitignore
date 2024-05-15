@@ -136,5 +136,7 @@ figs/
 data/
 ignore/
 src/mace/old/
+ipynbs/
+
 
 
