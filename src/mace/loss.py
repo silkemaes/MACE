@@ -282,7 +282,7 @@ def idn_loss(x,p, model):
 def elm_loss(z_hat,model, M):
     '''
     Return the element conservation loss per x_i.
-        M is at matrix that gives the elemental composition of each species.
+        M is at matrix that gives the elemental composition of each species. --> use buildM.py to create this matrix.
         We know that M x n_hat should be conserved at all times in the network, hence d(M x n_hat)/dt = 0.
         Since n_hat = D(g(z_hat)), with D the decoder, g=C+Az+Bzz the ODE function,
             we can rewrite the element conservation loss 
