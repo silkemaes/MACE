@@ -1,6 +1,15 @@
-from time import time
-import numpy as np
-from tqdm import tqdm
+'''
+This script contains functions to apply a trained MACE model on a test dataset, 
+i.e., test the trained model.
+
+    - Test the model on 1 consecutive time step or on the evolution of the system.
+    - Test the model on a full evolution of the system.
+'''
+
+
+from time       import time
+import numpy    as np
+from tqdm       import tqdm
 
 
 

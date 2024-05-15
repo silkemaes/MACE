@@ -1,3 +1,12 @@
+'''
+This script contains a function to plot the 1D abundance profiles of a 1D CSE model,
+together with the predictions of MACE for this 1D CSE model.
+
+NOTE:
+This function only works for this specific dataset.
+'''
+
+
 import matplotlib.pyplot as plt
 from matplotlib          import rcParams
 rcParams.update({'figure.dpi': 200})

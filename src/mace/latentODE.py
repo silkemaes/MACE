@@ -1,6 +1,15 @@
+'''
+This script builds the latent ordinary differential equation (ODE).
+
+Two different options exist:
+    - G: ODE without neural network, but with adjustable/trainable elements (C, A, B)
+    - Gnn: ODE with neural networks that constructs the tensors A and B from the output layer, starting from the physical input of the chemistry model.
+'''
+
+
 import torch.nn     as nn
 import torch    
-import numpy as np
+import numpy        as np
 
 
 class A(nn.Module):
@@ -113,8 +122,7 @@ class G(nn.Module):
         Forward function of the G class, einstein summations over indices.
         '''
         return self.C + torch.einsum("ij, bj -> bi", self.A, z) + torch.einsum("ijk, bj, bk -> bi", self.B, z, z)  ## b is the index of the batchsize
-        # return  torch.einsum("ij, bj -> bi", self.A, z) + torch.einsum("ijk, bj, bk -> bi", self.B, z, z)  ## b is the index of the batchsize
-
+        
 
 
 

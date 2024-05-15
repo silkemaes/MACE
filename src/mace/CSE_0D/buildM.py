@@ -1,3 +1,7 @@
+'''
+This script builds the stoichiometric matrix M for the rate16 chemical network.
+'''
+
 import numpy as np
 import re
 

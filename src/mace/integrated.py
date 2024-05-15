@@ -1,3 +1,13 @@
+'''
+This script contains the core of the integrated training scheme.
+
+The function run_epoch() uses the function evaluate() to evaluate the model properly on a given data sample.
+
+More details on this training scheme can be found in Maes et al. (2024).
+https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract
+'''
+
+
 import torch
 
 

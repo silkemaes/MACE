@@ -1,3 +1,13 @@
+'''
+This script loads a trained MACE model 
+and provides the user with the possibility to apply (test) the model on a test dataset.
+
+The class Trained_MACE() contains the loaded model, 
+together with the training and test losses, and the meta data.
+'''
+
+
+
 import src.mace.utils       as utils
 import src.mace.loss        as loss
 import src.mace.test        as test
@@ -36,9 +46,9 @@ class Trained_MACE():
 
         self.model, self.num_params = utils.load_model(self.loc, self.meta, epoch)
 
-        self.trainloss = utils.Loss_analyse(self.loc, self.meta, 'train')
+        self.trainloss = loss.LoadedLoss(self.loc, self.meta, 'train')
 
-        self.testloss  = utils.Loss_analyse(self.loc, self.meta, 'test')
+        self.testloss  = loss.LoadedLoss(self.loc, self.meta, 'test')
 
         self.plotpath = self.loc + 'plots/'
 

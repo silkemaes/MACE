@@ -1,13 +1,13 @@
-import os
-import numpy as np
+'''
+This script contains utility functions for MACE.
+'''
 
+
+import os
+import numpy            as np
 import json
 import torch
-
-
-# sys.path.insert(1, '/STER/silkem/MACE/src/mace')
-from src.mace.loss       import Loss_analyse
-import src.mace.mace     as mace
+import src.mace.mace    as mace
 
 
 def makeOutputDir(path):
@@ -184,83 +184,83 @@ def count_parameters(model):
 ### ---
 
     
-def load_all(outloc, dirname, epoch = ''):
-    '''
-    Load all the components of a MACE model,
-    given the output location (outloc) and the name of the directory (dirname).
+# def load_all(outloc, dirname, epoch = ''):
+#     '''
+#     Load all the components of a MACE model,
+#     given the output location (outloc) and the name of the directory (dirname).
 
-    Returns:
-        - meta: file with meta data
-        - model: torch model
-        - trainloss: training loss per epoch
-        - testloss: test loss per epoch
-    '''
-    loc   = outloc+dirname+'/'
+#     Returns:
+#         - meta: file with meta data
+#         - model: torch model
+#         - trainloss: training loss per epoch
+#         - testloss: test loss per epoch
+#     '''
+#     loc   = outloc+dirname+'/'
 
-    ## loading meta file
-    with open(loc+'/meta.json', 'r') as f:
-        meta=f.read()
-    meta  = json.loads(meta)
+#     ## loading meta file
+#     with open(loc+'/meta.json', 'r') as f:
+#         meta=f.read()
+#     meta  = json.loads(meta)
 
-    ## loading torch model
-    model = load_model(loc,meta,epoch, sepr=True)
+#     ## loading torch model
+#     model = load_model(loc,meta,epoch, sepr=True)
 
-    ## loading losses
+#     ## loading losses
 
-    trainloss = Loss_analyse()
-    trainloss.load(loc, 'train', meta)
-    testloss  = Loss_analyse()
-    testloss.load(loc, 'test', meta)
+#     trainloss = Loss_analyse()
+#     trainloss.load(loc, 'train', meta)
+#     testloss  = Loss_analyse()
+#     testloss.load(loc, 'test', meta)
 
-    return meta, model, trainloss, testloss
-
-
+#     return meta, model, trainloss, testloss
 
 
-## ------------------------------------------------------
+
+
+# ## ------------------------------------------------------
     
 
 
-def load_model_old(loc, meta, epoch, sepr):
-    n_dim = 468
-    cuda   = False
-    DEVICE = torch.device("cuda" if cuda else "cpu")
-    model = mace.Solver_old(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, DEVICE = DEVICE)
+# def load_model_old(loc, meta, epoch, sepr):
+#     n_dim = 468
+#     cuda   = False
+#     DEVICE = torch.device("cuda" if cuda else "cpu")
+#     model = mace.Solver_old(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, DEVICE = DEVICE)
 
-    if sepr == True:
-        file = 'nn/nn'+str(epoch)+'.pt'
-    else:
-        file = 'nn/nn.pt'
+#     if sepr == True:
+#         file = 'nn/nn'+str(epoch)+'.pt'
+#     else:
+#         file = 'nn/nn.pt'
 
-    model.load_state_dict(torch.load(loc+file))
+#     model.load_state_dict(torch.load(loc+file))
     
-    num_params = count_parameters(model)
-    print(f'The model has {num_params} trainable parameters')
+#     num_params = count_parameters(model)
+#     print(f'The model has {num_params} trainable parameters')
 
-    return model
+#     return model
 
-def load_all_noevol(outloc, dirname, sepr = False, epoch = ''):
-    loc   = outloc+dirname+'/'
+# def load_all_noevol(outloc, dirname, sepr = False, epoch = ''):
+#     loc   = outloc+dirname+'/'
 
-    ## loading meta file
-    with open(loc+'/meta.json', 'r') as f:
-        meta=f.read()
-    meta  = json.loads(meta)
+#     ## loading meta file
+#     with open(loc+'/meta.json', 'r') as f:
+#         meta=f.read()
+#     meta  = json.loads(meta)
 
-    ## loading torch model
-    model = load_model_old(loc, meta, epoch, sepr)
+#     ## loading torch model
+#     model = load_model_old(loc, meta, epoch, sepr)
 
-    ## loading losses
-    if sepr == False:
-        trainloss = Loss_analyse()
-        trainloss.load(loc, 'train', meta)
-        testloss  = Loss_analyse()
-        testloss.load(loc, 'test', meta)
-        model.set_status(np.load(loc+'train/status.npy'), 'train')
-        model.set_status(np.load(loc+'test/status.npy'), 'test')
+#     ## loading losses
+#     if sepr == False:
+#         trainloss = Loss_analyse()
+#         trainloss.load(loc, 'train', meta)
+#         testloss  = Loss_analyse()
+#         testloss.load(loc, 'test', meta)
+#         model.set_status(np.load(loc+'train/status.npy'), 'train')
+#         model.set_status(np.load(loc+'test/status.npy'), 'test')
 
-    if sepr == False:
-        return meta, model, trainloss, testloss
-    else:
-        return meta, model
+#     if sepr == False:
+#         return meta, model, trainloss, testloss
+#     else:
+#         return meta, model
 

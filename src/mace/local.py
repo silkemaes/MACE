@@ -1,4 +1,9 @@
+'''
+This script contains the core of the local training scheme.
+More details on this training scheme can be found in Maes et a;. (2024).
 
+https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract
+'''
 
 
 def run_epoch(data_loader, model, loss_obj, training):

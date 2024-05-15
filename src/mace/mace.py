@@ -1,11 +1,20 @@
-import torch.nn     as nn
+'''
+This script contains the MACE model architecture, called Solver.
+It combines the autoencoder with the latent ODE, and includes solving the ODE in the forward pass.
+
+Also an old version of the solver is available still, which is compatible with an older version of the autoencoder.
+'''
+
+
+
+import torch.nn             as nn
 import torch    
-import numpy as np
-import torchode     as to      # Lienen, M., & Günnemann, S. 2022, in The Symbiosis of Deep Learning and Differential Equations II, NeurIPS. https://openreview.net/forum?id=uiKVKTiUYB0
-import src.mace.autoencoder  as ae
-import src.mace.latentODE    as lODE
-from scipy.stats    import gmean
-from time           import time
+import numpy                as np
+import torchode             as to      # Lienen, M., & Günnemann, S. 2022, in The Symbiosis of Deep Learning and Differential Equations II, NeurIPS. https://openreview.net/forum?id=uiKVKTiUYB0
+import src.mace.autoencoder as ae
+import src.mace.latentODE   as lODE
+from scipy.stats            import gmean
+from time                   import time
 
 
 class Solver(nn.Module):

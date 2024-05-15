@@ -1,7 +1,19 @@
+'''
+This script handles the losses of the training.
+
+Contains:
+    - Loss: class to store the losses of the training
+    - LoadedLoss: class to store the losses of a trained model
+    - functions for calculating the different losses
+    - function to plot the losses
+'''
+
+
+
 import torch
-import numpy as np
-import src.mace.utils as utils
-from torch.autograd.functional import jacobian
+import numpy                    as np
+import src.mace.utils           as utils
+from torch.autograd.functional  import jacobian
 import os
 
 import matplotlib.pyplot    as plt
@@ -321,7 +333,7 @@ def elm_loss(z_hat,model, M):
 
 
 
-class Loss_analyse():
+class LoadedLoss():
     def __init__(self, loc, meta, type):
         '''
         Initialise the loss object, used for analysing a trained model.

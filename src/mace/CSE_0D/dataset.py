@@ -1,10 +1,32 @@
+'''
+This script contains classes for loading the 1D CSE models,
+which is the training data for MACE,
+as well as code to preprocess the data.
 
-import numpy             as np
+
+Contains:
+    Classes:
+        - CSEdata: Dataset class (PyTorch) to prepare the dataset for training and validating the emulator
+        - CSEmod: Class to load a 1D CSE model
+    
+    Functions:
+        - get_data: prepare the data for training and validating the emulator, using the PyTorch-specific dataloader
+        - get_test_data: get the data of the test a 1D model, given a path and meta-data from a training setup
+        - get_abs: get the abundances, given the normalised abundances
+        - get_phys: reverse the normalisation of the physical parameters
+        - read_input_1Dmodel: read input text file of 1D CSE models, given the filename
+        - read_data_1Dmodel: read data text file of output abundances of 1D CSE models
+
+NOTE:
+This script only works for this specific dataset.
+
+'''
+
+
+import numpy            as np
 import torch
-
-from torch.utils.data    import Dataset, DataLoader
-
-import src.mace.utils as utils
+from torch.utils.data   import Dataset, DataLoader
+import src.mace.utils   as utils
 
 specs_dict, idx_specs = utils.get_specs()
 

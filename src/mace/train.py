@@ -1,10 +1,12 @@
-from time   import time
-import matplotlib.pyplot as plt
-import numpy as np
+'''
+This script contains the core of training a MACE model.
+'''
 
+from time                   import time
+import matplotlib.pyplot    as plt
+import numpy                as np
 import torch
-
-import src.mace.loss as loss
+import src.mace.loss        as loss
 
 
 def train(model,
