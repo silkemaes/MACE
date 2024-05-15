@@ -135,4 +135,6 @@ models/
 figs/
 data/
 ignore/
+src/mace/old/
+
 
