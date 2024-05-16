@@ -12,14 +12,14 @@ MACE is implemented in Python and uses [PyTorch](https://pytorch.org/), together
 ---
 ## What?
 
-Surrogate model that emulates the evolution of chemical abundances over time in a dynamical physical environment. As the states, it makes use of machine learning techniques. More specifically, combining an *autoencoder* and a *trainable ordinary differential equation (ODE)* allows to accurately emulate a chemical kinetics model.
-
 The architecture of MACE is schematically given as 
 ![MACE architecture](MACE.png)
 
-or in formula
-$$\underline{\hat{\boldsymbol{n}}}(t) = \mathcal{D}\Big( G \big( \mathcal{E} (\underline{\boldsymbol{n}}, \underline{\boldsymbol{p}}),t \big) \Big).$$
-Here, $\underline{\hat{\boldsymbol{n}}}(t)$ are the predicted (normalised) chemical abundances at a time $t$ later dan the initial state $\underline{\boldsymbol{n}}$ . $\mathcal{E}$ and $\mathcal{D}$ represent the autoecoder, with the encoder and decoder, respectively. The autoencoder maps the chemical space $\underline{\boldsymbol{n}}$ together with the physical space $\underline{\boldsymbol{p}}$ to a lower dimensional representation $\boldsymbol{z}$, called the latent space. The function $G$ describes the evolution in latent space such that $\boldsymbol{z}(\Delta t) = G(\boldsymbol{z}, \Delta t)=\int_0^{\Delta t} g(\boldsymbol{z}){\rm d}t$.
+MACE offers a surrogate model that emulates the evolution of chemical abundances over time in a dynamical physical environment. As the name states, it makes use of machine learning techniques. More specifically, combining an *autoencoder* (blue) and a *trainable ordinary differential equation (ODE)* (red) allows to accurately emulate a chemical kinetics model.
+
+In formule, MACE is stated as
+$${\hat{\boldsymbol{n}}}(t) = \mathcal{D}\Big( G \big( \mathcal{E} ({\boldsymbol{n}}, {\boldsymbol{p}}),t \big) \Big).$$
+Here, ${\hat{\boldsymbol{n}}}(t)$ are the predicted chemical abundances at a time $t$ later dan the initial state ${\boldsymbol{n}}$ . $\mathcal{E}$ and $\mathcal{D}$ represent the autoecoder, with the encoder and decoder, respectively. The autoencoder maps the chemical space ${\boldsymbol{n}}$ together with the physical space ${\boldsymbol{p}}$ to a lower dimensional representation $\boldsymbol{z}$, called the latent space. The function $G$ describes the evolution in latent space such that $\boldsymbol{z}(\Delta t) = G(\boldsymbol{z}, \Delta t)=\int_0^{\Delta t} g(\boldsymbol{z}){\rm d}t$.
 
 For more details, check out our paper: [Maes et al. (*in press.*)](https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract).
 
