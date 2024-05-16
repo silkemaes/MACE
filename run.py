@@ -4,6 +4,7 @@ import sys
 import torch
 from time import time
 import datetime             as dt
+from tqdm       import tqdm
 
 import src.mace.CSE_0D.dataset  as ds
 import src.mace.train           as train
@@ -39,7 +40,7 @@ input.print()
 utils.makeOutputDir(path)
 utils.makeOutputDir(path+'/nn')
 
-input.make_meta(path)
+meta = input.make_meta(path)
 
 ## ================================================== SETUP ========
 
@@ -147,17 +148,19 @@ input.print()
 
 ## Test the model on the test samples
 
+print('\n\n>>> Testing model on',len(traindata.testpath),'test samples ...')
+
 sum_err_step = 0
 sum_err_evol = 0
 
 step_calctime = list()
 evol_calctime = list()
 
-for i in range(len(traindata.testpath)):
-    print(i,end='\r')
+for i in tqdm(range(len(traindata.testpath))):
+#     print(i+1,end='\r')
     testpath = traindata.testpath[i]
 
-    err_test, err_evol, step_time, evol_time = test.test_model(model,testpath)
+    err_test, err_evol, step_time, evol_time = test.test_model(model,testpath, meta, printing = False)
 
     sum_err_step += err_test
     sum_err_evol += err_evol
@@ -167,13 +170,32 @@ for i in range(len(traindata.testpath)):
 
 utils.makeOutputDir(path+'/test')
 
-np.save(path+ '/sum_err_step.npy', np.array(sum_err_step))
-np.save(path+ '/sum_err_evol.npy', np.array(sum_err_evol))
+np.save(path+ '/sum_err_step.npy', np.array(sum_err_step/len(traindata.testpath)))
+np.save(path+ '/sum_err_evol.npy', np.array(sum_err_evol/len(traindata.testpath)))
 
 np.save(path+ '/calctime_evol.npy', evol_calctime)
 np.save(path+ '/calctime_step.npy', step_calctime)  
 
-print('\n\n>>> Fully done!')
+print('\nAverage error:')
+print('           Step:', np.round(sum_err_step,3))
+print('      Evolution:', np.round(sum_err_evol,3))
+print('(following Eq. 23 of Maes et al., 2024)')
+
+stop = time()
+
+print('\n>>> FULLY DONE!')
+
+total_time = stop-start
+if total_time < 60:
+        print('Total time [secs]:', np.round(total_time,2))
+if total_time >= 60:
+        print('Total time [mins]:', np.round(total_time/60,2))
+if total_time >= 3600:
+        print('Total time [hours]:', np.round(total_time/3600,2))
+
+print('Output saved in:', path,'\n')
+
+
 
 
     

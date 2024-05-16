@@ -7,18 +7,17 @@ i.e., test the trained model.
 '''
 
 
-from time       import time
-import numpy    as np
-from tqdm       import tqdm
+from time                   import time
+import numpy                as np
 import matplotlib.pyplot    as plt
 
-import src.mace.CSE_0D.dataset as ds
-import src.mace.utils   as utils
-from src.mace.CSE_0D.plotting        import plot_abs
+import src.mace.CSE_0D.dataset  as ds
+import src.mace.utils           as utils
+from src.mace.CSE_0D.plotting   import plot_abs
 
 
 
-def test_step(model, input):
+def test_step(model, input, printing = True):
     '''
     Function to test a trained MACE model on 1 consecutive time step.
 
@@ -41,7 +40,8 @@ def test_step(model, input):
     '''
 
     mace_time = list()
-    print('>>> Testing step...')
+    if printing == True:
+        print('>>> Testing step...')
 
     model.eval()
     n     = input[0]
@@ -61,13 +61,14 @@ def test_step(model, input):
     n0 = n[0].view(1,-1).detach().numpy()
     n_hat = np.concatenate((n0,n_hat[0].detach().numpy()),axis=0)
 
-    print('Solving time [s]:', solve_time)
+    if printing == True:
+        print('Solving time [s]:', solve_time)
 
     return n.detach().numpy(), n_hat, dt, mace_time
 
 
 
-def test_evolution(model, input, start_idx=0):
+def test_evolution(model, input, printing = True, start_idx=0):
     '''
     Function to test the evolution of a MACE model.
     
@@ -88,8 +89,8 @@ def test_evolution(model, input, start_idx=0):
         - predicted abundances
         - calculation time
     '''
-    print('\n>>> Testing evolution...')
-
+    if printing == True:
+        print('\n>>> Testing evolution...')
 
     model.eval()
     n     = input[0][start_idx]
@@ -112,7 +113,7 @@ def test_evolution(model, input, start_idx=0):
 
     
     ## subsequent steps of the evolution
-    for i in tqdm(range(start_idx+1,len(dt))):
+    for i in range(start_idx+1,len(dt)):
         tic = time()
         n_hat,z_hat, modstatus = model(n_hat.view(1, -1),p[i].view(1, -1),dt[i].view(-1))    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches
         toc = time()
@@ -121,13 +122,14 @@ def test_evolution(model, input, start_idx=0):
         mace_time.append(solve_time)
     toc_tot = time()
 
-    print('Solving time [s]:', np.array(mace_time).sum())
-    print('Total   time [s]:', toc_tot-tic_tot)
+    if printing == True:
+        print('Solving time [s]:', np.array(mace_time).sum())
+        print('Total   time [s]:', toc_tot-tic_tot)
 
     return np.array(n_evol).reshape(-1,468), np.array(mace_time)
 
 
-def test_model(model, testpath, specs=[], plotting = False, save = False):
+def test_model(model, testpath, meta, specs=[], printing = True, plotting = False, save = False):
     '''
     Test the model on a test set.
 
@@ -136,13 +138,14 @@ def test_model(model, testpath, specs=[], plotting = False, save = False):
         - plotting: plot the results, default = False
     '''
 
-    model1D, input, info = ds.get_test_data(testpath, model.meta)
+    model1D, input, info = ds.get_test_data(testpath, meta)
     id = info['path'] +'_'+ info['name']
 
-    n, n_hat, t, step_time = test_step(model.model, input)
-    n_evol, evol_time  = test_evolution(model.model, input, start_idx=0)
+    n, n_hat, t, step_time = test_step(model, input, printing = printing)
+    n_evol, evol_time  = test_evolution(model, input, start_idx=0, printing = printing)
 
-    print('\n>>> Denormalising... ')
+    if printing == True:
+        print('\n>>> Denormalising... ')
     n = ds.get_abs(n)
     n_hat = ds.get_abs(n_hat)
     n_evol = ds.get_abs(n_evol)

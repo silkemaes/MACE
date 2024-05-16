@@ -72,6 +72,7 @@ class Input():
                     'lr'        : self.lr,
                     'epochs'    : self.nb_epochs,
                     'z_dim'     : self.z_dim,
+                    'dt_fract'  : self.dt_fract,
                     'losstype'  : self.losstype,
                     'inputfile' : self.file,
                     'nb_evol'   : self.nb_evol,
@@ -85,7 +86,7 @@ class Input():
         with open(path+"/meta.json", "w") as outfile:
             outfile.write(json_object)
 
-        return
+        return metadata
 
     def get_facts(self):
         fract = {'abs' : self.abs, 
