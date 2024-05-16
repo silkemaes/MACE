@@ -13,9 +13,8 @@ def train(model,
           data_loader, test_loader, 
           end_epochs, 
           trainloss, testloss, 
-          continue_train = False,
           start_epochs = 0,                 ## option to restart training from a certain epoch
-          plot = False, log = True, show = True, save_epoch = 10,
+          plot = False, log = True, show = False, save_epoch = 10,
           start_time = 0.):
     '''
     Train the model for a number of epochs in the local way (for details; see paper).
@@ -50,13 +49,6 @@ def train(model,
     model.set_optimiser()
     path = model.path
     
-    ## initialise lists for statistics of training
-
-    print('Model:         ')
-    print('--------------')
-    print('     # epochs: '+str(end_epochs))
-    print('learning rate: '+str(model.lr))
-    print('    loss type: '+str(trainloss.losstype))
 
     if model.scheme == 'loc':
         print('\nLocal training scheme in use.')
@@ -94,7 +86,7 @@ def train(model,
             ## nn
             torch.save(model.state_dict(),path+'/nn/nn'+str(int((epoch)/save_epoch))+'.pt')
             trainpath = path+'/train'
-            testpath  = path+'/test'
+            testpath  = path+'/valid'
             ## losses
             trainloss.save(trainpath)
             testloss.save(testpath)
@@ -103,7 +95,7 @@ def train(model,
             plt.savefig(path+'/loss.png')
         
         # print(trainloss.get_loss('tot'))
-        print("Epoch", epoch + 1, "complete!", "\tAverage loss train: ", np.round(trainloss.get_loss('tot')[epoch], 5), "\tAverage loss test: ", np.round(testloss.get_loss('tot')[epoch],5))
+        print("Epoch", epoch + 1, "complete!", "\tAverage training loss: ", np.round(trainloss.get_loss('tot')[epoch], 5), "\tAverage validation loss: ", np.round(testloss.get_loss('tot')[epoch],5))
         
         calc_time = (time()-start_time)     ## in seconds
         if calc_time < 60:
@@ -113,9 +105,6 @@ def train(model,
         elif calc_time > 3600:
             print("              time [hours]: ", np.round((time()-start_time)/(60*60),5))
     
-    # trainloss.normalise_loss(nb)
-    # testloss.normalise_loss(nb)
-
     print('\n \tDONE!')
 
     if plot == True:

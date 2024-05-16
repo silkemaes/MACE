@@ -1,17 +1,17 @@
 
 ## input model
 
-lr          = 1.e-4
-nb_epochs   = 5
-ini_epochs  = 2
+lr          = 1.e-5
+nb_epochs   = 20
+ini_epochs  = 4
 losstype    = abs_idn
 z_dim       = 8
-nb_samples  = 100
+nb_samples  = 1000
 scheme      = loc
 nb_evol     = 1
 nb_hidden   = 1
 ae_type     = simple
-nb_test     = 3
+nb_test     = 20
 
 
 
@@ -25,37 +25,6 @@ elm = 0
 
 
 
+Name = 20240516_121129
 
-Name = 20240515_164302
-
-Name = 20240515_164318
-
-Name = 20240515_164344
-
-Name = 20240515_164424
-
-Name = 20240515_164510
-
-Name = 20240515_164707
-
-Name = 20240515_164819
-
-Name = 20240515_164933
-
-Name = 20240515_165332
-
-Name = 20240515_165536
-
-Name = 20240515_165629
-
-Name = 20240515_165751
-
-Name = 20240515_170234
-
-Name = 20240515_170351
-
-Name = 20240515_170625
-
-Name = 20240515_171352
-
-Name = 20240515_171543
+Name = 20240516_121209

@@ -51,7 +51,9 @@ kwargs = {'num_workers': 1, 'pin_memory': True}
 
 
 ## Load train & test data sets 
-traindata, testdata, data_loader, test_loader = ds.get_data(dt_fract=input.dt_fract,nb_samples=input.nb_samples, batch_size=batch_size, nb_test=input.nb_test,kwargs=kwargs)
+traindata, testdata, data_loader, test_loader = ds.get_data(dt_fract=input.dt_fract,
+                                                            nb_samples=input.nb_samples, batch_size=batch_size, 
+                                                            nb_test=input.nb_test,kwargs=kwargs)
 
 ## Make model
 model = mace.Solver(n_dim=input.n_dim, p_dim=4,z_dim = input.z_dim, 
@@ -62,7 +64,7 @@ model = mace.Solver(n_dim=input.n_dim, p_dim=4,z_dim = input.z_dim,
                     lr=input.lr )
 
 num_params = utils.count_parameters(model)
-print(f'The model has {num_params} trainable parameters\n')
+print(f'\nThe model has {num_params} trainable parameters')
 
 ## ================================================== TRAIN ========
 
@@ -79,8 +81,7 @@ train.train(model,
             data_loader, test_loader, 
             end_epochs = input.ini_epochs, 
             trainloss=trainloss, testloss=testloss, 
-            start_time = start, 
-            plot=True, show = False)
+            start_time = start)
 toc = time()
 train_time1 = toc-tic
 
@@ -88,6 +89,7 @@ train_time1 = toc-tic
 ## ------------- PART 2: normalised losses, but reinitialise model ----------------
 
 ## Change the ratio of losses via the fraction
+print('\n\n>>> Continue with normalised losses.')
 
 fract = input.get_facts()
 trainloss.change_fract(fract)
@@ -104,9 +106,7 @@ train.train(model,
             data_loader, test_loader, 
             start_epochs = input.ini_epochs, end_epochs = input.nb_epochs, 
             trainloss=trainloss, testloss=testloss, 
-            start_time = start, 
-            plot=True, show = False, 
-            continue_train=True)
+            start_time = start)
 toc = time()
 train_time2 = toc-tic
 
@@ -142,3 +142,38 @@ overhead_time = (stop-start)-train_time
 input.update_meta(traindata, train_time, overhead_time, path)
 
 ## ================================================== TEST ========
+
+input.print()
+
+## Test the model on the test samples
+
+sum_err_step = 0
+sum_err_evol = 0
+
+step_calctime = list()
+evol_calctime = list()
+
+for i in range(len(traindata.testpath)):
+    print(i,end='\r')
+    testpath = traindata.testpath[i]
+
+    err_test, err_evol, step_time, evol_time = test.test_model(model,testpath)
+
+    sum_err_step += err_test
+    sum_err_evol += err_evol
+
+    step_calctime.append(step_time)
+    evol_calctime.append(evol_time)
+
+utils.makeOutputDir(path+'/test')
+
+np.save(path+ '/sum_err_step.npy', np.array(sum_err_step))
+np.save(path+ '/sum_err_evol.npy', np.array(sum_err_evol))
+
+np.save(path+ '/calctime_evol.npy', evol_calctime)
+np.save(path+ '/calctime_step.npy', step_calctime)  
+
+print('\n\n>>> Fully done!')
+
+
+    

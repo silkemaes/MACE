@@ -7,9 +7,7 @@ class Input():
     def __init__(self, infile, name):
 
         self.name = name
-        self.file = infile
-
-        print(self.file)
+        self.file = infile 
 
         with open(infile, 'a') as file:
             file.write('\nName = '+name+'\n')
@@ -55,15 +53,15 @@ class Input():
         print('Training:')
         print('Name:', self.name)
         print('------------------------------')
-        print('      # epochs:', self.nb_epochs)
-        print(' learning rate:', self.lr)
-        print('# z dimensions:', self.z_dim)
-        print('     # samples:', self.nb_samples)
-        print('  # evolutions:', self.nb_evol)
-        print('     loss type:', self.losstype)
+        print('     inputfile:', self.file)
         print('      # hidden:', self.nb_hidden)
         print('       ae type:', self.ae_type)
-        print('     inputfile:', self.file)
+        print('# z dimensions:', self.z_dim)
+        print('        scheme:', self.scheme)
+        print('  # evolutions:', self.nb_evol)
+        print('     loss type:', self.losstype)
+        print('      # epochs:', self.nb_epochs)
+        print(' learning rate:', self.lr)
         print('')
 
         return
