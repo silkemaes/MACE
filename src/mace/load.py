@@ -45,9 +45,11 @@ class Trained_MACE():
 
         self.trainloss = loss.LoadedLoss(self.loc, self.meta, 'train')
 
-        self.testloss  = loss.LoadedLoss(self.loc, self.meta, 'test')
+        self.testloss  = loss.LoadedLoss(self.loc, self.meta, 'valid')
 
-        self.plotpath = self.loc + 'plots/'
+        self.plotpath = self.loc + 'figs/'
+
+        utils.makeOutputDir(self.plotpath)
 
         
     def get_meta(self):

@@ -116,7 +116,7 @@ def plot_abs(model1D, n, n_hat, specs, step = False):
     ax1.set_ylim([1e-20, 1e-2])
     # ax2.set_ylim([-2,2])
 
-    ax1.legend(fontsize = 12,loc = 'lower left')
+    ax1.legend(fontsize = 10,loc = 'lower left')
 
     plt.subplots_adjust(hspace = 0.00001)
 

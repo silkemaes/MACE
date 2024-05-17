@@ -168,14 +168,14 @@ def test_model(model, testpath, meta, specs=[], printing = True, plotting = Fals
         ## plotting results for the step test
         fig_step = plot_abs(model1D, n, n_hat, specs=specs, step = True)
         if save == True:
-            plt.savefig(model.plotpath+'step_'+model.epoch+'_'+id+'.png', dpi=300)
-            print('Step test plot saved at:', model.plotpath+'step_'+model.epoch+'_'+id+'.png')
+            plt.savefig(model.path+'figs/step_'+id+'.png', dpi=300)
+            print('\nStep test plot saved as', model.path+'step'+id+'.png')
         
         ## plotting results for the evolution test
         fig_evol = plot_abs(model1D, n, n_evol, specs=specs)
         if save == True:
-            plt.savefig(model.plotpath+'evol_'+model.epoch+'_'+id+'.png', dpi=300)
-            print('Evolution test plot saved at:', model.plotpath+'evol_'+model.epoch+'_'+id+'.png')
+            plt.savefig(model.path+'figs/evol_'+id+'.png', dpi=300)
+            print('Evolution test plot saved as', model.path+'evol'+id+'.png')
 
         plt.show()
 

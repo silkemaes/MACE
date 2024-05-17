@@ -170,11 +170,11 @@ for i in tqdm(range(len(traindata.testpath))):
 
 utils.makeOutputDir(path+'/test')
 
-np.save(path+ '/sum_err_step.npy', np.array(sum_err_step/len(traindata.testpath)))
-np.save(path+ '/sum_err_evol.npy', np.array(sum_err_evol/len(traindata.testpath)))
+np.save(path+ '/test/sum_err_step.npy', np.array(sum_err_step/len(traindata.testpath)))
+np.save(path+ '/test/sum_err_evol.npy', np.array(sum_err_evol/len(traindata.testpath)))
 
-np.save(path+ '/calctime_evol.npy', evol_calctime)
-np.save(path+ '/calctime_step.npy', step_calctime)  
+np.save(path+ '/test/calctime_evol.npy', evol_calctime)
+np.save(path+ '/test/calctime_step.npy', step_calctime)  
 
 print('\nAverage error:')
 print('           Step:', np.round(sum_err_step,3))
