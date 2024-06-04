@@ -55,9 +55,8 @@ exclude_patterns = ['_build']
 # a list of builtin themes.
 #
 html_theme = 'press'
-html_theme_options = {
+# html_theme_options = {}
 
-}
 
 
 # Add any paths that contain custom static files (such as style sheets) here,
