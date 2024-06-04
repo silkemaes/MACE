@@ -55,8 +55,8 @@ exclude_patterns = ['_build']
 # a list of builtin themes.
 #
 html_theme = 'furo'
-# html_theme_options = {}
-
+# html_logo  = 'images/pomme_logo.svg'
+# html_theme_options = {'logo_only': True}
 
 
 # Add any paths that contain custom static files (such as style sheets) here,
