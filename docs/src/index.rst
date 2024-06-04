@@ -42,7 +42,7 @@ For more details, check out our paper: `Maes et al. (in press.) <https://ui.adsa
 How to run?
 ***********
 
-Once the Dataset class is set up properly (see `src/mace/CSE_0D/dataset.py <https://github.com/silkemaes/MACE/blob/main/src/mace/CSE_0D/dataset.py>`_), a MACE model can be trained. This can be done using the script `run.py <https://github.com/silkemaes/MACE/blob/main/run.py>`_, which takes an input file with the needed (hyper)parameter setup. An example of such an input file can be found in input/.
+Once the Dataset class is set up properly (see :code:`src/mace/CSE_0D/dataset.py <https://github.com/silkemaes/MACE/blob/main/src/mace/CSE_0D/dataset.py>`_), a MACE model can be trained. This can be done using the script :code:`run.py <https://github.com/silkemaes/MACE/blob/main/run.py>`_, which takes an input file with the needed (hyper)parameter setup. An example of such an input file can be found in :code:`input/`.
 
 The script run.py trains the model, as explained by `Maes et al. (in press.) <https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract>`_, and is immediately applied to the specified test dataset once training is finished. As such, it returns an averaged error on the MACE model compared to the classical model.
 
