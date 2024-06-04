@@ -9,7 +9,7 @@ MACE
    :maxdepth: 1
    :caption: Contents:
 
-
+*****
 ABOUT
 *****
 
@@ -38,7 +38,7 @@ Here, :math:`{\hat{\boldsymbol{n}}}(t)` are the predicted chemical abundances at
 
 For more details, check out our paper: `Maes et al. (in press.) <https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract>`_.
 
-
+***********
 How to run?
 ***********
 
