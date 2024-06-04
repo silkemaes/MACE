@@ -34,7 +34,7 @@ In formula, MACE is stated as
 
     {\hat{\boldsymbol{n}}}(t) = \mathcal{D}\Big( G \big( \mathcal{E} ({\boldsymbol{n}}, {\boldsymbol{p}}),t \big) \Big).
 
-Here, :math:`{\hat{\boldsymbol{n}}}(t)` are the predicted chemical abundances at a time $t$ later dan the initial state :math:`{\boldsymbol{n}}`. :math:`\mathcal{E}` and :math:`\mathcal{D}$` represent the autoecoder, with the encoder and decoder, respectively. The autoencoder maps the chemical space :math:`{\boldsymbol{n}}` together with the physical space :math:`{\boldsymbol{p}}'' to a lower dimensional representation :math:`\boldsymbol{z}`, called the latent space. The function $G$ describes the evolution in latent space such that :math:`\boldsymbol{z}(\Delta t) = G(\boldsymbol{z}, \Delta t)=\int_0^{\Delta t} g(\boldsymbol{z}){\rm d}t`.
+Here, :math:`{\hat{\boldsymbol{n}}}(t)` are the predicted chemical abundances at a time $t$ later dan the initial state :math:`{\boldsymbol{n}}`. :math:`\mathcal{E}` and :math:`\mathcal{D}$` represent the autoecoder, with the encoder and decoder, respectively. The autoencoder maps the chemical space :math:`{\boldsymbol{n}}` together with the physical space :math:`{\boldsymbol{p}}` to a lower dimensional representation :math:`\boldsymbol{z}`, called the latent space. The function $G$ describes the evolution in latent space such that :math:`\boldsymbol{z}(\Delta t) = G(\boldsymbol{z}, \Delta t)=\int_0^{\Delta t} g(\boldsymbol{z}){\rm d}t`.
 
 For more details, check out our paper: `Maes et al. (in press.) <https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract>`_.
 
