@@ -13,7 +13,7 @@ MACE is implemented in Python and uses [PyTorch](https://pytorch.org/), together
 ## What?
 
 The architecture of MACE is schematically given as 
-![MACE architecture](MACE.png)
+![MACE architecture](docs/src/MACE.png)
 
 MACE offers a surrogate model that emulates the evolution of chemical abundances over time in a dynamical physical environment. As the name states, it makes use of machine learning techniques. More specifically, combining an *autoencoder* (blue) and a *trainable ordinary differential equation (ODE)* (red) allows to accurately emulate a chemical kinetics model.
 
