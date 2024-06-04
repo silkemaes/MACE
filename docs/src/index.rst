@@ -1,13 +1,19 @@
-# MACE
+=========================================================
+MACE - a Machine learning Approach to Chemistry Emulation
+=========================================================
 
-Welcome to the MACE repository!
+*Welcome to the documentation of MACE!*
 
-***MACE - a Machine learning Approach to Chemistry Emulation***, by [Maes et al. (*in press.*)](https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract), is a surrogate model for chemical kinetics. It is developed in the contexts of circumstellar envelopes (CSEs) of asymptotic giant branch (AGB) stars, i.e. evolved low-mass stars.
+-----
+ABOUT
+-----
+
+**MACE**, by `Maes et al. (*in press.*) <https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract>`_, is a surrogate model for chemical kinetics. It is developed in the contexts of circumstellar envelopes (CSEs) of asymptotic giant branch (AGB) stars, i.e. evolved low-mass stars.
 
 Currently it still under development.
 Planned release: Sept 2024
 
-MACE is implemented in Python and uses [PyTorch](https://pytorch.org/), together with [torchode](https://github.com/martenlienen/torchode) [(Lienen & Gunnemann, 2022)](https://openreview.net/pdf?id=uiKVKTiUYB0), to be trained.
+MACE is implemented in Python and uses `PyTorch <https://pytorch.org/>`_, together with `torchode <https://github.com/martenlienen/torchode>`_ (`Lienen & Gunnemann, 2022 <https://openreview.net/pdf?id=uiKVKTiUYB0>`_), to be trained.
 
 ---
 ## What?
@@ -21,14 +27,14 @@ In formula, MACE is stated as
 $${\hat{\boldsymbol{n}}}(t) = \mathcal{D}\Big( G \big( \mathcal{E} ({\boldsymbol{n}}, {\boldsymbol{p}}),t \big) \Big).$$
 Here, ${\hat{\boldsymbol{n}}}(t)$ are the predicted chemical abundances at a time $t$ later dan the initial state ${\boldsymbol{n}}$ . $\mathcal{E}$ and $\mathcal{D}$ represent the autoecoder, with the encoder and decoder, respectively. The autoencoder maps the chemical space ${\boldsymbol{n}}$ together with the physical space ${\boldsymbol{p}}$ to a lower dimensional representation $\boldsymbol{z}$, called the latent space. The function $G$ describes the evolution in latent space such that $\boldsymbol{z}(\Delta t) = G(\boldsymbol{z}, \Delta t)=\int_0^{\Delta t} g(\boldsymbol{z}){\rm d}t$.
 
-For more details, check out our paper: [Maes et al. (*in press.*)](https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract).
+For more details, check out our paper: `Maes et al. (*in press.*) <https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract>`_.
 
 ---
 ## How to run?
 
 Once the Dataset class is set up properly (see src/mace/CSE_0D/dataset.py), a MACE model can be trained. This can be done using the script 'run.py', which takes an input file with the needed (hyper)parameter setup. An example of such an input file can be found in input/.
 
-The script run.py trains the model, as explained by [Maes et al. (*in press.*)](https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract), and is immediately applied to the specified test dataset once training is finished. As such, it returns an averaged error on the MACE model compared to the classical model.
+The script run.py trains the model, as explained by `Maes et al. (*in press.*) <https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract>`_, and is immediately applied to the specified test dataset once training is finished. As such, it returns an averaged error on the MACE model compared to the classical model.
 
 
 
