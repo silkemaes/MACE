@@ -54,9 +54,7 @@ exclude_patterns = ['_build']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'better'
-# html_logo  = 'images/pomme_logo.svg'
-# html_theme_options = {'logo_only': True}
+html_theme = 'press'
 html_theme_options = {
 
 }
