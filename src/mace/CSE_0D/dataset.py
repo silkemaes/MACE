@@ -82,7 +82,7 @@ class CSEdata(Dataset):
         '''
 
         loc = '/STER/silkem/MACE/'
-        paths = np.loadtxt(loc+'data_info/paths_data_C.txt', dtype=str)
+        paths = np.loadtxt(loc+'data/paths_data_C.txt', dtype=str)
 
         ## select a certain number of paths, given by nb_samples
         np.random.seed(0)
@@ -103,7 +103,7 @@ class CSEdata(Dataset):
 
         # print('test path:', self.testpath)
 
-        self.M = np.load(loc+'data_info/M_rate16.npy')       
+        self.M = np.load(loc+'data/M_rate16.npy')       
 
         ## These values are the results from a search through the full dataset; see 'minmax.json' file
         self.logρ_min = np.log10(0.008223)
