@@ -49,8 +49,6 @@ class Input():
 
     def print(self):
         print('------------------------------')
-        print('')
-        print('Training:')
         print('Name:', self.name)
         print('------------------------------')
         print('     inputfile:', self.file)

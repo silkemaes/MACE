@@ -17,6 +17,7 @@ def makeOutputDir(path):
     '''
     if not os.path.exists(path):
         os.mkdir(path)
+        
     return path
 
 def relative_error(x,x_hat):
