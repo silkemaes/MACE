@@ -1,3 +1,4 @@
 sphinx>=4.4.0
 nbsphinx
+sphinx_copybutton
 press
