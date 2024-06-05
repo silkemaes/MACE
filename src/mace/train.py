@@ -99,11 +99,11 @@ def train(model,
         
         calc_time = (time()-start_time)     ## in seconds
         if calc_time < 60.:
-            print("              time [secs]: ", np.round(calc_time,5))
+            print("              time [secs]: ", np.round(calc_time,2))
         elif calc_time >= 60.:
-            print("              time [mins]: ", np.round(calc_time/60.,5))
+            print("              time [mins]: ", np.round(calc_time/60.,2))
         elif calc_time > 3600.:
-            print("              time [hours]: ", np.round((time()-start_time)/(60.*60.),5))
+            print("              time [hours]: ", np.round(calc_time/(60.*60.),2))
     
     print('\n \tDONE!')
 

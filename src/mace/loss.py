@@ -43,7 +43,7 @@ class Loss():
         self.idn = list()
         self.elm = list()
 
-        self.M = np.load('/STER/silkem/MACE/data_info/M_rate16.npy')
+        self.M = np.load('/STER/silkem/MACE/data/M_rate16.npy')
 
         ## initialise
         self.set_losstype(losstype)
