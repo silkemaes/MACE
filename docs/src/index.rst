@@ -48,6 +48,7 @@ The script run.py trains the model, as explained by `Maes et al. (in press.) <ht
 
 .. note::
     Required packages:
+    
     * torch
     * torchode
     * numpy
