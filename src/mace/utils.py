@@ -8,6 +8,7 @@ import numpy            as np
 import json
 import torch
 import src.mace.mace    as mace
+from pathlib import Path
 
 
 def makeOutputDir(path):
@@ -109,7 +110,10 @@ def get_specs():
         and a dictionary with the index and the species.
 
     '''
-    loc_specs = '/STER/silkem/MACE/data/rate16.specs'
+
+    parentpath = str(Path(__file__).parent)[:-15]
+
+    loc_specs = parentpath+'data/rate16.specs'
     
     specs = np.loadtxt(loc_specs, usecols=(1), dtype=str, skiprows = 1, max_rows=466)  
 
@@ -191,87 +195,4 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-
-### ---
-
-    
-# def load_all(outloc, dirname, epoch = ''):
-#     '''
-#     Load all the components of a MACE model,
-#     given the output location (outloc) and the name of the directory (dirname).
-
-#     Returns:
-#         - meta: file with meta data
-#         - model: torch model
-#         - trainloss: training loss per epoch
-#         - testloss: test loss per epoch
-#     '''
-#     loc   = outloc+dirname+'/'
-
-#     ## loading meta file
-#     with open(loc+'/meta.json', 'r') as f:
-#         meta=f.read()
-#     meta  = json.loads(meta)
-
-#     ## loading torch model
-#     model = load_model(loc,meta,epoch, sepr=True)
-
-#     ## loading losses
-
-#     trainloss = Loss_analyse()
-#     trainloss.load(loc, 'train', meta)
-#     testloss  = Loss_analyse()
-#     testloss.load(loc, 'test', meta)
-
-#     return meta, model, trainloss, testloss
-
-
-
-
-# ## ------------------------------------------------------
-    
-
-
-# def load_model_old(loc, meta, epoch, sepr):
-#     n_dim = 468
-#     cuda   = False
-#     DEVICE = torch.device("cuda" if cuda else "cpu")
-#     model = mace.Solver_old(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, DEVICE = DEVICE)
-
-#     if sepr == True:
-#         file = 'nn/nn'+str(epoch)+'.pt'
-#     else:
-#         file = 'nn/nn.pt'
-
-#     model.load_state_dict(torch.load(loc+file))
-    
-#     num_params = count_parameters(model)
-#     print(f'The model has {num_params} trainable parameters')
-
-#     return model
-
-# def load_all_noevol(outloc, dirname, sepr = False, epoch = ''):
-#     loc   = outloc+dirname+'/'
-
-#     ## loading meta file
-#     with open(loc+'/meta.json', 'r') as f:
-#         meta=f.read()
-#     meta  = json.loads(meta)
-
-#     ## loading torch model
-#     model = load_model_old(loc, meta, epoch, sepr)
-
-#     ## loading losses
-#     if sepr == False:
-#         trainloss = Loss_analyse()
-#         trainloss.load(loc, 'train', meta)
-#         testloss  = Loss_analyse()
-#         testloss.load(loc, 'test', meta)
-#         model.set_status(np.load(loc+'train/status.npy'), 'train')
-#         model.set_status(np.load(loc+'test/status.npy'), 'test')
-
-#     if sepr == False:
-#         return meta, model, trainloss, testloss
-#     else:
-#         return meta, model
 

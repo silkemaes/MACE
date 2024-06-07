@@ -4,9 +4,10 @@ This script builds the stoichiometric matrix M for the rate16 chemical network.
 
 import numpy as np
 import re
+from pathlib import Path
 
-
-loc = '/STER/silkem/MACE/data_info/'
+parentpath = str(Path(__file__).parent)[:-15]
+loc = parentpath+'data/'
 
 specs = np.loadtxt(loc+'rate16.specs', usecols=(1), dtype=str, skiprows = 1) 
 

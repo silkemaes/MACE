@@ -18,6 +18,7 @@ import os
 
 import matplotlib.pyplot    as plt
 import matplotlib.lines     as mlines
+from pathlib import Path
 
 class Loss():
     def __init__(self, norm, fract, losstype):
@@ -43,7 +44,9 @@ class Loss():
         self.idn = list()
         self.elm = list()
 
-        self.M = np.load('/STER/silkem/MACE/data/M_rate16.npy')
+        parentpath = str(Path(__file__).parent)[:-15]
+
+        self.M = np.load(parentpath+'data/M_rate16.npy')
 
         ## initialise
         self.set_losstype(losstype)
