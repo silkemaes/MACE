@@ -27,6 +27,7 @@ import numpy            as np
 import torch
 from torch.utils.data   import Dataset, DataLoader
 import src.mace.utils   as utils
+from pathlib import Path
 
 specs_dict, idx_specs = utils.get_specs()
 
@@ -216,7 +217,7 @@ def get_data( nb_samples, dt_fract, nb_test, batch_size, kwargs):
     return train, valid, data_loader, test_loader
 
 
-def get_test_data(testpath, meta):
+def get_test_data(testpath, meta, inpackage = False):
     '''
     Get the data of the test 1D model, given a path and meta-data from a training setup.
 
@@ -231,7 +232,10 @@ def get_test_data(testpath, meta):
     
     data = CSEdata(nb_samples=meta['nb_samples'],dt_fract=meta['dt_fract'],nb_test= 100, train=True, fraction=0.7, cutoff = 1e-20, scale = 'norm')
     
-    mod = CSEmod(testpath)
+    mod = CSEmod(testpath, inpackage)
+
+    if inpackage:
+        input = mod.get_input()
 
     Δt, n, p = mod.split_in_0D()
 
@@ -287,7 +291,7 @@ class CSEmod():
     Class to load a 1D CSE model, calculated with the classical fortan code.
     For more info on this model, see https://github.com/MarieVdS/rate22_cse_code.
     '''
-    def __init__(self, path):
+    def __init__(self, path, inpackage = False):
         '''
         Load the 1D CSE model, given a path.
 
@@ -307,15 +311,24 @@ class CSEmod():
             - input --> self.Rstar, self.Tstar, self.Mdot, self.v, self.eps, self.rtol, self.atol
         '''
 
-        self.path = '/STER/silkem/CSEchem/' + path[34:-17]
-        self.model = path[34:-51]
+        if not inpackage:
+            self.path = '/STER/silkem/CSEchem/' + path[34:-17]
+            self.model = path[34:-51]
+            self.name = path[-43:-18]
+            inp_path = self.path[:-26]+ 'inputChemistry_'+self.name+'.txt'
+
+        if inpackage:
+            parentpath = str(Path(__file__).parent)[:-15]
+            self.path = parentpath + 'data/test/' + path +'/'
+            self.model = path[-62:-1]
+            self.name = path
+            inp_path = self.path+'input.txt'
+
         abs_path = 'csfrac_smooth.out'
         phys_path = 'csphyspar_smooth.out'
-        self.name = path[-43:-18]
-        inp_path = 'inputChemistry_'+self.name+'.txt'
 
         ## retrieve input
-        self.Rstar, self.Tstar, self.Mdot, self.v, self.eps, self.rtol, self.atol = read_input_1Dmodel(self.path[:-26]+inp_path)
+        self.Rstar, self.Tstar, self.Mdot, self.v, self.eps, self.rtol, self.atol = read_input_1Dmodel(inp_path)
 
         ## retrieve abundances
         abs = read_data_1Dmodel(self.path+abs_path)
@@ -420,6 +433,21 @@ class CSEmod():
         p    = np.array([self.get_dens()[:-1], self.get_temp()[:-1], self.get_xi()[:-1]+y, self.get_Av()[:-1]])
 
         return Δt.astype(np.float64), n_0D.astype(np.float64), p.T.astype(np.float64)
+    
+    def get_input(self):
+        print('-------------------')
+        print('Input of test model')
+        print('-------------------')
+        print('Mdot [Msol/yr]:      ', self.Mdot)
+        print('v [km/s]:            ', self.v/1e5)
+        print('Density proxi Mdot/v:', self.Mdot/self.v)
+        print('')
+        print('Temp at 1e16 cm [K]: ', np.round(utils.temp( self.Tstar, self.eps, 1e16),2))
+        print('Tstar:               ', self.Tstar)
+        print('eps:                 ', self.eps)
+        print('-------------------\n')
+
+        return self.Mdot, self.v, self.Tstar, self.eps
         
 
 

@@ -31,6 +31,16 @@ def relative_error(x,x_hat):
     res = np.abs((x[1:]-x_hat)/x[1:])
     return res
 
+def temp(Tstar, eps, r):
+    '''
+    Computes the temperature at a given radius r, 
+    according to the power-law temperature profile.
+    T = Tstar * (r/Rstar)^(-eps)
+    '''
+    Rstar = 2e13
+    # r = 1e16
+    T = Tstar * (r/Rstar)**(-eps)
+    return T
 
 def error(n,n_hat):
     '''
