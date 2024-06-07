@@ -9,6 +9,8 @@ MACE
    :maxdepth: 1
    :caption: Contents:
 
+   example/index
+
 *****
 ABOUT
 *****
