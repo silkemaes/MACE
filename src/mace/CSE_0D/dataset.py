@@ -85,7 +85,7 @@ class CSEdata(Dataset):
         paths = np.loadtxt(loc+'data/paths_data_C.txt', dtype=str)
 
         ## select a certain number of paths, given by nb_samples
-        np.random.seed(9)
+        np.random.seed(0)
         self.idxs = utils.generate_random_numbers(nb_samples, 0, len(paths))
         self.path = paths[self.idxs]
 
