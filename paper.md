@@ -66,7 +66,7 @@ The development of MACE is a first step towards this coupling. Using the MACE ar
 which is executed element-wise and subsequently summed over the different chemical species. More details on the accuracy of the MACE models can be found in @Maes2024. Fig. \ref{fig:int4} shows the abundance profiles of seven chemical species, where the full curves indicate the MACE test of model *int4* from @Maes2024, and the dashed curves give the result for the classical model. On average, the MACE routine provides a speed-up of a factor 26, not taking into account the potential extra speed-up factor due to efficient vectorisation when coupling MACE with an SPH hydrodynamical model.
 
 
-![Chemical abundance profiles from a test of trained MACE model model *int4* (full curves), compared to the classical model (dashed curves). The error on the MACE model is calculated according to Eq. \ref{eq:error}. More details in @Maes2024. \label{fig:int4}](int4_example.png){ width=70% }
+![Chemical abundance profiles from a test of trained MACE model model *int4* (full curves), compared to the classical model (dashed curves). The error on the MACE model is calculated according to Eq. (\ref{eq:error}). More details in @Maes2024. \label{fig:int4}](int4_example.png){ width=70% }
 
 # Code availability
 The code of MACE is publicly available in a GitHub repository: [https://github.com/silkemaes/MACE](https://github.com/silkemaes/MACE).
