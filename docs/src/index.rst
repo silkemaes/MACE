@@ -15,7 +15,7 @@ MACE
 ABOUT
 *****
 
-**MACE - a Machine learning Approach to Chemistry Emulation**, by `Maes et al. (in press.) <https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract>`_, is a surrogate model for chemical kinetics. It is developed in the contexts of circumstellar envelopes (CSEs) of asymptotic giant branch (AGB) stars, i.e. evolved low-mass stars.
+**MACE, a Machine-learning Approach to Chemistry Emulation**, by `Maes et al. (in press.) <https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract>`_, is a surrogate model for chemical kinetics. It is developed in the contexts of circumstellar envelopes (CSEs) of asymptotic giant branch (AGB) stars, i.e. evolved low-mass stars.
 
 Currently it still under development.
 Planned release: Sept 2024
