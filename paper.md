@@ -41,11 +41,11 @@ aas-journal: Astrophysical Journal
 # Summary
 Astrochemistry is the study of chemical species in astrophysical objects. By combining observations and theoretical predictions, the physical conditions of the object can be analysed as well as its chemical composition and yields, since chemistry is closely coupled to the dynamics of the environment. Most often, such astrophysical environments are known to be complex and out of thermodynamic equilibrium. For that reason, the chemical evolution is usually modelled using the chemical kinetics approach, in which a set of non-linear coupled ordinary different equations (ODEs) is solved for a given network of chemical species and reactions. For large chemical networks, however, this method is computationally slow. Therefore, we developed MACE, *a Machine-learning Approach to Chemistry Emulation*, inspired on similar work in the literature (e.g., @Holdship2021; @Grassi2022; @Sulzer2023). MACE is a PyTorch module that offers a trainable surrogate model that is able to emulate chemical kinetics in a shorter computation time than its classical analogue. More specifically, it provides a machine learning architecture, consisting of an autoencoder and a trainable ODE, implemented in PyTorch and [torchode](https://github.com/martenlienen/torchode) [@torchode]. Mathematically, MACE is give by 
 
-$$ \hat{\textbf{\textit{n}}}(t) = \mathcal{D}\Big( G \big( \mathcal{E} (\\textit{\textbf{n}}, \\textit{\textbf{p}}),t \big) \Big), $$
+$$ \hat{\textbf{\textit{n}}}(t) = \mathcal{D}\Big( G \big( \mathcal{E} (\textit{\textbf{n}}, \textit{\textbf{p}}),t \big) \Big), $$
 
-where $\hat{\boldsymbol{n}}(t)$ represents the predicted chemical abundances at time $t$. A schematic representation of the architecture and flow of the emulator is shown in Fig. \ref{fig:MACE}. MACE is developed in the context of circumstellar envelopes (CSEs) of evolved stars, but is flexible to be retrained on data of other astrophysical environments.
+where $\hat{\textbf{\textit{n}}}(t)$ represents the predicted chemical abundances at time $t$, more details can be found in @Maes2024. A schematic representation of the architecture and flow of the emulator is shown in Fig. \ref{fig:MACE}. MACE is developed in the context of circumstellar envelopes (CSEs) of evolved stars, but is flexible to be retrained on data of other astrophysical environments.
 
-![Schematic representation of the architecture of MACE. The symbols $\boldsymbol{n}$ and $\boldsymbol{p}$ represent the chemical abundances and physical parameters, respectively. The autoencoder (in blue) consists of an encoder $\mathcal{E}$, able to map $\boldsymbol{n}$ and $\boldsymbol{p}$ to a latent space representation $\boldsymbol{z}$, and decoder $\mathcal{D}$, working the other way around. The function $g$ represents the trainable ODE, which needs to be solved for a time step $\Delta t$. (Adapted from @Maes2024.) \label{fig:MACE}](MACE.png)
+![Schematic representation of the architecture of MACE. The symbols $\textbf{\textit{n}}$ and $\textbf{\textit{p}}$ represent the chemical abundances and physical parameters, respectively. The autoencoder (in blue) consists of an encoder $\mathcal{E}$, able to map $\textbf{\textit{n}}$ and $\textbf{\textit{p}}$ to a latent space representation $\textbf{\textit{z}}$, and decoder $\mathcal{D}$, working the other way around. The function $g$ represents the trainable ODE, which needs to be solved for a time step $\Delta t$. (Adapted from @Maes2024.) \label{fig:MACE}](MACE.png)
 
 
 # Statement of need
@@ -57,12 +57,12 @@ In the context of circumstellar envelopes, we aim to build a comprehensive model
 
 The development of MACE is a first step towards this coupling. Using the MACE architecture, we are able to reproduce the 1D abundance profiles of 468 chemical species with an accuracy between 10 and 18, averaged over 3000 tests, for MACE models with different sets of hyperparameters, for the following error metric:
 
-$$ {\rm error} = \frac{\log_{10}\boldsymbol{n}-\log_{10}\hat{\boldsymbol{n}}}{\log_{10}\boldsymbol{n}}, $$
+$$ {\rm error} = \frac{\log_{10}\textbf{\textit{n}}-\log_{10}\hat{\textbf{\textit{n}}}}{\log_{10}\textbf{\textit{n}}}, $$
 
 which is executed element-wise and subsequently summed over the different chemical species. More details on the accuracy of the MACE models can be found in @Maes2024. Fig. \ref{fig:int4} shows the abundance profiles of seven chemical species, where the full curves indicate the MACE test of model *int4* from @Maes2024, and the dashed curves give the result for the classical model. On average, the MACE routine provides a speed-up of a factor 26, not taking into account the potential extra speed-up factor due to efficient vectorisation when coupling MACE with an SPH hydrodynamical model.
 
 
-![Chemical abundance profiles from a test of trained MACE model model *int4* (full curves), compared to the classical model (dashed curves). More details in @Maes2024. \label{fig:int4}](int4_example.png){ width=7x0% }
+![Chemical abundance profiles from a test of trained MACE model model *int4* (full curves), compared to the classical model (dashed curves). More details in @Maes2024. \label{fig:int4}](int4_example.png){ width=70% }
 
 # Code availability
 The code of MACE is publicly available in a GitHub repository: [https://github.com/silkemaes/MACE](https://github.com/silkemaes/MACE).
