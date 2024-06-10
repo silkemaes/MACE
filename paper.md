@@ -39,9 +39,9 @@ aas-journal: Astrophysical Journal
 ---
 
 # Summary
-Astrochemistry is the study of chemical species in astrophysical objects. By combining observations and theoretical predictions, the physical conditions of the object can be analysed as well as its chemical composition and yields, since chemistry is closely coupled to the dynamics of the environment. Most often, such astrophysical environments are known to be complex and out of thermodynamic equilibrium. For that reason, the chemical evolution is usually modelled using the chemical kinetics approach, in which a set of non-linear coupled ordinary different equations (ODEs) is solved for a given network of chemical species and reactions. For large chemical networks, however, this method is computationally slow. Therefore, we developed MACE, *a Machine-learning Approach to Chemistry Emulation*, inspired on similar work in the literature (e.g., @Holdship2021; @Grassi2022; @Sulzer2023). MACE is a PyTorch module that offers a trainable surrogate model that is able to emulate chemical kinetics in a shorter computation time than its classical analogue. More specifically, it provides a machine learning architecture, consisting of an autoencoder and a trainable ODE, implemented in PyTorch and (torchode){https://github.com/martenlienen/torchode?tab=readme-ov-file} [@torchode]. Mathematically, MACE is give by 
+Astrochemistry is the study of chemical species in astrophysical objects. By combining observations and theoretical predictions, the physical conditions of the object can be analysed as well as its chemical composition and yields, since chemistry is closely coupled to the dynamics of the environment. Most often, such astrophysical environments are known to be complex and out of thermodynamic equilibrium. For that reason, the chemical evolution is usually modelled using the chemical kinetics approach, in which a set of non-linear coupled ordinary different equations (ODEs) is solved for a given network of chemical species and reactions. For large chemical networks, however, this method is computationally slow. Therefore, we developed MACE, *a Machine-learning Approach to Chemistry Emulation*, inspired on similar work in the literature (e.g., @Holdship2021; @Grassi2022; @Sulzer2023). MACE is a PyTorch module that offers a trainable surrogate model that is able to emulate chemical kinetics in a shorter computation time than its classical analogue. More specifically, it provides a machine learning architecture, consisting of an autoencoder and a trainable ODE, implemented in PyTorch and [torchode](https://github.com/martenlienen/torchode) [@torchode]. Mathematically, MACE is give by 
 
-$$ \hat{{\textbf n}}(t) = \mathcal{D}\Big( G \big( \mathcal{E} (\boldsymbol{n}, \boldsymbol{p}),t \big) \Big), $$
+$$ \hat{\textit{\textbf{n}}}(t) = \mathcal{D}\Big( G \big( \mathcal{E} (\boldsymbol{n}, \boldsymbol{p}),t \big) \Big), $$
 
 where $\hat{\boldsymbol{n}}(t)$ represents the predicted chemical abundances at time $t$. A schematic representation of the architecture and flow of the emulator is shown in Fig. \ref{fig:MACE}. MACE is developed in the context of circumstellar envelopes (CSEs) of evolved stars, but is flexible to be retrained on data of other astrophysical environments.
 
@@ -65,7 +65,7 @@ which is executed element-wise and subsequently summed over the different chemic
 ![Chemical abundance profiles from a test of trained MACE model model *int4* (full curves), compared to the classical model (dashed curves). More details in @Maes2024. \label{fig:int4}](int4_example.png){ width=60% }
 
 # Code availability
-The code of MACE is publicly available in a GitHub repository: (https://github.com/silkemaes/MACE){https://github.com/silkemaes/MACE}.
+The code of MACE is publicly available in a GitHub repository: [https://github.com/silkemaes/MACE](https://github.com/silkemaes/MACE).
 
 
 # Acknowledgements
