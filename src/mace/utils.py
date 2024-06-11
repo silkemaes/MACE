@@ -111,7 +111,7 @@ def get_specs():
 
     '''
 
-    parentpath = str(Path(__file__).parent)[:-15]
+    parentpath = str(Path(__file__).parent)[:-8]
 
     loc_specs = parentpath+'data/rate16.specs'
     
