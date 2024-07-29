@@ -4,9 +4,6 @@ Welcome to the MACE repository!
 
 ***MACE, a Machine-learning Approach to Chemistry Emulation***, by [Maes et al. (*in press.*)](https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract), is a surrogate model for chemical kinetics. It is developed in the contexts of circumstellar envelopes (CSEs) of asymptotic giant branch (AGB) stars, i.e. evolved low-mass stars.
 
-Currently it still under development.
-Planned release: Sept 2024
-
 MACE is implemented in Python and uses [PyTorch](https://pytorch.org/), together with [torchode](https://github.com/martenlienen/torchode) [(Lienen & Gunnemann, 2022)](https://openreview.net/pdf?id=uiKVKTiUYB0), to be trained.
 
 ---

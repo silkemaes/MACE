@@ -115,7 +115,7 @@ def get_specs():
 
     loc_specs = parentpath+'data/rate16.specs'
     
-    specs = np.loadtxt(loc_specs, usecols=(1), dtype=str, skiprows = 1, max_rows=466)  
+    specs = np.loadtxt(loc_specs, usecols=(1), dtype=str, skiprows = 1, max_rows=469)  
 
     specs_dict = dict()
     idx_specs  = dict()
