@@ -57,6 +57,7 @@ The script run.py trains the model, as explained by `Maes et al. (2024) <https:/
     * matplotlib
     * natsort
     * tqdm
+    * scipy
 
 
 

@@ -4,3 +4,4 @@ numpy
 matplotlib
 natsort
 tqdm
+scipy
