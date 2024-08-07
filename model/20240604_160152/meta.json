@@ -15,5 +15,10 @@
     "nb_evol": 16,
     "nb_hidden": 1,
     "ae_type": "simple",
-    "done": "true"
+    "done": "true",
+    "model": "20240604_160152",
+    "date": "2024-06-04",
+    "owner": "Silke Maes",
+    "p" : "array[4]: density, temperature, xi, Av",
+    "info" : "https://ui.adsabs.harvard.edu/abs/2024ApJ...969...79M/abstract"
 }
