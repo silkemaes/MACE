@@ -141,4 +141,7 @@ ae-models/
 latentdyn/
 input/ignore/
 
+# files
+MACE.md
+
 
