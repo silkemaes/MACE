@@ -180,7 +180,7 @@ def load_meta(loc):
     given the output location (outloc) and the name of the directory (loc).
     '''
     ## loading meta file
-    with open(loc+'/meta.json', 'r') as f:
+    with open(loc+'meta.json', 'r') as f:
         meta=f.read()
     meta  = json.loads(meta)
 

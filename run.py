@@ -160,7 +160,7 @@ for i in tqdm(range(len(traindata.testpath))):
 #     print(i+1,end='\r')
     testpath = traindata.testpath[i]
 
-    err_test, err_evol, step_time, evol_time = test.test_model(model,testpath, meta, printing = False)
+    err_test, err_evol, step_time, evol_time,n, n_hat, n_evol  = test.test_model(model,testpath, meta, printing = False)
 
     sum_err_step += err_test
     sum_err_evol += err_evol

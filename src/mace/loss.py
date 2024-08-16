@@ -44,7 +44,7 @@ class Loss():
         self.idn = list()
         self.elm = list()
 
-        parentpath = str(Path(__file__).parent)[:-15]
+        parentpath = str(Path(__file__).parent)[:-8]
 
         self.M = np.load(parentpath+'data/M_rate16.npy')
 

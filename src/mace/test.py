@@ -185,5 +185,5 @@ def test_model(model, testpath, meta, specs=[], inpackage = False, printing = Tr
 
         plt.show()
 
-    return err_test, err_evol, step_time, np.sum(evol_time)
+    return err_test, err_evol, step_time, np.sum(evol_time), n, n_hat, n_evol
             
