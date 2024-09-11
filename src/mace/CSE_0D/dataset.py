@@ -291,7 +291,7 @@ class CSEmod():
     Class to load a 1D CSE model, calculated with the classical fortan code.
     For more info on this model, see https://github.com/MarieVdS/rate22_cse_code.
     '''
-    def __init__(self, path, inpackage = False):
+    def __init__(self, path, inpackage = False, chempy = False):
         '''
         Load the 1D CSE model, given a path.
 
@@ -314,6 +314,12 @@ class CSEmod():
         if not inpackage:
             self.path = '/STER/silkem/CSEchem/' + path[34:-17]
             self.model = path[34:-51]
+            self.name = path[-43:-18]
+            inp_path = self.path[:-26]+ 'inputChemistry_'+self.name+'.txt'
+        
+        if chempy == True:
+            self.path = path[:-17]
+            self.model = path[21:-51]
             self.name = path[-43:-18]
             inp_path = self.path[:-26]+ 'inputChemistry_'+self.name+'.txt'
 
