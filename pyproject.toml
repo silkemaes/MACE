@@ -26,6 +26,8 @@ dependencies = [
     "numpy",
     "numba",
     "tqdm",
+    "scipy",
+    "torchode"
 ]
 requires-python = ">=3.7"
 
