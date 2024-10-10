@@ -9,7 +9,10 @@ MACE is implemented in Python and uses [PyTorch](https://pytorch.org/), together
 ---
 ## Notes on installation
 - MACE is not available on ```pypi```, the package named ```mace``` is not this one.
-- To use MACE, please clone the repo and install the required packages, see ```requirements.txt```.
+- To use MACE, please clone the repo and install the required packages, see ```requirements.txt```:
+```
+git clone https://github.com/silkemaes/MACE.git
+```
 
 
 ---
