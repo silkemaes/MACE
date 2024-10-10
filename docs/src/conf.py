@@ -37,7 +37,6 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx_copybutton',
-    'sphinxcontrib.email',
     'nbsphinx'
     
 ]

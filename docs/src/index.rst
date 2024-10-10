@@ -62,7 +62,7 @@ The MACE architecture is free to use. Please cite our paper `Maes et al. (2024) 
 Contact
 *****
 
-If any comments or issues come up, please contact :email:`Silke Maes <silke.maes@protonmail.com>`, or set up an issue on `GitHub <https://github.com/silkemaes/MACE>`_.
+If any comments or issues come up, please contact `Silke Maes <https://github.com/silkemaes>`_, or set up an issue on `GitHub <https://github.com/silkemaes/MACE>`_.
 
 
 
