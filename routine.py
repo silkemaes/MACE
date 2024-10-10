@@ -1,10 +1,11 @@
-import matplotlib.pyplot as plt
-import numpy as np      
+import matplotlib.pyplot        as plt
+import numpy                    as np      
 import sys
 import torch
-from time import time
-import datetime             as dt
-from tqdm       import tqdm
+from time                       import time
+import datetime                 as dt
+from tqdm                       import tqdm
+import os
 
 import src.mace.CSE_0D.dataset  as ds
 import src.mace.train           as train
@@ -15,14 +16,14 @@ import src.mace.loss            as loss
 import src.mace.utils           as utils
 from src.mace.input             import Input
 
-
+source_dir = os.path.dirname(os.path.abspath(__file__))
 
 specs_dict, idx_specs = utils.get_specs()
 
 start = time()
 now = dt.datetime.now()
 name = str(now.strftime("%Y%m%d")+'_'+now.strftime("%H%M%S"))
-path = '/STER/silkem/MACE/models/CSE_0D/'+name
+path = source_dir+'/models/CSE_0D/'+name
 
 
 ## ================================================== INPUT ========
@@ -31,7 +32,7 @@ path = '/STER/silkem/MACE/models/CSE_0D/'+name
 ## READ INPUT FILE
 arg = sys.argv[1]
 
-infile = '/STER/silkem/MACE/input/'+arg+'.in'
+infile = source_dir+'/input/'+arg+'.in'
 
 input = Input(infile, name)
 
