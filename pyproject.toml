@@ -24,7 +24,6 @@ dependencies = [
     "astropy",
     "torch>=2.0.0",
     "numpy",
-    "numba",
     "tqdm",
     "scipy",
     "torchode"
