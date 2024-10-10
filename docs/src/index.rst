@@ -50,6 +50,7 @@ For more details, check out our paper: `Maes et al. (2024) <https://ui.adsabs.ha
     * matplotlib
     * natsort
     * tqdm
+    * scipy
 
 *****
 Acknowledgements
