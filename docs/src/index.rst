@@ -41,6 +41,7 @@ Here, :math:`{\hat{\boldsymbol{n}}}(t)` are the predicted chemical abundances at
 For more details, check out our paper: `Maes et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract>`_.
 
 
+
 .. note::
     Required packages:
     
@@ -51,6 +52,7 @@ For more details, check out our paper: `Maes et al. (2024) <https://ui.adsabs.ha
     * natsort
     * tqdm
     * scipy
+
 
 *****
 Acknowledgements
