@@ -80,7 +80,7 @@ If any comments or issues come up, please contact me via [email](mailto:silke.ma
 ---
 ## Acknowledgements <a name="ackn"></a>
 
-The MACE architecture is free to use. Please cite our paper [Maes et al. (2024)](https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract)
+The MACE architecture is free to use. Please cite our paper [Maes et al. (2024)](https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract).
 
 
   
