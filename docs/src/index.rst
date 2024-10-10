@@ -9,19 +9,19 @@ MACE
    :maxdepth: 1
    :caption: Contents:
 
+   use/index
    example/index
+    
 
 *****
-ABOUT
+About
 *****
 
 **MACE, a Machine-learning Approach to Chemistry Emulation**, by `Maes et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract>`_, is a surrogate model for chemical kinetics. It is developed in the contexts of circumstellar envelopes (CSEs) of asymptotic giant branch (AGB) stars, i.e. evolved low-mass stars.
 
-Currently it still under development.
-Planned release: Sept 2024
+During development, the chemical models of `Maes et al. (2023) <https://ui.adsabs.harvard.edu/abs/2023MNRAS.522.4654M/abstract>`_ are used. In this paper you can also find more details about the astrochemical environment used.
 
 MACE is implemented in Python and uses `PyTorch <https://pytorch.org/>`_, together with `torchode <https://github.com/martenlienen/torchode>`_ (`Lienen & Gunnemann, 2022 <https://openreview.net/pdf?id=uiKVKTiUYB0>`_), to be trained.
-
 
 
 The architecture of MACE is schematically given as 
@@ -40,13 +40,6 @@ Here, :math:`{\hat{\boldsymbol{n}}}(t)` are the predicted chemical abundances at
 
 For more details, check out our paper: `Maes et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract>`_.
 
-***********
-How to run?
-***********
-
-Once the Dataset class is set up properly (see :code:`src/mace/CSE_0D/dataset.py`), a MACE model can be trained. This can be done using the script :code:`run.py`, which takes an input file with the needed (hyper)parameter setup. An example of such an input file can be found in :code:`input/`.
-
-The script run.py trains the model, as explained by `Maes et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract>`_, and is immediately applied to the specified test dataset once training is finished. As such, it returns an averaged error on the MACE model compared to the classical model.
 
 .. note::
     Required packages:
@@ -57,6 +50,20 @@ The script run.py trains the model, as explained by `Maes et al. (2024) <https:/
     * matplotlib
     * natsort
     * tqdm
+
+*****
+Acknowledgements
+*****
+
+The MACE architecture is free to use. Please cite our paper `Maes et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract>`_.
+
+*****
+Contact
+*****
+
+If any comments or issues come up, please contact :email:`Silke Maes <silke.maes@protonmail.com>`, or set up an issue on `GitHub <https://github.com/silkemaes/MACE>`_.
+
+
 
 
 

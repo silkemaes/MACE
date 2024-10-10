@@ -1,13 +1,14 @@
 
 
-Examples
+Test case
 #####################
 
-On this page shows tutorials on how to train a MACE model and how to test a trained model.
+The repository contains a trained MACE model as a test case, see :literal:`model/20240604_160152`. 
+
+Tutorial on how to load and test the model:
 
 .. toctree::
    :maxdepth: 1
 
-   run.ipynb
    load&test.ipynb
 
