@@ -81,14 +81,18 @@ class CSEdata(Dataset):
                 --> self.fraction
             8. Split the dataset in train and test set 
         '''
+        print('> Train state:',train)
 
-        loc = '/STER/silkem/MACE/'
-        paths = np.loadtxt(loc+'data/paths_data_C.txt', dtype=str)
+        # loc = '/STER/silkem/MACE/'
+        loc = str(Path().cwd())+'/'
+        paths = np.loadtxt(loc+'data/paths_train_data.txt', dtype=str)
+        print('Found paths:', len(paths))
 
         ## select a certain number of paths, given by nb_samples
         np.random.seed(0)
         self.idxs = utils.generate_random_numbers(nb_samples, 0, len(paths))
         self.path = paths[self.idxs]
+        print('Selected paths:', len(self.path))
 
         ## select a random test path, that is not in the training set
         # self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
@@ -101,6 +105,9 @@ class CSEdata(Dataset):
             if self.test_idx not in self.idxs:
                 count += 1
                 self.testpath.append(paths[self.test_idx][0])
+            print('count:',count, '\r', end = '')
+        print('Selected test paths:', len(self.testpath))
+        print('\n')
 
         # print('test path:', self.testpath)
 
@@ -161,9 +168,8 @@ class CSEdata(Dataset):
 
         Returns the preprocessed data in torch tensors.
         '''
-        # print(len(self))
-        # print(idx)
-        mod = CSEmod(self.path[idx])
+
+        mod = CSEmod(self.path[idx],inpackage = True, train = True)
 
         Δt, n, p = mod.split_in_0D()
 
@@ -217,7 +223,7 @@ def get_data( nb_samples, dt_fract, nb_test, batch_size, kwargs):
     return train, valid, data_loader, test_loader
 
 
-def get_test_data(testpath, meta, inpackage = False):
+def get_test_data(testpath, meta, inpackage = False, train = False):
     '''
     Get the data of the test 1D model, given a path and meta-data from a training setup.
 
@@ -232,7 +238,7 @@ def get_test_data(testpath, meta, inpackage = False):
     
     data = CSEdata(nb_samples=meta['nb_samples'],dt_fract=meta['dt_fract'],nb_test= 100, train=True, fraction=0.7, cutoff = 1e-20, scale = 'norm')
     
-    mod = CSEmod(testpath, inpackage)
+    mod = CSEmod(testpath, inpackage, train)
 
     if inpackage:
         input = mod.get_input()
@@ -291,7 +297,7 @@ class CSEmod():
     Class to load a 1D CSE model, calculated with the classical fortan code.
     For more info on this model, see https://github.com/MarieVdS/rate22_cse_code.
     '''
-    def __init__(self, path, inpackage = False):
+    def __init__(self, path, inpackage = False, train = False):
         '''
         Load the 1D CSE model, given a path.
 
@@ -318,11 +324,19 @@ class CSEmod():
             inp_path = self.path[:-26]+ 'inputChemistry_'+self.name+'.txt'
 
         if inpackage:
-            parentpath = str(Path(__file__).parent)[:-15]
-            self.path = parentpath + 'data/test/' + path +'/'
-            self.model = path[-62:-1]
-            self.name = path
-            inp_path = self.path+'input.txt'
+            if train == False:
+                parentpath = str(Path(__file__).parent)[:-15]
+                self.path = parentpath + 'data/test/' + path +'/'
+                self.model = path[-62:-1]
+                self.name = path
+                inp_path = self.path+'input.txt'
+            if train == True:
+                parentpath = str(Path(__file__).parent)[:-15]
+                self.path = parentpath + 'data/train/' + path[:-18] +'/'
+                self.model = self.path
+                self.name = self.path
+                inp_path = self.path+'input.txt'
+                
 
         abs_path = 'csfrac_smooth.out'
         phys_path = 'csphyspar_smooth.out'

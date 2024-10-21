@@ -1,27 +1,36 @@
-
 ## input model
 
-lr          = 1.e-5
-nb_epochs   = 3
-ini_epochs  = 1
+lr          = 1.e-4
+nb_epochs   = 15
+ini_epochs  = 5
 losstype    = abs_idn
 z_dim       = 8
-nb_samples  = 100
-scheme      = loc
-nb_evol     = 1
+nb_samples  = 4
+scheme      = int
+nb_evol     = 16
 nb_hidden   = 1
 ae_type     = simple
-nb_test     = 2
+nb_test     = 1
 
 
 
 ## loss fractions
 
 abs = 1
-grd = 0 
+grd = 1 
 idn = 1
 elm = 0
 
 
 
 
+
+Name = 20241021_165509
+
+Name = 20241021_165509
+
+Name = 20241021_165509
+
+Name = 20241021_165509
+
+Name = 20241021_165509
