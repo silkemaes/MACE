@@ -133,7 +133,6 @@ dmypy.json
 runs/
 models/
 figs/
-data/
 ignore/
 src/mace/old/
 ipynbs/

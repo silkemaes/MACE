@@ -1,0 +1,11 @@
+{
+    "dens_min": 0.008223,
+    "dens_max": 5009000000.0,
+    "temp_min": 10.0,
+    "temp_max": 1851.0,
+    "delta_min": 0.0,
+    "delta_max": 0.9999,
+    "Av_min": 2.141e-05,
+    "Av_max": 1246.0,
+    "dt_max": 434800000000.0
+}
