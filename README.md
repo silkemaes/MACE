@@ -14,6 +14,7 @@ MACE is implemented in Python and is trained using [PyTorch](https://pytorch.org
 - [What is MACE?](#what)
 - [How to use?](#use)
 - [Example case](#exmp)
+- [Contributions](#contr)
 - [Contact](#cont)
 - [Acknowledgements](#ackn)
 
@@ -76,6 +77,22 @@ The code for loading a trained MACE model can be found in the script ```src/mace
 ## Contact <a name="cont"></a>
 
 If any comments or issues come up, please contact me via [email](mailto:silke.maes@protonmail.com), or set up a GitHub issue.
+
+---
+## Developers & Contributions <a name="contr"></a>
+
+**Developers**:
+- Silke Maes
+- Frederik De Ceuster
+
+**Scientific & technical advisors**:
+- Marie Van de Sande
+- Leen Decin
+
+**Contributors**:
+- Steven Rieder
+> Feel free to contribute to MACE via pull requests and discussions!
+
 
 ---
 ## Acknowledgements <a name="ackn"></a>
