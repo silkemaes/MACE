@@ -14,6 +14,7 @@ MACE is implemented in Python and is trained using [PyTorch](https://pytorch.org
 - [What is MACE?](#what)
 - [How to use?](#use)
 - [Example case](#exmp)
+- [Contributions](#contr)
 - [Contact](#cont)
 - [Acknowledgements](#ackn)
 
@@ -52,7 +53,7 @@ For more details, check out our paper: [Maes et al. (2024)](https://ui.adsabs.ha
 
 The script ```routine.py``` gives the flow of training & storing a MACE architecture, and immediately applies to the specified test dataset once training is finished. As such, it returns an averaged error on the MACE model compared to the classical model. More info on the training routine can be found in the [paper](https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract). 
 
-An annotated notebook of the routine can be found in the [documentation](https://mace-code.readthedocs.io/en/latest/example/run.html).
+An annotated notebook of the routine can be found in [here](https://github.com/silkemaes/MACE/blob/JOSS/routine.ipynb). 
 
 The script ```routine.py``` takes an input file with the needed (hyper)parameter setup. An example of such an input file can be found in input/.
 ```
@@ -70,7 +71,7 @@ should be made compatible with that data. Currently, the script ```src/mace/CSE_
 
 This repository contains a trained MACE model as a test case, see ```model/20240604_160152```. 
 
-The code for loading a trained MACE model can be found in the script ```src/mace/load.py```, testing in ```src/mace/test.py```. An annotated notebook can be found in the [documentation](https://mace-code.readthedocs.io/en/latest/example/load%26test.html).
+The code for loading a trained MACE model can be found in the script ```src/mace/load.py```, testing in ```src/mace/test.py```. An annotated notebook can be found in the [documentation](https://mace-code.readthedocs.io/en/latest/example/index.html).
 
 ---
 ## Contact <a name="cont"></a>
@@ -78,12 +79,25 @@ The code for loading a trained MACE model can be found in the script ```src/mace
 If any comments or issues come up, please contact me via [email](mailto:silke.maes@protonmail.com), or set up a GitHub issue.
 
 ---
+## Developers & Contributions <a name="contr"></a>
+
+**Developers**:
+- Silke Maes
+- Frederik De Ceuster
+
+**Scientific & technical advisors**:
+- Marie Van de Sande
+- Leen Decin
+
+**Contributors**:
+- Steven Rieder
+> Feel free to contribute to MACE via pull requests and discussions!
+
+
+---
 ## Acknowledgements <a name="ackn"></a>
 
 The MACE architecture is free to use. Please cite our paper [Maes et al. (2024)](https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract).
-
-
-  
 
 
   
