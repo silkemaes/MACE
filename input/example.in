@@ -5,12 +5,12 @@ nb_epochs   = 15
 ini_epochs  = 5
 losstype    = abs_idn
 z_dim       = 8
-nb_samples  = 4
+nb_samples  = 10
 scheme      = int
 nb_evol     = 16
 nb_hidden   = 1
 ae_type     = simple
-nb_test     = 1
+nb_test     = 3
 
 
 
@@ -25,12 +25,15 @@ elm = 0
 
 
 
-Name = 20241021_165509
 
-Name = 20241021_165509
+Name = 20241025_120806
 
-Name = 20241021_165509
+Name = 20241025_120806
 
-Name = 20241021_165509
+Name = 20241025_123012
 
-Name = 20241021_165509
+Name = 20241025_123835
+
+Name = 20241025_124525
+
+Name = 20241025_125032

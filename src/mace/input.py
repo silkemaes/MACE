@@ -114,6 +114,7 @@ class Input():
             'nb_evol'   : self.nb_evol,
             'nb_hidden' : self.nb_hidden,
             'ae_type'   : self.ae_type,
+            'nb_test'   : self.nb_test,
             'done'      : 'true'
         }
 
