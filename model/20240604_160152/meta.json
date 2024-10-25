@@ -1,13 +1,13 @@
 {
-    "nb_samples": 10000,
+    "nb_samples": 10,
     "lr": 0.0001,
-    "epochs": 150,
+    "epochs": 15,
     "z_dim": 8,
     "dt_fract": 0.221,
     "tmax": 434800000000.0,
     "train_time_h": 72.36221496270763,
     "overhead_s": 1.014007806777954,
-    "samples": 7000,
+    "samples": 7,
     "cutoff_abs": 1e-20,
     "losstype": "abs_idn",
     "inputfile": "/STER/silkem/MACE/input/ignore/testing/int4.in",
@@ -15,5 +15,6 @@
     "nb_evol": 16,
     "nb_hidden": 1,
     "ae_type": "simple",
-    "done": "true"
+    "done": "true",
+    "nb_test": 3
 }
