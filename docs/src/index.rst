@@ -54,6 +54,24 @@ For more details, check out our paper: `Maes et al. (2024) <https://ui.adsabs.ha
     * scipy
 
 
+
+*****
+Developers & contributions
+*****
+
+**Developers**:
+- Silke Maes
+- Frederik De Ceuster
+
+**Scientific & technical advisors**:
+- Marie Van de Sande
+- Leen Decin
+
+**Contributors**:
+- Steven Rieder
+> Feel free to contribute to MACE via pull requests and discussions!
+
+
 *****
 Acknowledgements
 *****
