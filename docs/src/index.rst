@@ -60,15 +60,16 @@ Developers & contributions
 *****
 
 **Developers**:
-- Silke Maes
-- Frederik De Ceuster
+* Silke Maes
+* Frederik De Ceuster
 
 **Scientific & technical advisors**:
-- Marie Van de Sande
-- Leen Decin
+* Marie Van de Sande
+* Leen Decin
 
 **Contributors**:
-- Steven Rieder
+* Steven Rieder
+
 > Feel free to contribute to MACE via pull requests and discussions!
 
 
