@@ -70,7 +70,7 @@ def plot_abs(model1D, n, n_hat, specs, step = False):
             marker = 'o'
         else:
             ls = '-'
-            marker = 'none'
+            marker = '.'
         ## predicted abundances
         line, = ax1.plot(r,n_hat[:,idx], ls =ls, marker = marker, label = spec, ms = ms,  lw = lw)
         ## real abundances
