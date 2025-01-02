@@ -10,6 +10,7 @@ MACE is implemented in Python and is trained using [PyTorch](https://pytorch.org
 
 ---
 ## Table of content
+_Please find documentation on the code in the scripts. On the documentation page, we provide general info on MACE and tutorial notebooks._
 - [Installation](#inst)
 - [What is MACE?](#what)
 - [How to use?](#use)
