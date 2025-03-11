@@ -13,7 +13,7 @@ authors:
     affiliation: 1
   - name: Frederik De Ceuster
     orcid: 0000-0001-5887-8498
-    affiliation: 1
+    affiliation: "1,5"
   - name: Marie Van de Sande
     orcid: 0000-0001-9298-6265
     affiliation: "2,3"
@@ -30,6 +30,8 @@ affiliations:
    index: 3
  - name: School of Chemistry, University of Leeds, Leeds LS2 9JT, United Kingdom
    index: 4
+ - name: Leuven Gravity Institute, KU Leuven, Celestijnenlaan 200D, Leuven, Belgium
+   index: 5
 date: 16 May 2024
 bibliography: paper.bib
 
