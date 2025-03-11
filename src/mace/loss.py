@@ -46,7 +46,7 @@ class Loss():
 
         parentpath = str(Path(__file__).parent)[:-8]
 
-        self.M = np.load(parentpath+'data/M_rate16.npy')
+        self.M = np.load(parentpath+'M_rate16.npy')
 
         ## initialise
         self.set_losstype(losstype)

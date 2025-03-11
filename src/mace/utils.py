@@ -113,7 +113,7 @@ def get_specs():
 
     parentpath = str(Path(__file__).parent)[:-8]
 
-    loc_specs = parentpath+'data/rate16.specs'
+    loc_specs = parentpath+'rate16.specs'
     
     specs = np.loadtxt(loc_specs, usecols=(1), dtype=str, skiprows = 1, max_rows=469)  
 

@@ -1,10 +1,11 @@
-import matplotlib.pyplot as plt
-import numpy as np      
+import matplotlib.pyplot        as plt
+import numpy                    as np      
 import sys
 import torch
-from time import time
-import datetime             as dt
-from tqdm       import tqdm
+from time                       import time
+import datetime                 as dt
+from tqdm                       import tqdm
+import os
 
 import src.mace.CSE_0D.dataset  as ds
 import src.mace.train           as train
@@ -15,23 +16,30 @@ import src.mace.loss            as loss
 import src.mace.utils           as utils
 from src.mace.input             import Input
 
-
+source_dir = os.path.dirname(os.path.abspath(__file__))
 
 specs_dict, idx_specs = utils.get_specs()
 
 start = time()
 now = dt.datetime.now()
 name = str(now.strftime("%Y%m%d")+'_'+now.strftime("%H%M%S"))
-path = '/STER/silkem/MACE/models/CSE_0D/'+name
+path = source_dir+'/model/'+name
+
+print('Model path:', path)
 
 
 ## ================================================== INPUT ========
 ## ADJUST THESE PARAMETERS FOR DIFFERENT MODELS
 
 ## READ INPUT FILE
-arg = sys.argv[1]
+try:
+        arg = sys.argv[1]
+except Exception:
+        print('Please provide an input file.')
+        print('$ python routine.py example')
+        sys.exit()
 
-infile = '/STER/silkem/MACE/input/'+arg+'.in'
+infile = source_dir+'/input/'+arg+'.in'
 
 input = Input(infile, name)
 
@@ -53,9 +61,8 @@ kwargs = {'num_workers': 1, 'pin_memory': True}
 
 ## Load train & test data sets 
 traindata, testdata, data_loader, test_loader = ds.get_data(dt_fract=input.dt_fract,
-                                                            nb_samples=input.nb_samples, batch_size=batch_size, 
-                                                            nb_test=input.nb_test,kwargs=kwargs)
-
+                                                            nb_samples=input.nb_samples, batch_size=batch_size,
+                                                            nb_test=input.nb_test,kwargs=kwargs, inpackage=True)
 ## Make model
 model = mace.Solver(n_dim=input.n_dim, p_dim=4,z_dim = input.z_dim, 
                     nb_hidden=input.nb_hidden, ae_type=input.ae_type, 
@@ -78,9 +85,9 @@ testloss  = Loss(norm, fract, input.losstype)
 
 ## Train
 tic = time()
-train.train(model, 
-            data_loader, test_loader, 
-            end_epochs = input.ini_epochs, 
+train.train(model,
+            data_loader, test_loader,
+            end_epochs = input.ini_epochs,
             trainloss=trainloss, testloss=testloss, 
             start_time = start)
 toc = time()
@@ -160,7 +167,7 @@ for i in tqdm(range(len(traindata.testpath))):
 #     print(i+1,end='\r')
     testpath = traindata.testpath[i]
 
-    err_test, err_evol, step_time, evol_time,n, n_hat, n_evol  = test.test_model(model,testpath, meta, printing = False)
+    err_test, err_evol, step_time, evol_time = test.test_model(model,testpath, meta, printing = False, inpackage=True, datapath='train' )
 
     sum_err_step += err_test
     sum_err_evol += err_evol

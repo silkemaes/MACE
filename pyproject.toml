@@ -24,10 +24,11 @@ dependencies = [
     "astropy",
     "torch>=2.0.0",
     "numpy",
-    "numba",
     "tqdm",
+    "scipy",
+    "torchode"
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 
 [project.optional-dependencies]
 dev = ["black", "bumpver", "pip-tools", "pytest"]

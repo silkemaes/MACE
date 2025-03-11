@@ -1,0 +1,15 @@
+20211014_gridC_Mdot1e-6_v12-5_T_eps_model_2022-12-23h10-52-30/csfrac_smooth.out
+20211014_gridC_Mdot2e-7_v7-5_T_eps_model_2022-12-23h14-08-04/csfrac_smooth.out
+20211014_gridC_Mdot2e-8_v10_T_eps_model_2022-12-25h13-20-46/csfrac_smooth.out
+20210527_gridC_Mdot5e-5_v22-5_T_eps_model_2022-12-27h10-44-23/csfrac_smooth.out
+20211014_gridC_Mdot1e-7_v15_T_eps_model_2022-12-28h15-08-21/csfrac_smooth.out
+20210527_gridC_Mdot2e-5_v17-5_T_eps_model_2023-01-16h16-20-07/csfrac_smooth.out
+20211014_gridC_Mdot1e-7_v7-5_T_eps_model_2022-12-26h18-24-01/csfrac_smooth.out
+20211015_gridC_Mdot1e-6_v20_T_eps_model_2022-12-28h21-05-09/csfrac_smooth.out
+20211014_gridC_Mdot1e-8_v5_T_eps_model_2022-12-25h08-12-47/csfrac_smooth.out
+20211018_gridC_Mdot5e-6_v22-5_T_eps_model_2022-12-27h03-01-50/csfrac_smooth.out
+20210527_gridC_Mdot2e-5_v20_T_eps_model_2023-01-10h12-04-32/csfrac_smooth.out
+20211014_gridC_Mdot5e-7_v15_T_eps_model_2022-12-23h16-12-23/csfrac_smooth.out
+20211014_gridC_Mdot5e-8_v12-5_T_eps_model_2022-12-25h00-57-30/csfrac_smooth.out
+
+

@@ -91,7 +91,7 @@ def train(model,
             trainloss.save(trainpath)
             testloss.save(testpath)
             ## plot, every save this fig is updated
-            loss.plot(trainloss, testloss, log = log, show = show)
+            fig = loss.plot(trainloss, testloss, ylim = False, log = log, show = False)
             plt.savefig(path+'/loss.png')
         
         # print(trainloss.get_loss('tot'))

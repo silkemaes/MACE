@@ -92,6 +92,7 @@ If any comments or issues come up, please contact me via [email](mailto:silke.ma
 
 **Contributors**:
 - Steven Rieder
+
 > Feel free to contribute to MACE via pull requests and discussions!
 
 
