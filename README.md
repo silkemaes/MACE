@@ -74,6 +74,8 @@ This repository contains a trained MACE model as a test case, see ```model/20240
 
 The code for loading a trained MACE model can be found in the script ```src/mace/load.py```, testing in ```src/mace/test.py```. An annotated notebook can be found in the [documentation](https://mace-code.readthedocs.io/en/latest/example/index.html).
 
+An annotated version of the training routine can be found in ```routine.ipynb```, which is the same as the eponymous script.
+
 ---
 ## Contact <a name="cont"></a>
 
