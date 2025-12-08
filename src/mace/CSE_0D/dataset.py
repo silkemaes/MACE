@@ -657,7 +657,7 @@ class Phantommod():
         if len(abs[:, 0]) < 10:
             raise ValueError(f'Warning: {self.path} has less than 10 time steps, skipping this model.')
         self.time = abs[:, 0]
-        self.radius = abs[:,1] * AU_to_cm
+        self.radius = abs[:,1]
         self.dens, self.temp, self.mu, self.Av, self.xi = abs[:, 2], abs[:, 3], abs[:, 4], abs[:, 5], abs[:, 6]
         self.n = abs[:, 7:]
 
