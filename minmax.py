@@ -17,7 +17,7 @@ outputfile = os.path.join(SOURCE_DIR,'data', 'minmax.txt')
 files = []
 
 # headers to skip
-skip = {'radius(AU)', 'mu'}
+skip = {'radius(cm)', 'mu'}
 # headers to keep (ignoring abundances and time, they'll be treated separately)
 keep = {'n(cm-3)','T(K)', 'A_UV', 'xi'}
 
