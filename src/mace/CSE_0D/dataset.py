@@ -23,6 +23,7 @@ This script only works for this specific dataset.
 '''
 import json
 import os
+import sys
 
 import numpy as np
 import torch
@@ -655,7 +656,7 @@ class Phantommod():
         self.path = path
         abs = read_data_phantom(self.path)
         if len(abs[:, 0]) < 10:
-            raise ValueError(f'Warning: {self.path} has less than 10 time steps, skipping this model.')
+            print(f'Warning: {self.path} has less than 10 time steps.')
         self.time = abs[:, 0]
         self.radius = abs[:,1]
         self.dens, self.temp, self.mu, self.Av, self.xi = abs[:, 2], abs[:, 3], abs[:, 4], abs[:, 5], abs[:, 6]
@@ -755,7 +756,10 @@ def read_data_phantom(file_name):
     with open(file_name, 'r') as f:
         for line in f:
             if not line.startswith(' #'):
-                data.append([float(_) for _ in line.strip().split()])
+                try:
+                    data.append([float(_) for _ in line.strip().split()])
+                except ValueError:
+                    print(f'Error: could not convert line to float: {line.strip()} in file {file_name}')
     return np.array(data)
 
 
