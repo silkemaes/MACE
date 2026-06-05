@@ -5,9 +5,12 @@ Outputs a .txt file with the min and max values.
 
 import numpy as np
 import pandas as pd
-import os
 
-DIRS = ['/STER/hydroModels/camille/phantom/macetraining/3d/v17-5-1k/chem_output/']
+import os
+import multiprocessing as mp
+import time
+
+DIRS = ['/STER/hydroModels/camille/phantom/macetraining/3d/v17-5_5e7_a20/chem_output/']
 SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 outputfile = os.path.join(SOURCE_DIR,'data', 'minmax.txt')
 
@@ -16,64 +19,82 @@ files = []
 # headers to skip
 skip = {'radius(AU)', 'mu'}
 # headers to keep (ignoring abundances and time, they'll be treated separately)
-keep = {'# time','n(cm-3)','T(K)', 'A_UV', 'xi'}
+keep = {'n(cm-3)','T(K)', 'A_UV', 'xi'}
 
 # abundance cutoff
 abundance_cutoff = 1e-20
-# precision cutoff
-precision_cutoff = 1e-40
 
-print('- Searching for .chem files in:')
-for DIR in DIRS:
-    print(f'        - {DIR}')
-    files += [os.path.join(DIR,f) for f in sorted(os.listdir(DIR)) if f.endswith('.chem')]
-    print(f'            -> Found {len(files)} files')
-
-mins = {}
-maxs = {}   
-print('- Computing min and max values for all parameters...')
-for fi,i in zip(files, range(len(files))):
-    data = pd.read_csv(fi, sep='\s+\s+', engine='python')
-    print(f'        - Processing file: {i}/{len(files)}')
+def find_min_max(file, skip=skip, keep=keep, abundance_cutoff=abundance_cutoff):
+    data = pd.read_csv(file, sep=r'\s+\s+', engine='python')
     abs = []
+    mins = {}
+    maxs = {}
     for key in data.keys():
         if key in skip:
             data = data.drop(columns=key)
         elif key in keep:
-            if i == 0: 
-                mins[key] = data[key].min()
-                maxs[key] = data[key].max()
-            else:
-                mins[key] = np.minimum(mins[key], data[key].min())
-                maxs[key] = np.maximum(maxs[key], data[key].max())
+                mins[key] = (data[key].min())
+                maxs[key] = (data[key].max())
         elif key == '# time(s)':
             timestep = [b-a for a,b in zip(data[key][:-1], data[key][1:])]
-            if i == 0:
-                mins['time'] = min(timestep)
-                maxs['time'] = max(timestep)
-            else:
-                mins['time'] = min(mins['time'], min(timestep))
-                maxs['time'] = max(maxs['time'], max(timestep))
+            mins['time(s)'] = (min(timestep))
+            maxs['time(s)'] = (max(timestep))
         else:
             # abundances, concatenate all values before querying min and max
             abs += list(data[key].values)
-    mins['abs'] = max(np.min(abs), abundance_cutoff)
-    maxs['abs'] = np.max(abs)
+    mins['abs'] = (max(np.min(abs), abundance_cutoff))
+    maxs['abs'] = (np.max(abs))
+    return mins, maxs
 
-           
-print('- min and max values:')
-print(maxs)
-print(mins)
+if __name__ == '__main__':
 
-with open(outputfile, 'w') as f:
-    f.write(f'rho_min: {mins["n(cm-3)"]}\n')
-    f.write(f'rho_max: {maxs["n(cm-3)"]}\n')
-    f.write(f'T_min: {mins["T(K)"]}\n')
-    f.write(f'T_max: {maxs["T(K)"]}\n')
-    f.write(f'delta_min: {mins["xi"]}\n')
-    f.write(f'delta_max: {maxs["xi"]}\n')
-    f.write(f'A_UV_min: {mins["A_UV"]}\n')
-    f.write(f'A_UV_max: {maxs["A_UV"]}\n')
-    f.write(f'n_min: {mins["abs"]}\n')
-    f.write(f'n_max: {maxs["abs"]}\n')
-    f.write(f'dt_max: {maxs["time"]}\n')
+    print('- Searching for .chem files in:')
+    for DIR in DIRS:
+        print(f'        - {DIR}')
+        files += [os.path.join(DIR,f) for f in sorted(os.listdir(DIR)) if f.endswith('.chem')]
+        total = len(files)
+        print(f'            -> Found {total} files')
+
+    mins = {}
+    maxs = {}   
+    for key in keep:
+        mins[key] = []
+        maxs[key] = []
+    mins['abs'] = []
+    maxs['abs'] = []
+    mins['time(s)'] = []
+    maxs['time(s)'] = []
+
+    # get number of cpus available
+    num_cpus = mp.cpu_count()//2
+    print(f'- Using {num_cpus} CPUs.')
+    processed = 0
+    outputs = []
+    print('- Computing min and max values for all parameters...')
+    with mp.Pool(processes=num_cpus) as pool:
+        for result in pool.imap_unordered(find_min_max, files, chunksize=1):
+            processed += 1
+            outputs.append(result)
+            print(f"Processed {processed}/{total} files", end="\r", flush=True)
+    
+    for output in outputs:
+        for key in output[0].keys():
+            mins[key].append(output[0][key])
+            maxs[key].append(output[1][key])
+    print('- Finding global min and max values for all parameters...')
+    for key in mins.keys():
+        mins[key] = min(mins[key])
+        maxs[key] = max(maxs[key])
+
+    with open(outputfile, 'w') as f:
+        f.write(f'rho_min: {mins["n(cm-3)"]}\n')
+        f.write(f'rho_max: {maxs["n(cm-3)"]}\n')
+        f.write(f'T_min: {mins["T(K)"]}\n')
+        f.write(f'T_max: {maxs["T(K)"]}\n')
+        f.write(f'delta_min: {mins["xi"]}\n')
+        f.write(f'delta_max: {maxs["xi"]}\n')
+        f.write(f'A_UV_min: {mins["A_UV"]}\n')
+        f.write(f'A_UV_max: {maxs["A_UV"]}\n')
+        f.write(f'n_min: {mins["abs"]}\n')
+        f.write(f'n_max: {maxs["abs"]}\n')
+        f.write(f'dt_max: {maxs["time(s)"]}\n')
