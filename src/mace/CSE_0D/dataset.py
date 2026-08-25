@@ -933,6 +933,8 @@ class PhantomData(Dataset):
             # print(j)
             p_transf[:, j] = utils.normalise(np.log10(p[:, j]), self.mins[j],
                                              self.maxs[j])
+        print(self.mins)
+        print(self.maxs)
 
         ## abundances
         n_transf = np.clip(n, self.cutoff, None)

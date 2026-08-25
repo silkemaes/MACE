@@ -168,7 +168,6 @@ class Solver(nn.Module):
             - z_s: the predicted latent space at the time steps tstep
             - solution.status: the status of the ODE solver
         '''
-
         x_0 = n_0  ## use NN version of G
         if not self.g_nn:  ## DON'T use NN version of G
             ## Ravel the abundances n_0 and physical input p to x_0
