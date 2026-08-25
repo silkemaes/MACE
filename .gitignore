@@ -4,8 +4,8 @@
 #except the following files
 !.gitignore
 !train.py
-!data/
-!docs/
+!data
+!docs
 !input
 !src/
 !load&test.ipynb
