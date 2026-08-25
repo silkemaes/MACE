@@ -157,7 +157,7 @@ def test_model(data_type, model, testpath, meta, specs=[], inpackage = False, da
 
     err, err_test = utils.error(n, n_hat)
     err, err_evol = utils.error(n, n_evol)
-
+    
     if plotting == True:
         print('\nErrors (following Eq. 23 of Maes et al., 2024):')
         print('      Step error:', np.round(err_test,3))

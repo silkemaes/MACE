@@ -97,7 +97,7 @@ def plot_abs(model1D, modeltype, n, n_hat, specs, step=False):
                  lw=lw,
                  color=line.get_color())
     ## indicate where 0 is on the error plot
-    ax2.plot([1e14, 1e18], [0, 0], '--k', lw=0.5)
+    ax2.plot([2e14, 2e17], [0, 0], '--k', lw=0.5)
 
     ## plot the physical parameters (density, rho, and temperature, T)
     ax3.plot(r, rho, 'k-.', lw=lw)
@@ -119,7 +119,7 @@ def plot_abs(model1D, modeltype, n, n_hat, specs, step=False):
     for ax in axs:
         ax.set_yscale('log')
         ax.set_xscale('log')
-        ax.set_xlim([1e14, 1e18])
+        #ax.set_xlim([1e14, 1e18])
         ax.tick_params(labelsize=14)
     ax4.set_xscale('log')
     ax3.set_yscale('linear')
@@ -133,12 +133,12 @@ def plot_abs(model1D, modeltype, n, n_hat, specs, step=False):
     ax2.grid(True, linestyle='--', linewidth=0.2)
 
     ax1.set_ylim([1e-20, 1e-2])
-    ax2.set_ylim([-2,2])
+    #ax2.set_ylim([-2,2])
 
     ax1.legend(fontsize=10, loc='lower left')
 
-    plt.subplots_adjust(hspace=0.00001)
-
     plt.tight_layout()
+
+    plt.subplots_adjust(hspace=0)
 
     return fig
