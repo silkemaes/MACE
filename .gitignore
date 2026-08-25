@@ -7,7 +7,7 @@
 !data
 !docs
 !input
-!src
+!src/mace/*
 !load&test.ipynb
 !MACE_to_Fortran.py
 !MACE.png
