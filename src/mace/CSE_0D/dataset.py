@@ -35,7 +35,7 @@ specs_dict = utils.get_specs()
 
 AU_to_cm = 1.495978707e13
 
-def get_data(data_type, nb_samples, dt_fract, nb_test, inpackage, batch_size,
+def get_data(data_type, nb_samples, dt_fract, nb_valid, nb_test, inpackage, batch_size,
              kwargs):
     '''
     Prepare the data for training and validating the emulator.
@@ -63,13 +63,17 @@ def get_data(data_type, nb_samples, dt_fract, nb_test, inpackage, batch_size,
         data_class = CSEdata
     train = data_class(nb_samples=nb_samples,
                        dt_fract=dt_fract,
+                       nb_valid=nb_valid,
                        nb_test=nb_test,
+                       batch_size=batch_size,
                        inpackage=inpackage,
                        train=True,
                        datapath='train')
     valid = data_class(nb_samples=nb_samples,
                        dt_fract=dt_fract,
+                       nb_valid=nb_valid,
                        nb_test=nb_test,
+                       batch_size=1,
                        inpackage=inpackage,
                        train=False,
                        datapath='train')
@@ -87,12 +91,11 @@ def get_data(data_type, nb_samples, dt_fract, nb_test, inpackage, batch_size,
                              batch_size=batch_size,
                              shuffle=True,
                              **kwargs)
-    test_loader = DataLoader(dataset=valid,
+    valid_loader = DataLoader(dataset=valid,
                              batch_size=1,
-                             shuffle=False,
-                             **kwargs)
+                             shuffle=False)
 
-    return train, valid, data_loader, test_loader
+    return train, valid, data_loader, valid_loader
 
 
 def get_test_data(data_type,
@@ -125,7 +128,9 @@ def get_test_data(data_type,
 
     data = data_class(nb_samples=meta['nb_samples'],
                       dt_fract=meta['dt_fract'],
+                      nb_valid=meta['nb_valid'],
                       nb_test=meta['nb_test'],
+                      batch_size=1,
                       train=train,
                       fraction=0.7,
                       cutoff=1e-20,
@@ -211,7 +216,9 @@ class CSEdata(Dataset):
     def __init__(self,
                  nb_samples,
                  dt_fract,
+                 nb_valid,
                  nb_test,
+                 batch_size=1,
                  inpackage=False,
                  train=True,
                  datapath='train',
@@ -417,12 +424,6 @@ class CSEmod():
             self.model = path[34:-51]
             self.name = path[-43:-18]
             inp_path = self.path[:-26] + 'inputChemistry_' + self.name + '.txt'
-
-        #if chempy == True:
-        #    self.path = path[:-17]
-        #    self.model = path[21:-51]
-        #    self.name = path[-43:-18]
-        #    inp_path = self.path[:-26]+ 'inputChemistry_'+self.name+'.txt'
 
         if inpackage:
             if data == 'test':
@@ -772,7 +773,9 @@ class PhantomData(Dataset):
     def __init__(self,
                  nb_samples,
                  dt_fract,
+                 nb_valid,
                  nb_test,
+                 batch_size=1,
                  inpackage=False,
                  train=True,
                  datapath='train',
@@ -821,38 +824,50 @@ class PhantomData(Dataset):
         loc = str(Path().cwd()) + '/'
         # atleast_1d to ensure path is an array, because loadtxt returns an array scalar (0D array)
         # if only one path is is in the path file
-        path = np.atleast_1d(np.loadtxt(loc + 'data/paths_train_data.txt', dtype=str))
-        # get path of all files in path
-        paths = np.array([])
-        for p in path:
-            # decode if path is bytes
-            ps = os.listdir(p)
-            if isinstance(ps[0], bytes):
-                ps = [_.decode('utf-8') for _ in ps]
-            paths = np.append(paths, [os.path.join(p, _) for _ in ps])
-        paths = paths.flatten()
-        print('Found paths:', len(paths))
+        #path = np.atleast_1d(np.loadtxt(loc + 'data/paths_train_data.txt', dtype=str))
+        if batch_size > 1:
+            print('Batch size > 1, using split data')
+            path_train = np.atleast_1d(np.loadtxt(loc + 'data/path_train_split.txt', dtype=str))
+        else:
+            path_train = np.atleast_1d(np.loadtxt(loc + 'data/path_train.txt', dtype=str))
+        path_valid = np.atleast_1d(np.loadtxt(loc + 'data/path_valid.txt', dtype=str))
+        path_test = np.atleast_1d(np.loadtxt(loc + 'data/path_test.txt', dtype=str))
+        # check that all paths exist
+        paths = np.concatenate((path_train, path_valid, path_test))
+        #for p in paths:
+        #    if not os.path.exists(p):
+        #        raise FileNotFoundError(f'Error: sample {p} does not exist, please check the the path files.')
+        print('Found samples:', len(paths))
 
-        ## select a certain number of paths, given by nb_samples
+        ## select a certain number of paths, given by nb_samples or nb_valid
         np.random.seed(0)
-        if nb_samples > len(paths):
-            raise ValueError(
-                'Error: The dataset provided in paths_train_data.txt contains less data than required by nb_samples, please review the input files.'
-            )
-        self.idxs = utils.generate_random_numbers(nb_samples, 0, len(paths))
-        self.path = paths[self.idxs]
+        if train:
+            if nb_samples > len(path_train):
+                raise ValueError(
+                    'Error: The dataset provided in path_train.txt contains less data than required by nb_samples, please review the input files.'
+                )
+            self.idxs = utils.generate_random_numbers(nb_samples, 0, len(path_train))
+            self.path = path_train[self.idxs]
+        else:
+            if nb_valid > len(path_valid):
+                raise ValueError(
+                    'Error: The dataset provided in path_valid.txt contains less data than required by nb_valid, please review the input files.'
+                )
+            self.idxs = utils.generate_random_numbers(nb_valid, 0, len(path_valid))
+            self.path = path_valid[self.idxs]
+        print('Number of selected samples:', len(self.path))
 
-        ## select a random test path, that is not in the training set
+        ## select random test paths
         self.testpath = list()
         self.nb_test = nb_test
-        print('number of test paths:', nb_test)
-        count = 0
-        while count < nb_test:
-            self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
-            if self.test_idx not in self.idxs:
-                count += 1
-                self.testpath.append(paths[self.test_idx][0])
-        print('Selected test paths:', len(self.testpath))
+        print('Total number of available test samples:', nb_test)
+        if nb_test > len(path_test):
+            raise ValueError(
+                'Error: The dataset provided in path_test.txt contains less data than required by nb_test, please review the input files.'
+            )
+        test_idxs = utils.generate_random_numbers(nb_test, 0, len(path_test))
+        self.testpath = path_test[test_idxs]
+        print('Number of selected test samples:', len(self.testpath))
 
         self.M = np.load(loc + 'data/M_rate16.npy')
 
@@ -887,15 +902,6 @@ class PhantomData(Dataset):
         self.train = train
         self.inpackage = inpackage
         self.datapath = datapath
-
-        ## Split in train and test set
-        N = int(self.fraction * len(self.path))
-        if self.train:
-            self.path = self.path[:N]
-        else:
-            self.path = self.path[N:]
-
-        print('Selected paths:', len(self.path))
         print('\n')
 
     def __len__(self):
@@ -923,14 +929,12 @@ class PhantomData(Dataset):
 
         Returns the preprocessed data in torch tensors.
         '''
-        print('Loading phantom+krome model from:', self.path[idx])
         mod = Phantommod(self.path[idx], data=self.datapath)
         delta_t, n, p = mod.split_in_0D()
 
         ## physical parameters
         p_transf = np.empty_like(p)
         for j in range(p.shape[1]):
-            # print(j)
             p_transf[:, j] = utils.normalise(np.log10(p[:, j]), self.mins[j],
                                              self.maxs[j])
 

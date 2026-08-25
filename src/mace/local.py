@@ -36,14 +36,16 @@ def run_epoch(data_loader, model, loss_obj, training):
 
     for i, (n,p,dt) in enumerate(data_loader):
         
-        n  = n.view(n.shape[1], n.shape[2]).to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
-        p  = p.view(p.shape[1], p.shape[2]).to(DEVICE) 
-        dt = dt.view(dt.shape[1]).to(DEVICE)
+        n  = n.to(DEVICE)     ## op een niet-CPU berekenen als dat er is op de device
+        p  = p.to(DEVICE)
+        dt = dt.to(DEVICE)
 
-        n_hat, z_hat, modstatus = model(n[:-1],p,dt)    ## Give to the solver abundances[0:k] with k=last-1, without disturbing the batches 
+        print('calculate evolution...', flush=True)
+        n_hat, z_hat, modstatus = model(n[:,:-1,:],p,dt)    ## Give to the solver abundances[0:tlast-1] 
 
         ## Calculate losses
-        loss = loss_obj.calc_loss(n,n[1:], n_hat, z_hat, p, model)
+        print('calculate losses...', flush=True)
+        loss = loss_obj.calc_loss(n[:,:-1,:],n[:,1:,:], n_hat, z_hat, p, model)
         status += modstatus.sum().item()
 
         if training == True:

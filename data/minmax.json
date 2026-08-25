@@ -1,11 +1,11 @@
 {
-    "dens_min": 0.008223,
-    "dens_max": 5009000000.0,
-    "temp_min": 10.0,
-    "temp_max": 1851.0,
-    "delta_min": 0.0,
-    "delta_max": 0.9999,
-    "Av_min": 2.141e-05,
-    "Av_max": 1246.0,
-    "dt_max": 434800000000.0
+    "dens_min": 1.6668897,
+    "dens_max": 11037575.0,
+    "temp_min": 20.0,
+    "temp_max": 1574.03,
+    "delta_min": 0.0011229003,
+    "delta_max": 0.99992178,
+    "Av_min": 3.1700899e-05,
+    "Av_max": 5.2038137,
+    "dt_max": 5022800.0
 }
