@@ -6,9 +6,8 @@
 !train.py
 !data/
 !docs/
-!input
-!MACE_fortran
-!src
+!input/
+!src/
 !load&test.ipynb
 !MACE_to_Fortran.py
 !MACE.png
