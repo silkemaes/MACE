@@ -15,12 +15,12 @@ import torch
 import src.mace.load as load
 import src.mace.utils as utils
 
-model_name = '20251009_092808'
-epoch=14
+model_name = '20260602_071233'
+epoch=10
 
 # If you want to copy the model in a different directory afterwards (e.g. where it will be run)
 # leave this as None to skip this step
-final_dir = '~/software/FTorch/examples/MACE/'
+final_dir = '/STER/hydroModels/camille/phantom/macetraining/phantom_mace/'
 
 SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(SOURCE_DIR, 'model/')
@@ -69,6 +69,7 @@ print('   - Saving meta file to state folder...')
 with open(os.path.join(save_path, 'meta.txt'), 'w') as f:
     for key in meta:
         f.write(f'{key}: {meta[key]}\n')
+    f.write(f'epoch: {epoch}\n')
 
 # copy the minmax file too
 os.system(f'cp {os.path.join(SOURCE_DIR, "data", "minmax.txt")} {save_path}')
@@ -76,8 +77,7 @@ os.system(f'cp {os.path.join(SOURCE_DIR, "data", "minmax.txt")} {save_path}')
 # read Krome species file and store it in simpler format for Fortran
 print('   - Saving species file to state folder...')
 krome_file = utils.get_specs('Phantom')
-with open(os.path.join(save_path, 'species.txt'), 'w') as f:
-    f.write('# Species listed in krome/build/log.info\n')
+with open(os.path.join(save_path, 'abundance_label.txt'), 'w') as f:
     for spec in krome_file.keys():
         if krome_file[spec]+1 <= 468:  
             # only keep species with atomic number <= 468 (remove dummy species used by krome)
