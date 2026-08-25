@@ -4,11 +4,11 @@
 #except the following files
 !.gitignore
 !train.py
-!data/
-!docs/
-!input
-!MACE_fortran
-!src
+!data/*
+!docs/*
+!input/*
+!src/mace/*
+!src/mace/CSE_0D/*
 !load&test.ipynb
 !MACE_to_Fortran.py
 !MACE.png
