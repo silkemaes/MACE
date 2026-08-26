@@ -253,7 +253,7 @@ class Solver(nn.Module):
             raise ValueError(f"Physical input tensor p must have shape [B, T, p_dim] matching abundance tensor n_0 {n_0.shape}, but got {p.shape}")
         if tstep.shape[0] != B or tstep.shape[1] != T:
             raise ValueError(f"Timestep tensor tstep must have shape [B, T] matching abundance tensor n_0 {n_0.shape}, but got {tstep.shape}")
-
+        print(p)
         # Build encoder input
         _mem("Building encoder input with shape")
         if self.g_nn:
@@ -262,6 +262,7 @@ class Solver(nn.Module):
         else:
             # Concatenate the abundances n_0 and physical input p to x_0, with shape [B, T, n_dim + p_dim]
             x_0 = torch.cat((p, n_0), axis=-1)  # type: ignore
+            p = p.to(self.DEVICE)
 
         x_0 = x_0.to(self.DEVICE)
         tstep = tstep.to(self.DEVICE)
@@ -269,7 +270,7 @@ class Solver(nn.Module):
         _mem("flattening input tensors for encoder...")
         # Flatten the batch and time dimensions for the encoder
         x_0_flat = x_0.reshape(B * T, -1)
-        if self.g_nn: p_flat = p.reshape(B * T, -1)
+        p_flat = p.reshape(B * T, -1)
         tstep_flat = tstep.reshape(B * T, 1)
         t_start = torch.zeros_like(tstep_flat[:,0])
         t_end = tstep_flat[:, 0]
@@ -291,7 +292,7 @@ class Solver(nn.Module):
             t_end=t_end,
         )
         # check the health of the input data
-        _log_ode_inputs(y0=y0, t_eval=tstep_flat, t_start=t_start, t_end=t_end, p_args=p_flat if self.g_nn else None)
+        _log_ode_inputs(y0=y0, t_eval=tstep_flat, t_start=t_start, t_end=t_end, p_args=p_flat)
 
         _mem("solving initial value problem...")
         # Solve initial value problem. Details are set in the __init__() of this class.

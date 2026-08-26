@@ -848,6 +848,8 @@ class PhantomData(Dataset):
                 )
             self.idxs = utils.generate_random_numbers(nb_samples, 0, len(path_train))
             self.path = path_train[self.idxs]
+            #(debug) force specific sample for reproducibility
+            self.path = ['/STER/hydroModels/camille/phantom/macetraining/3d/v17-5_5e7_a20/chem_trace/322678.chem']
         else:
             if nb_valid > len(path_valid):
                 raise ValueError(
