@@ -21,6 +21,71 @@ def _mem(tag=""):
     rss_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss  # Linux: KB
     print(f"[MEM] {tag} maxrss={rss_kb/1024/1024:.3f} GB", flush=True)
 
+
+def _tensor_stats(name, x, eps=1e-20):
+    x_det = x.detach()
+    x_cpu = x_det.to("cpu")
+    flat = x_cpu.reshape(-1)
+
+    total = flat.numel()
+    finite_mask = torch.isfinite(flat)
+    finite_n = int(finite_mask.sum().item())
+    nan_n = int(torch.isnan(flat).sum().item())
+    inf_n = int(torch.isinf(flat).sum().item())
+
+    if finite_n > 0:
+        f = flat[finite_mask]
+        vmin = float(f.min().item())
+        vmax = float(f.max().item())
+        vmean = float(f.mean().item())
+        vstd = float(f.std(unbiased=False).item()) if f.numel() > 1 else 0.0
+        p01 = float(torch.quantile(f, 0.01).item())
+        p50 = float(torch.quantile(f, 0.50).item())
+        p99 = float(torch.quantile(f, 0.99).item())
+        abs_small = int((f.abs() < eps).sum().item())
+        nonpos = int((f <= 0).sum().item())
+    else:
+        vmin = vmax = vmean = vstd = float("nan")
+        p01 = p50 = p99 = float("nan")
+        abs_small = 0
+        nonpos = 0
+
+    print(
+        f"[ODE-IN] {name}: "
+        f"shape={tuple(x_det.shape)} dtype={x_det.dtype} device={x_det.device} "
+        f"numel={total} finite={finite_n} nan={nan_n} inf={inf_n} "
+        f"min={vmin:.6e} p01={p01:.6e} p50={p50:.6e} p99={p99:.6e} max={vmax:.6e} "
+        f"mean={vmean:.6e} std={vstd:.6e} "
+        f"|x|<eps({eps:.1e})={abs_small} <=0={nonpos}",
+        flush=True,
+    )
+
+
+def _log_ode_inputs(y0, t_eval, t_start, t_end, p_args=None):
+    print("[ODE-IN] ----- begin pre-solve diagnostics -----", flush=True)
+    _tensor_stats("y0", y0)
+    _tensor_stats("t_eval", t_eval)
+    _tensor_stats("t_start", t_start)
+    _tensor_stats("t_end", t_end)
+
+    if p_args is not None:
+        _tensor_stats("p_args", p_args)
+
+    # Extra dt diagnostics for your case
+    dt = t_end - t_start
+    _tensor_stats("dt=t_end-t_start", dt)
+
+    dt_cpu = dt.detach().to("cpu").reshape(-1)
+    finite_dt = dt_cpu[torch.isfinite(dt_cpu)]
+    if finite_dt.numel() > 0:
+        near_zero = int((finite_dt.abs() < 1e-14).sum().item())
+        nonpos = int((finite_dt <= 0).sum().item())
+        print(
+            f"[ODE-IN] dt checks: finite={finite_dt.numel()} near_zero(<1e-14)={near_zero} nonpositive={nonpos}",
+            flush=True,
+        )
+    print("[ODE-IN] ----- end pre-solve diagnostics -----", flush=True)
+
 class Solver(nn.Module):
     '''
     The Solver class presents the full architecture of MACE.
@@ -218,15 +283,20 @@ class Solver(nn.Module):
 
 
         # Create initial value problem
+        y0 = z_0.to(self.DEVICE)
         problem = to.InitialValueProblem(
-            y0=z_0.to(self.DEVICE),
+            y0=y0,
             t_eval=tstep_flat,
             t_start=t_start,
             t_end=t_end,
         )
+        # check the health of the input data
+        _log_ode_inputs(y0=y0, t_eval=tstep_flat, t_start=t_start, t_end=t_end, p_args=p_flat if self.g_nn else None)
+
         _mem("solving initial value problem...")
         # Solve initial value problem. Details are set in the __init__() of this class.
         tic = time()
+        print(f"Exact shape of y0: {z_0.to(self.DEVICE).shape}, t_eval: {tstep_flat.shape}, t_start: {t_start.shape}, t_end: {t_end.shape}", flush=True)
         solution = self.jit_solver.solve(problem, args=p_flat) if self.g_nn else self.jit_solver.solve(problem)
         toc = time()
         solve_time = toc - tic
