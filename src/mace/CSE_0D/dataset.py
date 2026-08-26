@@ -933,7 +933,9 @@ class PhantomData(Dataset):
         '''
         mod = Phantommod(self.path[idx], data=self.datapath)
         delta_t, n, p = mod.split_in_0D()
-        print(f"delta_t: {delta_t}, n: {n}, p: {p}")
+        print(f"original delta_t: {delta_t}")
+        print(f"original n: {n}")
+        print(f"original p: {p}")
 
         ## physical parameters
         p_transf = np.empty_like(p)
@@ -950,6 +952,8 @@ class PhantomData(Dataset):
 
         ## timesteps
         delta_t_transf = delta_t / self.dt_max * self.dt_fract  ## scale to [0,1] and multiply with dt_fract
+        print(f"self.dt_max: {self.dt_max}")
+        print(f"self.dt_fract: {self.dt_fract}")
 
         return torch.from_numpy(n_transf), torch.from_numpy(
             p_transf), torch.from_numpy(delta_t_transf)
