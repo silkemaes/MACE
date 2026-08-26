@@ -933,6 +933,7 @@ class PhantomData(Dataset):
         '''
         mod = Phantommod(self.path[idx], data=self.datapath)
         delta_t, n, p = mod.split_in_0D()
+        print(f"delta_t: {delta_t}, n: {n}, p: {p}")
 
         ## physical parameters
         p_transf = np.empty_like(p)
