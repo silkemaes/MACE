@@ -132,7 +132,6 @@ def get_test_data(data_type,
                       nb_test=meta['nb_test'],
                       batch_size=1,
                       train=train,
-                      fraction=0.7,
                       cutoff=1e-20,
                       inpackage=inpackage)
 
@@ -222,7 +221,6 @@ class CSEdata(Dataset):
                  inpackage=False,
                  train=True,
                  datapath='train',
-                 fraction=0.7,
                  cutoff=1e-20):
         '''
         Initialising the attributes of the dataset.
@@ -231,10 +229,9 @@ class CSEdata(Dataset):
             - nb_samples [int]: number of 1D models to use for training & validation
             - dt_fract [float]: fraction of the timestep to use, depends on number of latent species 
                 (see latent dynamics in paper)
+            - nb_valid [int]: number of 1D models to use for validation
             - nb_test [int]: number of 1D models to uses for testing
             - train [boolean]: True if training, False if testing
-            - fraction [float]: fraction of the dataset to use for training, 1-fraction is used for validation,
-                default = 0.7
             - cutoff [float]: cutoff value for the abundances, depends on tolerances of classical chemistry kinetics solver, 
                 default = 1e-20
             - scale [str]: type of scaling to use, default = 'norm'
@@ -258,8 +255,6 @@ class CSEdata(Dataset):
                 --> self.mins, self.maxs
             6. Set the cutoff value for the abundances 
                 --> self.cutoff
-            7. Set the fraction of the dataset to use for training 
-                --> self.fraction
             8. Split the dataset in train and test set 
         '''
         print('> Train state:', train)
@@ -323,17 +318,15 @@ class CSEdata(Dataset):
         ])
 
         self.cutoff = cutoff
-        self.fraction = fraction
         self.train = train
         self.inpackage = inpackage
         self.datapath = datapath
 
         ## Split in train and test set
-        N = int(self.fraction * len(self.path))
         if self.train:
-            self.path = self.path[:N]
+            self.path = self.path[:nb_valid]
         else:
-            self.path = self.path[N:]
+            self.path = self.path[nb_valid:]
 
         print('Selected paths:', len(self.path))
         print('\n')
@@ -779,19 +772,17 @@ class PhantomData(Dataset):
                  inpackage=False,
                  train=True,
                  datapath='train',
-                 fraction=0.7,
                  cutoff=1e-20):
         '''
         Initialising the attributes of the dataset.
 
         Input:
-            - nb_samples [int]: number of 1D models to use for training & validation
+            - nb_samples [int]: number of models to use for training & validation
             - dt_fract [float]: fraction of the timestep to use, depends on number of latent species 
                 (see latent dynamics in paper)
-            - nb_test [int]: number of 1D models to uses for testing
+            - nb_valid [int]: number of models to use for validation
+            - nb_test [int]: number of models to uses for testing
             - train [boolean]: True if training, False if testing
-            - fraction [float]: fraction of the dataset to use for training, 1-fraction is used for validation,
-                default = 0.7
             - cutoff [float]: cutoff value for the abundances, depends on tolerances of classical chemistry kinetics solver, 
                 default = 1e-20
             - scale [str]: type of scaling to use, default = 'norm'
@@ -802,7 +793,7 @@ class PhantomData(Dataset):
 
         Structure:
             1. Load the paths of the models
-            2. Select a certain number of paths, given by nb_samples 
+            2. Select a certain number of paths, given by nb_samples, or validation paths given by nb_valid
                 --> self.path
             3. Select a random test path, that is not in the training set 
                 --> self.testpath
@@ -815,9 +806,6 @@ class PhantomData(Dataset):
                 --> self.mins, self.maxs
             6. Set the cutoff value for the abundances 
                 --> self.cutoff
-            7. Set the fraction of the dataset to use for training 
-                --> self.fraction
-            8. Split the dataset in train and test set 
         '''
         print('> Train state:', train)
 
@@ -834,9 +822,6 @@ class PhantomData(Dataset):
         path_test = np.atleast_1d(np.loadtxt(loc + 'data/path_test.txt', dtype=str))
         # check that all paths exist
         paths = np.concatenate((path_train, path_valid, path_test))
-        #for p in paths:
-        #    if not os.path.exists(p):
-        #        raise FileNotFoundError(f'Error: sample {p} does not exist, please check the the path files.')
         print('Found samples:', len(paths))
 
         ## select a certain number of paths, given by nb_samples or nb_valid
@@ -848,8 +833,6 @@ class PhantomData(Dataset):
                 )
             self.idxs = utils.generate_random_numbers(nb_samples, 0, len(path_train))
             self.path = path_train[self.idxs]
-            #(debug) force specific sample for reproducibility
-            self.path = ['/STER/hydroModels/camille/phantom/macetraining/3d/v17-5_5e7_a20/chem_trace/322678.chem']
         else:
             if nb_valid > len(path_valid):
                 raise ValueError(
@@ -900,7 +883,6 @@ class PhantomData(Dataset):
         ])
 
         self.cutoff = cutoff
-        self.fraction = fraction
         self.train = train
         self.inpackage = inpackage
         self.datapath = datapath
@@ -933,9 +915,6 @@ class PhantomData(Dataset):
         '''
         mod = Phantommod(self.path[idx], data=self.datapath)
         delta_t, n, p = mod.split_in_0D()
-        print(f"original delta_t: {delta_t}")
-        print(f"original n: {n}")
-        print(f"original p: {p}")
 
         ## physical parameters
         p_transf = np.empty_like(p)
@@ -952,8 +931,6 @@ class PhantomData(Dataset):
 
         ## timesteps
         delta_t_transf = delta_t / self.dt_max * self.dt_fract  ## scale to [0,1] and multiply with dt_fract
-        print(f"self.dt_max: {self.dt_max}")
-        print(f"self.dt_fract: {self.dt_fract}")
 
         return torch.from_numpy(n_transf), torch.from_numpy(
             p_transf), torch.from_numpy(delta_t_transf)
