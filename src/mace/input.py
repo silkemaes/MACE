@@ -39,7 +39,6 @@ class Input():
         self.n_dim       = 468
         self.nb_hidden   = int(inputfile['nb_hidden'])
         self.ae_type     = str(inputfile['ae_type'])
-        self.nb_valid     = int(inputfile['nb_valid'])
         self.nb_test     = int(inputfile['nb_test'])  
         if 'data_type' not in inputfile.keys():
             self.data_type = 'CSE'
