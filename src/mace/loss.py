@@ -218,7 +218,7 @@ class Loss():
             grd = torch.from_numpy(np.array([0.]))
 
         if 'idn' in self.losstype:
-            idn = idn_loss(n[:-1], p, model)   /self.norm['idn']* self.fract['idn']
+            idn = idn_loss(n, p, model)   /self.norm['idn']* self.fract['idn']
         if 'idn' not in self.losstype:
             idn = torch.from_numpy(np.array([0.]))
 
@@ -227,9 +227,7 @@ class Loss():
         if 'elm' not in self.losstype:
             elm = torch.from_numpy(np.array([0.]))
 
-        # print(grd) 
         loss = abs.mean() + grd.mean() + idn.mean() + elm.mean()
-        # print(loss)
         self.adjust_loss('tot', loss.item())
         self.adjust_loss('abs', abs.mean().item())
         self.adjust_loss('grd', grd.mean().item())
@@ -289,8 +287,9 @@ def grd_loss(x,x_hat):
     '''
     Return the squared gradient loss per x_i, using the gradient function of PyTorch. 
     '''
-
-    loss = (torch.gradient(x)[0] - torch.gradient(x_hat[0])[0])**2
+    gx = torch.gradient(x, dim=2)[0]
+    gx_hat = torch.gradient(x_hat, dim=2)[0]
+    loss = (gx - gx_hat)**2
     
     return loss
 
@@ -335,8 +334,6 @@ def elm_loss(z_hat,model, M):
     C = model.g.C
     dt_dim = z_hat.shape[0]
     jac_D = jacobian(D,z_hat, strategy='forward-mode', vectorize=True).view(468,dt_dim,dt_dim,-1)
-
-    # print(M.shape, A.shape, B.shape, C.shape, jac_D.shape)
     
     L0 = torch.einsum("ZN , Nbci , i   -> bcZ  ", M , jac_D , C).mean()
     L1 = torch.einsum("ZN , Nbci , ij  -> bcZj ", M , jac_D , A).mean()

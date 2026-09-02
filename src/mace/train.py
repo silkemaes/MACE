@@ -69,15 +69,14 @@ def train(model,
         
         model.train()
         nb, status = run_epoch(data_loader, model, trainloss, training=True)
-        
         ## save status
         model.set_status(status/4, 'train')
 
         ## ---- Validating ----
 
-        model.eval() ## zelfde als torch.no_grad
-        nb, status = run_epoch(test_loader, model, testloss, training=False)
-        
+        model.eval() ## same as torch.no_grad
+        with torch.no_grad():
+            nb, status = run_epoch(test_loader, model, testloss, training=False)
         ## save status
         model.set_status(status/4, 'test')
         

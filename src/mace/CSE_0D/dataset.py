@@ -21,19 +21,184 @@ NOTE:
 This script only works for this specific dataset.
 
 '''
+import json
+import os
+import sys
 
-
-import numpy            as np
+import numpy as np
 import torch
-from torch.utils.data   import Dataset, DataLoader
-import src.mace.utils   as utils
+from torch.utils.data import Dataset, DataLoader
+import src.mace.utils as utils
 from pathlib import Path
 
-specs_dict, idx_specs = utils.get_specs()
+specs_dict = utils.get_specs()
+
+AU_to_cm = 1.495978707e13
+
+def get_data(data_type, nb_samples, dt_fract, nb_test, inpackage, batch_size,
+             kwargs):
+    '''
+    Prepare the data for training and validating the emulator.
+
+    1. Make PyTorch dataset for the training and validation set.
+    2. Make PyTorch dataloader for the 
+        training 
+            - batch size = batch_size
+            - shuffle = True
+        and validation set.
+            - batch size = 1
+            - shuffle = False 
+
+    kwargs = {'num_workers': 1, 'pin_memory': True} for the DataLoader        
+    '''
+    ## Make PyTorch dataset
+    if data_type == '1DCSE':
+        data_class = CSEdata
+    elif data_type == 'Phantom':
+        data_class = PhantomData
+    else:
+        print(
+            'Error: data_type not recognised (Phantom or 1DCSE), defaulting to 1DCSE'
+        )
+        data_class = CSEdata
+    train = data_class(nb_samples=nb_samples,
+                       dt_fract=dt_fract,
+                       nb_test=nb_test,
+                       inpackage=inpackage,
+                       train=True,
+                       datapath='train')
+    valid = data_class(nb_samples=nb_samples,
+                       dt_fract=dt_fract,
+                       nb_test=nb_test,
+                       inpackage=inpackage,
+                       train=False,
+                       datapath='train')
+
+    print('Dataset:')
+    print('------------------------------')
+    print('  total # of samples:', len(train) + len(valid))
+    print('#   training samples:', len(train))
+    print('# validation samples:', len(valid))
+    print('               ratio:',
+          np.round(len(valid) / (len(train) + len(valid)), 2))
+    print('     #  test samples:', train.nb_test)
+
+    data_loader = DataLoader(dataset=train,
+                             batch_size=batch_size,
+                             shuffle=True,
+                             **kwargs)
+    test_loader = DataLoader(dataset=valid,
+                             batch_size=1,
+                             shuffle=False,
+                             **kwargs)
+
+    return train, valid, data_loader, test_loader
+
+
+def get_test_data(data_type,
+                  testpath,
+                  meta,
+                  inpackage=False,
+                  train=False,
+                  datapath='test'):
+    '''
+    Get the data of the test 1D model, given a path and meta-data from a training setup.
+
+    Similar procedure as in the __getitem__() of the CSEdata class.
+
+    The specifics of the 1D test model are stored in the 'name' dictionary.
+
+    Input:
+        - testpath [str]: path of the 1D test model
+        - meta [dict]: meta data from the training setup
+    '''
+    if data_type == '1DCSE':
+        data_class = CSEdata
+        mod_class = CSEmod
+    elif data_type == 'Phantom':
+        data_class = PhantomData
+        mod_class = Phantommod
+    else:
+        print('Error: data_type not recognised, defaulting to 1DCSE')
+        data_class = CSEdata
+        mod_class = CSEmod
+
+    data = data_class(nb_samples=meta['nb_samples'],
+                      dt_fract=meta['dt_fract'],
+                      nb_test=meta['nb_test'],
+                      train=train,
+                      fraction=0.7,
+                      cutoff=1e-20,
+                      inpackage=inpackage)
+
+    if data_type == 'Phantom':
+        # no need for input data for the phantom models
+        mod = mod_class(testpath, datapath)
+        name = {'path': testpath, 'name': testpath.split('/')[-1]}
+    else:
+        mod = mod_class(testpath, inpackage=inpackage, data=datapath)
+
+        if inpackage:
+            input = mod.get_input()
+
+        if data_class == CSEdata:
+            # specifics of the 1DCSE model
+            name = {
+                'path': testpath[49:-57],
+                'name': mod.name,
+                'Tstar': mod.Tstar,
+                'Mdot': mod.Mdot,
+                'v': mod.v,
+                'eps': mod.eps
+            }
+    delta_t, n, p = mod.split_in_0D()
+
+    ## physical parameters
+    p_transf = np.empty_like(p)
+    for j in range(p.shape[1]):
+        p_transf[:, j] = utils.normalise(np.log10(p[:, j]), data.mins[j],
+                                         data.maxs[j])
+
+    ## abundances
+    n_transf = np.clip(n, data.cutoff, None)
+    n_transf = np.log10(n_transf)
+    n_transf = utils.normalise(
+        n_transf, data.n_min,
+        data.n_max)  ## max boundary = rel. abundance of He
+
+    ## timesteps
+    delta_t_transf = delta_t / data.dt_max * data.dt_fract  ## scale to [0,1] and multiply with dt_fract
+
+    return mod, (torch.from_numpy(n_transf), torch.from_numpy(p_transf),
+                 torch.from_numpy(delta_t_transf)), name
+
+
+def get_abs(n):
+    '''
+    Get the abundances, given the normalised abundances.
+
+    This function reverses the normalisation of the abundances.
+    '''
+    cutoff = 1e-20
+    nmin = np.log10(cutoff)
+    nmax = np.log10(0.85e-1)
+
+    return 10**utils.unscale(n, nmin, nmax)
+
+
+def get_phys(p_transf, dataset):
+    '''
+    Reverse the normalisation of the physical parameters.
+    '''
+    p = torch.empty_like(p_transf)
+    for j in range(p_transf.shape[1]):
+        p[:, j] = 10**utils.unscale(p_transf[:, j], dataset.mins[j],
+                                    dataset.maxs[j])
+
+    return p
 
 
 ### ----------------------- 1D CSE models ----------------------- ###
-
 
 
 class CSEdata(Dataset):
@@ -42,7 +207,16 @@ class CSEdata(Dataset):
 
     More specifically, this Dataset uses 1D CSE models, and splits them in 0D models.
     '''
-    def __init__(self, nb_samples,dt_fract, nb_test, inpackage = False, train=True, datapath = 'train', fraction=0.7, cutoff = 1e-20):
+
+    def __init__(self,
+                 nb_samples,
+                 dt_fract,
+                 nb_test,
+                 inpackage=False,
+                 train=True,
+                 datapath='train',
+                 fraction=0.7,
+                 cutoff=1e-20):
         '''
         Initialising the attributes of the dataset.
 
@@ -81,18 +255,22 @@ class CSEdata(Dataset):
                 --> self.fraction
             8. Split the dataset in train and test set 
         '''
-        print('> Train state:',train)
+        print('> Train state:', train)
 
         # loc = '/STER/silkem/MACE/'
-        loc = str(Path().cwd())+'/'
-        paths = np.loadtxt(loc+'data/paths_train_data.txt', dtype=str)
+        loc = str(Path().cwd()) + '/'
+        paths = np.loadtxt(loc + 'data/paths_train_data.txt', dtype=str)
         print('Found paths:', len(paths))
 
         ## select a certain number of paths, given by nb_samples
         np.random.seed(0)
+        if nb_samples > len(paths):
+            raise ValueError(
+                'Error: The dataset provided in paths_train_data.txt contains less data than required by nb_samples, please review the input files.'
+            )
         self.idxs = utils.generate_random_numbers(nb_samples, 0, len(paths))
+        print(self.idxs)
         self.path = paths[self.idxs]
-        
 
         ## select a random test path, that is not in the training set
         # self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
@@ -106,30 +284,36 @@ class CSEdata(Dataset):
             if self.test_idx not in self.idxs:
                 count += 1
                 self.testpath.append(paths[self.test_idx][0])
-            print('count:',count, '\r', end = '')
+            print('count:', count, '\r', end='')
         print('Selected test paths:', len(self.testpath))
 
         # print('test path:', self.testpath)
 
-        self.M = np.load(loc+'data/M_rate16.npy')       
+        self.M = np.load(loc + 'data/M_rate16.npy')
 
         ## These values are the results from a search through the full dataset; see 'minmax.json' file
-        self.logρ_min = np.log10(0.008223)
-        self.logρ_max = np.log10(5009000000.0)
+        self.logrho_min = np.log10(0.008223)
+        self.logrho_max = np.log10(5009000000.0)
         self.logT_min = np.log10(10.)
-        self.logT_max = np.log10(1851.0)   
-        y = 1.e-100   ## this number is added to xi, since it contains zeros    
-        self.logδ_min = np.log10(y)
-        self.logδ_max = np.log10(y+0.9999)
+        self.logT_max = np.log10(1851.0)
+        y = 1.e-100  ## this number is added to xi, since it contains zeros
+        self.logdelta_min = np.log10(y)
+        self.logdelta_max = np.log10(y + 0.9999)
         self.Av_min = np.log10(2.141e-05)
         self.Av_max = np.log10(1246.0)
         self.dt_max = 434800000000.0
         self.dt_fract = dt_fract
         self.n_min = np.log10(cutoff)
-        self.n_max = np.log10(0.85e-1)    ## initial abundance He
+        self.n_max = np.log10(0.85e-1)  ## initial abundance He
 
-        self.mins = np.array([self.logρ_min, self.logT_min, self.logδ_min, self.Av_min, self.n_min, self.dt_fract])
-        self.maxs = np.array([self.logρ_max, self.logT_max, self.logδ_max, self.Av_max, self.n_max, self.dt_max])
+        self.mins = np.array([
+            self.logrho_min, self.logT_min, self.logdelta_min, self.Av_min,
+            self.n_min, self.dt_fract
+        ])
+        self.maxs = np.array([
+            self.logrho_max, self.logT_max, self.logdelta_max, self.Av_max,
+            self.n_max, self.dt_max
+        ])
 
         self.cutoff = cutoff
         self.fraction = fraction
@@ -137,8 +321,8 @@ class CSEdata(Dataset):
         self.inpackage = inpackage
         self.datapath = datapath
 
-        ## Split in train and test set        
-        N = int(self.fraction*len(self.path))
+        ## Split in train and test set
+        N = int(self.fraction * len(self.path))
         if self.train:
             self.path = self.path[:N]
         else:
@@ -146,8 +330,7 @@ class CSEdata(Dataset):
 
         print('Selected paths:', len(self.path))
         print('\n')
-            
-            
+
     def __len__(self):
         '''
         Return the length of the dataset (number of 1D models used for training or validation).
@@ -167,133 +350,38 @@ class CSEdata(Dataset):
             - physical parameters (p) are
                 - np.log10 is taken
                 - normalised to [0,1]
-            - timesteps (Δt) are 
+            - timesteps (delta_t) are 
                 - scaled to [0,1]
                 - multiplied with dt_fract
 
         Returns the preprocessed data in torch tensors.
         '''
 
-        mod = CSEmod(self.path[idx], inpackage = self.inpackage, data = self.datapath)
+        mod = CSEmod(self.path[idx],
+                     inpackage=self.inpackage,
+                     data=self.datapath)
 
-        Δt, n, p = mod.split_in_0D()
+        delta_t, n, p = mod.split_in_0D()
 
         ## physical parameters
         p_transf = np.empty_like(p)
         for j in range(p.shape[1]):
             # print(j)
-            p_transf[:,j] = utils.normalise(np.log10(p[:,j]), self.mins[j], self.maxs[j])
+            p_transf[:, j] = utils.normalise(np.log10(p[:, j]), self.mins[j],
+                                             self.maxs[j])
 
         ## abundances
         n_transf = np.clip(n, self.cutoff, None)
         n_transf = np.log10(n_transf)
-        n_transf = utils.normalise(n_transf, self.n_min, self.n_max)       ## max boundary = rel. abundance of He
+        n_transf = utils.normalise(
+            n_transf, self.n_min,
+            self.n_max)  ## max boundary = rel. abundance of He
 
         ## timesteps
-        Δt_transf = Δt/self.dt_max * self.dt_fract             ## scale to [0,1] and multiply with dt_fract
+        delta_t_transf = delta_t / self.dt_max * self.dt_fract  ## scale to [0,1] and multiply with dt_fract
 
-        return torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)
-    
-
-def get_data( nb_samples, dt_fract, nb_test,inpackage, batch_size, kwargs):
-    '''
-    Prepare the data for training and validating the emulator.
-
-    1. Make PyTorch dataset for the training and validation set.
-    2. Make PyTorch dataloader for the 
-        training 
-            - batch size = batch_size
-            - shuffle = True
-        and validation set.
-            - batch size = 1
-            - shuffle = False 
-
-    kwargs = {'num_workers': 1, 'pin_memory': True} for the DataLoader        
-    '''
-    ## Make PyTorch dataset
-    train = CSEdata(nb_samples=nb_samples, dt_fract=dt_fract, nb_test = nb_test, inpackage = inpackage, train = True , datapath='train')
-    valid = CSEdata(nb_samples=nb_samples, dt_fract=dt_fract, nb_test = nb_test, inpackage = inpackage, train = False, datapath='train')
-    
-    print('Dataset:')
-    print('------------------------------')
-    print('  total # of samples:',len(train)+len(valid))
-    print('#   training samples:',len(train))
-    print('# validation samples:',len(valid) )
-    print('               ratio:',np.round(len(valid)/(len(train)+len(valid)),2))
-    print('     #  test samples:',train.nb_test)
-
-    data_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=True ,  **kwargs)
-    test_loader = DataLoader(dataset=valid , batch_size=1 , shuffle=False,  **kwargs)
-
-    return train, valid, data_loader, test_loader
-
-
-def get_test_data(testpath, meta, inpackage = False, train = False, datapath = 'test'):
-    '''
-    Get the data of the test 1D model, given a path and meta-data from a training setup.
-
-    Similar procedure as in the __getitem__() of the CSEdata class.
-
-    The specifics of the 1D test model are stored in the 'name' dictionary.
-
-    Input:
-        - testpath [str]: path of the 1D test model
-        - meta [dict]: meta data from the training setup
-    '''
-    
-    data = CSEdata(nb_samples=meta['nb_samples'],dt_fract=meta['dt_fract'],nb_test= meta['nb_test'], train=train, fraction=0.7, cutoff = 1e-20, inpackage=inpackage)
-    
-    mod = CSEmod(testpath, inpackage, datapath)
-
-    if inpackage:
-        input = mod.get_input()
-
-    Δt, n, p = mod.split_in_0D()
-
-    name = {'path' : testpath[49:-57],
-            'name' : mod.name,
-            'Tstar' : mod.Tstar,
-            'Mdot' : mod.Mdot,
-            'v' : mod.v,
-            'eps' : mod.eps}
-
-    ## physical parameters
-    p_transf = np.empty_like(p)
-    for j in range(p.shape[1]):
-        p_transf[:,j] = utils.normalise(np.log10(p[:,j]), data.mins[j], data.maxs[j])
-
-    ## abundances
-    n_transf = np.clip(n, data.cutoff, None)
-    n_transf = np.log10(n_transf)
-    n_transf = utils.normalise(n_transf, data.n_min, data.n_max)       ## max boundary = rel. abundance of He
-
-    ## timesteps
-    Δt_transf = Δt/data.dt_max * data.dt_fract             ## scale to [0,1] and multiply with dt_fract
-
-    return mod, (torch.from_numpy(n_transf), torch.from_numpy(p_transf), torch.from_numpy(Δt_transf)), name
-
-
-def get_abs(n):
-    '''
-    Get the abundances, given the normalised abundances.
-
-    This function reverses the normalisation of the abundances.
-    '''
-    cutoff = 1e-20
-    nmin = np.log10(cutoff)
-    nmax = np.log10(0.85e-1)
-
-    return 10**utils.unscale(n,nmin, nmax)
-
-def get_phys(p_transf,dataset):
-    '''
-    Reverse the normalisation of the physical parameters.
-    '''
-    p = torch.empty_like(p_transf)
-    for j in range(p_transf.shape[1]):
-        p[:,j] = 10**utils.unscale(p_transf[:,j],dataset.mins[j], dataset.maxs[j])
-    
-    return p
+        return torch.from_numpy(n_transf), torch.from_numpy(
+            p_transf), torch.from_numpy(delta_t_transf)
 
 
 
@@ -302,11 +390,13 @@ class CSEmod():
     Class to load a 1D CSE model, calculated with the classical fortan code.
     For more info on this model, see https://github.com/MarieVdS/rate22_cse_code.
     '''
-    def __init__(self, path, inpackage = False, data = 'test'):
+
+    def __init__(self, path, inpackage=False, data='test'):
         '''
         Load the 1D CSE model, given a path.
 
-        The abundances are stored in a file 'csfrac_smooth.out', 
+        The abundances are stored in a file '
+        .out', 
         the physical parameters are stored in a file 'csphyspar_smooth.out'.
         The input of the 1D CSE model is stored in a file 'inputChemistry_*.txt'.
 
@@ -326,51 +416,57 @@ class CSEmod():
             self.path = '/STER/silkem/CHEM/out/' + path[34:-17]
             self.model = path[34:-51]
             self.name = path[-43:-18]
-            inp_path = self.path[:-26]+ 'inputChemistry_'+self.name+'.txt'
-        
-        if chempy == True:
-            self.path = path[:-17]
-            self.model = path[21:-51]
-            self.name = path[-43:-18]
-            inp_path = self.path[:-26]+ 'inputChemistry_'+self.name+'.txt'
+            inp_path = self.path[:-26] + 'inputChemistry_' + self.name + '.txt'
+
+        #if chempy == True:
+        #    self.path = path[:-17]
+        #    self.model = path[21:-51]
+        #    self.name = path[-43:-18]
+        #    inp_path = self.path[:-26]+ 'inputChemistry_'+self.name+'.txt'
 
         if inpackage:
             if data == 'test':
                 parentpath = str(Path(__file__).parent)[:-15]
                 print(parentpath)
-                self.path = parentpath + 'data/test/' + path +'/'
+                self.path = parentpath + 'data/test/' + path + '/'
                 self.model = path[-62:-1]
                 self.name = path
-                inp_path = self.path+'input.txt'
+                inp_path = self.path + 'input.txt'
             if data == 'train':
                 parentpath = str(Path(__file__).parent)[:-15]
-                self.path = parentpath + 'data/train/' + path[:-18] +'/'
+                self.path = parentpath + 'data/train/' + path + '/'
                 self.model = self.path
                 self.name = self.path
-                inp_path = self.path+'input.txt'
-                
+                inp_path = self.path + 'input.txt'
+                print('inp_path:', inp_path)
 
         abs_path = 'csfrac_smooth.out'
         phys_path = 'csphyspar_smooth.out'
 
         ## retrieve input
-        self.Rstar, self.Tstar, self.Mdot, self.v, self.eps, self.rtol, self.atol = read_input_1Dmodel(inp_path)
+        self.Rstar, self.Tstar, self.Mdot, self.v, self.eps, self.rtol, self.atol = read_input_1Dmodel(
+            inp_path)
 
         ## retrieve abundances
-        abs = read_data_1Dmodel(self.path+abs_path)
+        abs = read_data_1Dmodel(self.path + abs_path)
         self.n = abs
 
         ## retrieve physical parameters
-        arr = np.loadtxt(self.path+phys_path, skiprows=4, usecols=(0,1,2,3,4))
-        self.radius, self.dens, self.temp, self.Av, self.xi = arr[:,0], arr[:,1], arr[:,2], arr[:,3], arr[:,4]
-        self.time = self.radius/(self.v) 
-                
+        arr = np.loadtxt(self.path + phys_path,
+                         skiprows=4,
+                         usecols=(0, 1, 2, 3, 4))
+        self.radius, self.dens, self.temp, self.Av, self.xi = arr[:,
+                                                                  0], arr[:,
+                                                                          1], arr[:,
+                                                                                  2], arr[:,
+                                                                                          3], arr[:,
+                                                                                                  4]
+        self.time = self.radius / (self.v)
 
     def __len__(self):
         '''
         Return the length of the time array, which indicates the length of the 1D model.
         '''
-
         return len(self.time)
 
     def get_time(self):
@@ -378,19 +474,19 @@ class CSEmod():
         Return the time array of the 1D model.
         '''
         return self.time
-    
+
     def get_phys(self):
         '''
         Return the physical parameters of the 1D model.
         '''
         return self.dens, self.temp, self.xi, self.Av
-    
+
     def get_abs(self):
         '''
         Return the abundances of the 1D model.
         '''
         return self.n
-    
+
     def get_abs_spec(self, spec):
         '''
         Return the abundance of a specific species of the 1D model.
@@ -405,8 +501,8 @@ class CSEmod():
         '''
         Return the density of the 1D model.
         '''
-        return self.dens 
-    
+        return self.dens
+
     def get_temp(self):
         '''
         Return the temperature of the 1D model.
@@ -418,7 +514,7 @@ class CSEmod():
         Return the visual extinction of the 1D model.
         '''
         return self.Av
-    
+
     def get_xi(self):
         '''
         Return the radiation parameter of the 1D model.
@@ -430,7 +526,7 @@ class CSEmod():
         Return the velocity of the 1D model.
         '''
         return self.v
-    
+
     def get_path(self):
         '''
         Return the path of the 1D model.
@@ -442,39 +538,45 @@ class CSEmod():
         Return the name of the 1D model.
         '''
         return self.name
-    
+
     def get_dt(self):
         '''
         Return the time steps of the 1D model.
         '''
         return self.time[1:] - self.time[:-1]
-    
+
     def split_in_0D(self):
         '''
         Split the 1D model in 0D models.
         '''
-        Δt   = self.get_dt()
+        delta_t = self.get_dt()
         n_0D = self.get_abs()
-        y    = 1.e-100  ## this number is added to xi, since it contains zeros
-        p    = np.array([self.get_dens()[:-1], self.get_temp()[:-1], self.get_xi()[:-1]+y, self.get_Av()[:-1]])
+        y = 1.e-100  ## this number is added to xi, since it contains zeros
+        p = np.array([
+            self.get_dens()[:-1],
+            self.get_temp()[:-1],
+            self.get_xi()[:-1] + y,
+            self.get_Av()[:-1]
+        ])
 
-        return Δt.astype(np.float64), n_0D.astype(np.float64), p.T.astype(np.float64) # type: ignore
-    
+        return delta_t.astype(np.float64), n_0D.astype(np.float64), p.T.astype(
+            np.float64)  # type: ignore
+
     def get_input(self):
         print('-------------------')
         print('Input of test model')
         print('-------------------')
         print('Mdot [Msol/yr]:      ', self.Mdot)
-        print('v [km/s]:            ', self.v/1e5)
-        print('Density proxi Mdot/v:', self.Mdot/self.v)
+        print('v [km/s]:            ', self.v / 1e5)
+        print('Density proxi Mdot/v:', self.Mdot / self.v)
         print('')
-        print('Temp at 1e16 cm [K]: ', np.round(utils.temp( self.Tstar, self.eps, 1e16),2))
+        print('Temp at 1e16 cm [K]: ',
+              np.round(utils.temp(self.Tstar, self.eps, 1e16), 2))
         print('Tstar:               ', self.Tstar)
         print('eps:                 ', self.eps)
         print('-------------------\n')
 
         return self.Mdot, self.v, self.Tstar, self.eps
-        
 
 
 def read_input_1Dmodel(file_name):
@@ -487,9 +589,9 @@ def read_input_1Dmodel(file_name):
 
     Rstar = float(lines[3][9:])
     Tstar = float(lines[4][9:])
-    Mdot  = float(lines[5][8:])     ## Msol/yr
-    v     = float(lines[6][11:])    ## sec
-    eps   = float(lines[8][19:])
+    Mdot = float(lines[5][8:])  ## Msol/yr
+    v = float(lines[6][11:])  ## sec
+    eps = float(lines[8][19:])
 
     rtol = float(lines[31][7:])
     atol = float(lines[32][6:])
@@ -510,21 +612,339 @@ def read_data_1Dmodel(file_name):
         part = []
         full = None
         for line in file:
-            try:  
-                if len(line) > 1: 
+            try:
+                if len(line) > 1:
                     part.append([float(el) for el in line.split()])
             except:
                 if len(part) != 0:
-                    part = np.array(part)[:,1:]
+                    part = np.array(part)[:, 1:]
                     if full is None:
                         full = part
                     else:
-                        full = np.concatenate((full, part), axis = 1)
+                        full = np.concatenate((full, part), axis=1)
                 part = []
     return full
 
 
+##----------------------- Phantom+krome models ----------------------- ###
 
 
+class Phantommod():
+    '''
+    Class to load a phantom+krome wind model, calculated using Krome on particle paths from a phantom simulation.
+    One output file contains physical parameters and abundances for one particle at all time steps.
+    '''
+
+    def __init__(self, path, data='test'):
+        '''
+        Load the phantom model, given a path.
+
+        The abundances and physical parameters are stored in a file 'particleID.chem'.
+
+        From these paths, retrieve
+            - the abundances            --> self.n
+            - the physical parameters (for more info on the parameters, see the paper)
+                - radius                --> self.radius
+                - density               --> self.dens
+                - temperature           --> self.temp
+                - visual extinction     --> self.Av
+                - radiation parameter   --> self.xi
+            - the time steps            --> self.time
+        '''
+
+        ## retrieve abundances and physical parameters
+        self.path = path
+        abs = read_data_phantom(self.path)
+        if len(abs[:, 0]) < 10:
+            print(f'Warning: {self.path} has less than 10 time steps.')
+        self.time = abs[:, 0]
+        self.radius = abs[:,1]
+        self.dens, self.temp, self.mu, self.Av, self.xi = abs[:, 2], abs[:, 3], abs[:, 4], abs[:, 5], abs[:, 6]
+        self.n = abs[:, 7:]
+
+    def __len__(self):
+        '''
+        Return the length of the time array, which indicates the length of the 1D model.
+        '''
+
+        return len(self.time)
+
+    def get_time(self):
+        '''
+        Return the time array of the 1D model.
+        '''
+        return self.time
+
+    def get_phys(self):
+        '''
+        Return the physical parameters of the 1D model.
+        '''
+        return self.dens, self.temp, self.xi, self.Av
+
+    def get_abs(self):
+        '''
+        Return the abundances of the 1D model.
+        '''
+        return self.n
+
+    def get_dens(self):
+        '''
+        Return the density of the 1D model.
+        '''
+        return self.dens
+
+    def get_temp(self):
+        '''
+        Return the temperature of the 1D model.
+        '''
+        return self.temp
+
+    def get_Av(self):
+        '''
+        Return the visual extinction of the 1D model.
+        '''
+        return self.Av
+
+    def get_xi(self):
+        '''
+        Return the radiation parameter of the 1D model.
+        '''
+        return self.xi
+
+    def get_path(self):
+        '''
+        Return the path of the 1D model.
+        '''
+        return self.path
+
+    def get_name(self):
+        '''
+        Return the name of the 1D model.
+        '''
+        return self.name
+
+    def get_dt(self):
+        '''
+        Return the time steps of the 1D model.
+        '''
+        return self.time[1:] - self.time[:-1]
+
+    def split_in_0D(self):
+        '''
+        Split the 1D model in 0D models.
+        '''
+        delta_t = self.get_dt()
+        n_0D = self.get_abs()
+        y = 1.e-100  ## this number is added to xi, since it can contain zeros
+        p = np.array([
+            self.get_dens()[:-1],
+            self.get_temp()[:-1],
+            self.get_xi()[:-1] + y,
+            self.get_Av()[:-1] + y
+        ])
+
+        return delta_t.astype(np.float64), n_0D.astype(np.float64), p.T.astype(
+            np.float64)  # type: ignore
 
 
+def read_data_phantom(file_name):
+    '''
+    Read data text file of output abundances of phantom+krome models.
+    The data is stored in a numpy array.
+    '''
+    data = []
+    with open(file_name, 'r') as f:
+        for line in f:
+            if not line.startswith(' #'):
+                try:
+                    data.append([float(_) for _ in line.strip().split()])
+                except ValueError:
+                    print(f'Error: could not convert line to float: {line.strip()} in file {file_name}')
+    return np.array(data)
+
+
+class PhantomData(Dataset):
+    '''
+    Class to initialise the dataset to train & test emulator with phantom+Krome 
+    models split in 0D models.
+    '''
+
+    def __init__(self,
+                 nb_samples,
+                 dt_fract,
+                 nb_test,
+                 inpackage=False,
+                 train=True,
+                 datapath='train',
+                 fraction=0.7,
+                 cutoff=1e-20):
+        '''
+        Initialising the attributes of the dataset.
+
+        Input:
+            - nb_samples [int]: number of 1D models to use for training & validation
+            - dt_fract [float]: fraction of the timestep to use, depends on number of latent species 
+                (see latent dynamics in paper)
+            - nb_test [int]: number of 1D models to uses for testing
+            - train [boolean]: True if training, False if testing
+            - fraction [float]: fraction of the dataset to use for training, 1-fraction is used for validation,
+                default = 0.7
+            - cutoff [float]: cutoff value for the abundances, depends on tolerances of classical chemistry kinetics solver, 
+                default = 1e-20
+            - scale [str]: type of scaling to use, default = 'norm'
+
+        Preprocess on data:
+            - clip all abundances to cutoff
+            - take np.log10 of abudances
+
+        Structure:
+            1. Load the paths of the models
+            2. Select a certain number of paths, given by nb_samples 
+                --> self.path
+            3. Select a random test path, that is not in the training set 
+                --> self.testpath
+            4. Load the rates matrix M (matrix needed for the 'element loss', see appendix of paper)
+                (Currently not used) 
+                --> self.M
+            5. Set the min and max values of the physical parameters and abundances, 
+                resulting from a search through the full dataset; see 'minmax.json' file.
+                These values are used for normalisation of the data. 
+                --> self.mins, self.maxs
+            6. Set the cutoff value for the abundances 
+                --> self.cutoff
+            7. Set the fraction of the dataset to use for training 
+                --> self.fraction
+            8. Split the dataset in train and test set 
+        '''
+        print('> Train state:', train)
+
+        loc = str(Path().cwd()) + '/'
+        # atleast_1d to ensure path is an array, because loadtxt returns an array scalar (0D array)
+        # if only one path is is in the path file
+        path = np.atleast_1d(np.loadtxt(loc + 'data/paths_train_data.txt', dtype=str))
+        # get path of all files in path
+        paths = np.array([])
+        for p in path:
+            # decode if path is bytes
+            ps = os.listdir(p)
+            if isinstance(ps[0], bytes):
+                ps = [_.decode('utf-8') for _ in ps]
+            paths = np.append(paths, [os.path.join(p, _) for _ in ps])
+        paths = paths.flatten()
+        print('Found paths:', len(paths))
+
+        ## select a certain number of paths, given by nb_samples
+        np.random.seed(0)
+        if nb_samples > len(paths):
+            raise ValueError(
+                'Error: The dataset provided in paths_train_data.txt contains less data than required by nb_samples, please review the input files.'
+            )
+        self.idxs = utils.generate_random_numbers(nb_samples, 0, len(paths))
+        self.path = paths[self.idxs]
+
+        ## select a random test path, that is not in the training set
+        self.testpath = list()
+        self.nb_test = nb_test
+        print('number of test paths:', nb_test)
+        count = 0
+        while count < nb_test:
+            self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
+            if self.test_idx not in self.idxs:
+                count += 1
+                self.testpath.append(paths[self.test_idx][0])
+        print('Selected test paths:', len(self.testpath))
+
+        self.M = np.load(loc + 'data/M_rate16.npy')
+
+        ## These values are the results from a search through the full dataset; see 'minmax.json' file
+        with open(loc + 'data/minmax.json', 'r') as f:
+            minmax = json.load(f)
+        self.logrho_min = np.log10(minmax['dens_min'])
+        self.logrho_max = np.log10(minmax['dens_max'])
+        self.logT_min = np.log10(minmax['temp_min'])
+        self.logT_max = np.log10(minmax['temp_max'])
+        y = 1.e-100  ## this number is added to xi, since it contains zeros
+        self.logdelta_min = np.log10(y + minmax['delta_min'])
+        self.logdelta_max = np.log10(y + minmax['delta_max'])
+        self.Av_min = np.log10(y + minmax['Av_min'])
+        self.Av_max = np.log10(y + minmax['Av_max'])
+        self.dt_max = minmax['dt_max']
+        self.dt_fract = dt_fract
+        self.n_min = np.log10(cutoff)
+        self.n_max = np.log10(0.85e-1)  ## initial abundance He
+
+        self.mins = np.array([
+            self.logrho_min, self.logT_min, self.logdelta_min, self.Av_min,
+            self.n_min, self.dt_fract
+        ])
+        self.maxs = np.array([
+            self.logrho_max, self.logT_max, self.logdelta_max, self.Av_max,
+            self.n_max, self.dt_max
+        ])
+
+        self.cutoff = cutoff
+        self.fraction = fraction
+        self.train = train
+        self.inpackage = inpackage
+        self.datapath = datapath
+
+        ## Split in train and test set
+        N = int(self.fraction * len(self.path))
+        if self.train:
+            self.path = self.path[:N]
+        else:
+            self.path = self.path[N:]
+
+        print('Selected paths:', len(self.path))
+        print('\n')
+
+    def __len__(self):
+        '''
+        Return the length of the dataset (number of 1D models used for training or validation).
+        '''
+        return len(self.path)
+
+    def __getitem__(self, idx):
+        '''
+        Get the data of the idx-th 1D model.
+
+        The phantommod class is used to get the data of the phantom model.
+        Subsequently, this data is preprocessed:
+            - abundances (n) are
+                - clipped to the cutoff value
+                - np.log10 is taken 
+                - normalised to [0,1]
+            - physical parameters (p) are
+                - np.log10 is taken
+                - normalised to [0,1]
+            - timesteps (delta_t) are 
+                - scaled to [0,1]
+                - multiplied with dt_fract
+
+        Returns the preprocessed data in torch tensors.
+        '''
+        print('Loading phantom+krome model from:', self.path[idx])
+        mod = Phantommod(self.path[idx], data=self.datapath)
+        delta_t, n, p = mod.split_in_0D()
+
+        ## physical parameters
+        p_transf = np.empty_like(p)
+        for j in range(p.shape[1]):
+            # print(j)
+            p_transf[:, j] = utils.normalise(np.log10(p[:, j]), self.mins[j],
+                                             self.maxs[j])
+        print(self.mins)
+        print(self.maxs)
+
+        ## abundances
+        n_transf = np.clip(n, self.cutoff, None)
+        n_transf = np.log10(n_transf)
+        n_transf = utils.normalise(
+            n_transf, self.n_min,
+            self.n_max)  ## max boundary = rel. abundance of He
+
+        ## timesteps
+        delta_t_transf = delta_t / self.dt_max * self.dt_fract  ## scale to [0,1] and multiply with dt_fract
+
+        return torch.from_numpy(n_transf), torch.from_numpy(
+            p_transf), torch.from_numpy(delta_t_transf)

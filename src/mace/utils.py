@@ -18,7 +18,7 @@ def makeOutputDir(path):
     '''
     if not os.path.exists(path):
         os.mkdir(path)
-        
+
     return path
 
 def relative_error(x,x_hat):
@@ -84,11 +84,11 @@ def get_files_in(path):
     '''
     Returns the files in the given path.
     '''
-    files = os.listdir(path) 
+    files = os.listdir(path)
     locs = []
     for file in files:
         locs.append(file)
-    
+
     return locs
 
 
@@ -100,7 +100,7 @@ def unscale(x, min, max):
     return unscaled
 
 
-def get_specs():
+def get_specs(model='1DCSE'):
     '''
     Reads the species file, using code from ChemTorch.
         chemtype: 'C' for carbon-rich,  'O' for oxygen-rich
@@ -112,18 +112,34 @@ def get_specs():
     '''
 
     parentpath = str(Path(__file__).parent)[:-8]
-
-    loc_specs = parentpath+'rate16.specs'
-    
-    specs = np.loadtxt(loc_specs, usecols=(1), dtype=str, skiprows = 1, max_rows=469)  
-
+    if model == '1DCSE':
+        loc_specs = parentpath + 'rate16.specs'
+        specs = np.loadtxt(loc_specs,
+                           usecols=(1),
+                           dtype=str,
+                           skiprows=1,
+                           max_rows=469)
+    elif model == 'Phantom':
+        loc_specs = parentpath + '/data/krome_umist.specs'
+        specs = []
+        with open(loc_specs, "r") as file:
+            for line in file:
+                if not line.startswith("#"):
+                    specs.extend(line.strip('[').strip(']').replace('"', '').replace(
+                        "'", "").replace("\\", "").split(',')[:-1])  # :-1 to remove last element that just contains a linebreak
+    else:
+        print('Model not recognized, using 1DCSE as default')
+        loc_specs = parentpath + 'rate16.specs'
+        specs = np.loadtxt(loc_specs,
+                           usecols=(1),
+                           dtype=str,
+                           skiprows=1,
+                           max_rows=469)
     specs_dict = dict()
-    idx_specs  = dict()
-    for i in range(len(specs)):
-        specs_dict[specs[i]] = i
-        idx_specs[i] = specs[i]
+    for i, sp in enumerate(specs):
+        specs_dict[sp.strip()] = i
 
-    return specs_dict, idx_specs
+    return specs_dict
 
 
 def normalise(x,min,max):
@@ -166,7 +182,7 @@ def load_model(loc, meta, epoch):
         file = 'nn/nn.pt'
 
     model.load_state_dict(torch.load(loc+file))
-    
+
     num_params = count_parameters(model)
     print(f'The model has {num_params} trainable parameters')
 
@@ -193,6 +209,3 @@ def count_parameters(model):
     Count the number of trainable parameters in a model.
     '''
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
-
-
-
