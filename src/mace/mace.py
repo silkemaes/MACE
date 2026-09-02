@@ -253,7 +253,7 @@ class Solver(nn.Module):
             raise ValueError(f"Physical input tensor p must have shape [B, T, p_dim] matching abundance tensor n_0 {n_0.shape}, but got {p.shape}")
         if tstep.shape[0] != B or tstep.shape[1] != T:
             raise ValueError(f"Timestep tensor tstep must have shape [B, T] matching abundance tensor n_0 {n_0.shape}, but got {tstep.shape}")
-        print(p)
+
         # Build encoder input
         _mem("Building encoder input with shape")
         if self.g_nn:
@@ -282,7 +282,6 @@ class Solver(nn.Module):
         toc = time()
         enc_time = toc - tic
 
-
         # Create initial value problem
         y0 = z_0.to(self.DEVICE)
         problem = to.InitialValueProblem(
@@ -292,12 +291,10 @@ class Solver(nn.Module):
             t_end=t_end,
         )
         # check the health of the input data
-        _log_ode_inputs(y0=y0, t_eval=tstep_flat, t_start=t_start, t_end=t_end, p_args=p_flat)
 
         _mem("solving initial value problem...")
         # Solve initial value problem. Details are set in the __init__() of this class.
         tic = time()
-        print(f"Exact shape of y0: {z_0.to(self.DEVICE).shape}, t_eval: {tstep_flat.shape}, t_start: {t_start.shape}, t_end: {t_end.shape}", flush=True)
         solution = self.jit_solver.solve(problem, args=p_flat) if self.g_nn else self.jit_solver.solve(problem)
         toc = time()
         solve_time = toc - tic
