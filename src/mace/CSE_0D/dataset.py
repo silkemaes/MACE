@@ -127,7 +127,6 @@ def get_test_data(data_type,
                       dt_fract=meta['dt_fract'],
                       nb_test=meta['nb_test'],
                       train=train,
-                      fraction=0.7,
                       cutoff=1e-20,
                       inpackage=inpackage)
 
@@ -215,7 +214,6 @@ class CSEdata(Dataset):
                  inpackage=False,
                  train=True,
                  datapath='train',
-                 fraction=0.7,
                  cutoff=1e-20):
         '''
         Initialising the attributes of the dataset.
@@ -224,10 +222,9 @@ class CSEdata(Dataset):
             - nb_samples [int]: number of 1D models to use for training & validation
             - dt_fract [float]: fraction of the timestep to use, depends on number of latent species 
                 (see latent dynamics in paper)
+            - nb_valid [int]: number of 1D models to use for validation
             - nb_test [int]: number of 1D models to uses for testing
             - train [boolean]: True if training, False if testing
-            - fraction [float]: fraction of the dataset to use for training, 1-fraction is used for validation,
-                default = 0.7
             - cutoff [float]: cutoff value for the abundances, depends on tolerances of classical chemistry kinetics solver, 
                 default = 1e-20
             - scale [str]: type of scaling to use, default = 'norm'
@@ -251,8 +248,6 @@ class CSEdata(Dataset):
                 --> self.mins, self.maxs
             6. Set the cutoff value for the abundances 
                 --> self.cutoff
-            7. Set the fraction of the dataset to use for training 
-                --> self.fraction
             8. Split the dataset in train and test set 
         '''
         print('> Train state:', train)
@@ -316,17 +311,15 @@ class CSEdata(Dataset):
         ])
 
         self.cutoff = cutoff
-        self.fraction = fraction
         self.train = train
         self.inpackage = inpackage
         self.datapath = datapath
 
         ## Split in train and test set
-        N = int(self.fraction * len(self.path))
         if self.train:
-            self.path = self.path[:N]
+            self.path = self.path[:nb_valid]
         else:
-            self.path = self.path[N:]
+            self.path = self.path[nb_valid:]
 
         print('Selected paths:', len(self.path))
         print('\n')
@@ -776,19 +769,17 @@ class PhantomData(Dataset):
                  inpackage=False,
                  train=True,
                  datapath='train',
-                 fraction=0.7,
                  cutoff=1e-20):
         '''
         Initialising the attributes of the dataset.
 
         Input:
-            - nb_samples [int]: number of 1D models to use for training & validation
+            - nb_samples [int]: number of models to use for training & validation
             - dt_fract [float]: fraction of the timestep to use, depends on number of latent species 
                 (see latent dynamics in paper)
-            - nb_test [int]: number of 1D models to uses for testing
+            - nb_valid [int]: number of models to use for validation
+            - nb_test [int]: number of models to uses for testing
             - train [boolean]: True if training, False if testing
-            - fraction [float]: fraction of the dataset to use for training, 1-fraction is used for validation,
-                default = 0.7
             - cutoff [float]: cutoff value for the abundances, depends on tolerances of classical chemistry kinetics solver, 
                 default = 1e-20
             - scale [str]: type of scaling to use, default = 'norm'
@@ -799,7 +790,7 @@ class PhantomData(Dataset):
 
         Structure:
             1. Load the paths of the models
-            2. Select a certain number of paths, given by nb_samples 
+            2. Select a certain number of paths, given by nb_samples, or validation paths given by nb_valid
                 --> self.path
             3. Select a random test path, that is not in the training set 
                 --> self.testpath
@@ -812,28 +803,25 @@ class PhantomData(Dataset):
                 --> self.mins, self.maxs
             6. Set the cutoff value for the abundances 
                 --> self.cutoff
-            7. Set the fraction of the dataset to use for training 
-                --> self.fraction
-            8. Split the dataset in train and test set 
         '''
         print('> Train state:', train)
 
         loc = str(Path().cwd()) + '/'
         # atleast_1d to ensure path is an array, because loadtxt returns an array scalar (0D array)
         # if only one path is is in the path file
-        path = np.atleast_1d(np.loadtxt(loc + 'data/paths_train_data.txt', dtype=str))
-        # get path of all files in path
-        paths = np.array([])
-        for p in path:
-            # decode if path is bytes
-            ps = os.listdir(p)
-            if isinstance(ps[0], bytes):
-                ps = [_.decode('utf-8') for _ in ps]
-            paths = np.append(paths, [os.path.join(p, _) for _ in ps])
-        paths = paths.flatten()
-        print('Found paths:', len(paths))
+        #path = np.atleast_1d(np.loadtxt(loc + 'data/paths_train_data.txt', dtype=str))
+        if batch_size > 1:
+            print('Batch size > 1, using split data')
+            path_train = np.atleast_1d(np.loadtxt(loc + 'data/path_train_split.txt', dtype=str))
+        else:
+            path_train = np.atleast_1d(np.loadtxt(loc + 'data/path_train.txt', dtype=str))
+        path_valid = np.atleast_1d(np.loadtxt(loc + 'data/path_valid.txt', dtype=str))
+        path_test = np.atleast_1d(np.loadtxt(loc + 'data/path_test.txt', dtype=str))
+        # check that all paths exist
+        paths = np.concatenate((path_train, path_valid, path_test))
+        print('Found samples:', len(paths))
 
-        ## select a certain number of paths, given by nb_samples
+        ## select a certain number of paths, given by nb_samples or nb_valid
         np.random.seed(0)
         if nb_samples > len(paths):
             raise ValueError(
@@ -883,7 +871,6 @@ class PhantomData(Dataset):
         ])
 
         self.cutoff = cutoff
-        self.fraction = fraction
         self.train = train
         self.inpackage = inpackage
         self.datapath = datapath

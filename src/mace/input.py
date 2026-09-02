@@ -83,6 +83,7 @@ class Input():
                     'nb_hidden' : self.nb_hidden,
                     'ae_type'   : self.ae_type,
                     'nb_test'   : self.nb_test,
+                    'nb_valid'  : self.nb_valid,
                     'done'      : 'false',
                 }
 
@@ -120,6 +121,7 @@ class Input():
             'nb_hidden' : self.nb_hidden,
             'ae_type'   : self.ae_type,
             'nb_test'   : self.nb_test,
+            'nb_valid'  : self.nb_valid,
             'done'      : 'true'
         }
 
