@@ -323,8 +323,14 @@ class CSEmod():
         '''
 
         if not inpackage:
-            self.path = '/STER/silkem/CSEchem/' + path[34:-17]
+            self.path = '/STER/silkem/CHEM/out/' + path[34:-17]
             self.model = path[34:-51]
+            self.name = path[-43:-18]
+            inp_path = self.path[:-26]+ 'inputChemistry_'+self.name+'.txt'
+        
+        if chempy == True:
+            self.path = path[:-17]
+            self.model = path[21:-51]
             self.name = path[-43:-18]
             inp_path = self.path[:-26]+ 'inputChemistry_'+self.name+'.txt'
 

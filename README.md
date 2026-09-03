@@ -10,6 +10,7 @@ MACE is implemented in Python and is trained using [PyTorch](https://pytorch.org
 
 ---
 ## Table of content
+_Please find documentation on the code in the scripts. On the documentation page, we provide general info on MACE and tutorial notebooks._
 - [Installation](#inst)
 - [What is MACE?](#what)
 - [How to use?](#use)
@@ -73,6 +74,8 @@ This repository contains a trained MACE model as a test case, see ```model/20240
 
 The code for loading a trained MACE model can be found in the script ```src/mace/load.py```, testing in ```src/mace/test.py```. An annotated notebook can be found in the [documentation](https://mace-code.readthedocs.io/en/latest/example/index.html).
 
+An annotated version of the training routine can be found in ```routine.ipynb```, which is the same as the eponymous script.
+
 ---
 ## Contact <a name="cont"></a>
 
@@ -91,6 +94,7 @@ If any comments or issues come up, please contact me via [email](mailto:silke.ma
 
 **Contributors**:
 - Steven Rieder
+
 > Feel free to contribute to MACE via pull requests and discussions!
 
 
@@ -98,9 +102,6 @@ If any comments or issues come up, please contact me via [email](mailto:silke.ma
 ## Acknowledgements <a name="ackn"></a>
 
 The MACE architecture is free to use. Please cite our paper [Maes et al. (2024)](https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract).
-
-
-  
 
 
   

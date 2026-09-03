@@ -115,7 +115,7 @@ def get_specs():
 
     loc_specs = parentpath+'rate16.specs'
     
-    specs = np.loadtxt(loc_specs, usecols=(1), dtype=str, skiprows = 1, max_rows=466)  
+    specs = np.loadtxt(loc_specs, usecols=(1), dtype=str, skiprows = 1, max_rows=469)  
 
     specs_dict = dict()
     idx_specs  = dict()
@@ -180,7 +180,7 @@ def load_meta(loc):
     given the output location (outloc) and the name of the directory (loc).
     '''
     ## loading meta file
-    with open(loc+'/meta.json', 'r') as f:
+    with open(loc+'meta.json', 'r') as f:
         meta=f.read()
     meta  = json.loads(meta)
 
