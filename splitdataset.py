@@ -9,16 +9,16 @@ import os
 import random
 import multiprocessing as mp
 
-window_length = 200
-window_stride = 100
+window_length = 2000
+window_stride = 1000
 
 dataset_ratios = (0.7,  # training set
                   0.15, # validation set
                   0.15) # test set
-dir_data = '/STER/hydroModels/camille/phantom/macetraining/3d/v17-5_5e7_a20/chem_trace/test/'
+dir_data = '/STER/hydroModels/camille/phantom/macetraining/3d/v17-5_5e7_a20/chem_trace/'
 dir_save = '/STER/hydroModels/camille/phantom/macetraining/MACE/data'
 
-def split_dataset(file, dir_data, dir_save, window_length=2000, window_stride=1000, start_index=0):
+def split_dataset(file, dir_data, dir_save, window_length, window_stride, start_index=0):
     # read in the data
     data = []
     with open(os.path.join(dir_data, file), 'r') as f:
@@ -26,7 +26,11 @@ def split_dataset(file, dir_data, dir_save, window_length=2000, window_stride=10
             data.append(line.strip().split())
     data = data[1:]  # skip the header
     if len(data) - start_index < window_length:
-        print(f"    - File {file} is too short ({len(data)} lines), skipping.")
+        print(f"    - File {file} is too short ({len(data)} lines), saving as is.", flush=True)
+        chunk_file = os.path.join(dir_save, f"{file[:-5]}_00.chem")
+        with open(chunk_file, 'w') as f:
+            for line in data[start_index:]:
+                f.write(' '.join(line) + '\n')
         return
     # split the data into chunks
     chunk_count = 0
@@ -38,7 +42,7 @@ def split_dataset(file, dir_data, dir_save, window_length=2000, window_stride=10
         with open(chunk_file, 'w') as f:
             for line in chunk:
                 f.write(' '.join(line) + '\n')
-    print(f"{file} split into {chunk_count} chunks.")
+    print(f"{file} split into {chunk_count} chunks.", flush=True)
 
 
 if __name__ == '__main__':
@@ -93,17 +97,20 @@ if __name__ == '__main__':
     with open(os.path.join(dir_save, 'path_train.txt'), 'w') as f:
         for file in train_files:
             f.write(os.path.join(dir_data, file) + '\n')
+    print(f"Training set saved with {len(train_files)} files.", flush=True)
     with open(os.path.join(dir_save, 'path_valid.txt'), 'w') as f:
         for file in valid_files:
             f.write(os.path.join(dir_data, file) + '\n')
+    print(f"Validation set saved with {len(valid_files)} files.", flush=True)
     with open(os.path.join(dir_save, 'path_test.txt'), 'w') as f:
         for file in test_files:
             f.write(os.path.join(dir_data, file) + '\n')
+    print(f"Test set saved with {len(test_files)} files.", flush=True)
 
     # get number of cpus available
     num_cpus = mp.cpu_count()//2
-    print('Splitting dataset into smaller chunks for batch training...')
-    print(f'- Using {num_cpus} CPUs.')
+    print('Splitting dataset into smaller chunks for batch training...', flush=True)
+    print(f'- Using {num_cpus} CPUs.', flush=True)
     # split training data in parallel 
     with mp.Pool(processes=num_cpus) as pool:
         for file in train_files:
@@ -122,5 +129,5 @@ if __name__ == '__main__':
         for file in files:
             f.write(os.path.join(dir_data, 'split', file) + '\n')
 
-    print("DONE - happy training!")
+    print("DONE - happy training!", flush=True)
         
