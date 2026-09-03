@@ -14,7 +14,12 @@ import torchode             as to      # Lienen, M., & Günnemann, S. 2022, in T
 import src.mace.autoencoder as ae
 import src.mace.latentODE   as lODE
 from time                   import time
+import resource
+import os
 
+def _mem(tag=""):
+    rss_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss  # Linux: KB
+    print(f"[MEM] {tag} maxrss={rss_kb/1024/1024:.3f} GB", flush=True)
 
 
 def _tensor_stats(name, x, eps=1e-20):
@@ -233,9 +238,29 @@ class Solver(nn.Module):
             - z_s: the predicted latent space at the time steps tstep
             - solution.status: the status of the ODE solver
         '''
-        x_0 = n_0  ## use NN version of G
-        if not self.g_nn:  ## DON'T use NN version of G
-            ## Ravel the abundances n_0 and physical input p to x_0
+
+        # If data is unbatched, batch it to make sure the batch size is 1
+        if n_0.dim() == 2:
+            n_0 = n_0.unsqueeze(0)
+        if p.dim() == 2:
+            p = p.unsqueeze(0)
+        if tstep.dim() == 1:
+            tstep = tstep.unsqueeze(0)
+        
+        # Grab dimensions of the tensors, should be [B, T, _] where B = batch size, T = time steps, _ = abundances or physical input
+        B, T, _ = n_0.shape
+        if p.shape[0] != B or p.shape[1] != T:
+            raise ValueError(f"Physical input tensor p must have shape [B, T, p_dim] matching abundance tensor n_0 {n_0.shape}, but got {p.shape}")
+        if tstep.shape[0] != B or tstep.shape[1] != T:
+            raise ValueError(f"Timestep tensor tstep must have shape [B, T] matching abundance tensor n_0 {n_0.shape}, but got {tstep.shape}")
+
+        # Build encoder input
+        _mem("Building encoder input with shape")
+        if self.g_nn:
+            x_0 = n_0  ## use NN version of G
+            p = p.to(self.DEVICE)
+        else:
+            # Concatenate the abundances n_0 and physical input p to x_0, with shape [B, T, n_dim + p_dim]
             x_0 = torch.cat((p, n_0), axis=-1)  # type: ignore
             p = p.to(self.DEVICE)
 
@@ -253,7 +278,7 @@ class Solver(nn.Module):
         # Encode x_0, returning the encoded z_0 in latent space
         _mem("encoding input...")
         tic = time()
-        z_0 = self.encoder(x_0)
+        z_0 = self.encoder(x_0_flat)
         toc = time()
         enc_time = toc - tic
 
@@ -270,22 +295,28 @@ class Solver(nn.Module):
         _mem("solving initial value problem...")
         # Solve initial value problem. Details are set in the __init__() of this class.
         tic = time()
-        solution = self.jit_solver.solve(problem, args=p)
+        solution = self.jit_solver.solve(problem, args=p_flat) if self.g_nn else self.jit_solver.solve(problem)
         toc = time()
         solve_time = toc - tic
-        z_s = solution.ys.view(-1, self.z_dim)  ## want batches
-        ## Decode the resulting values from latent space z_s back to physical space
+        # the resulting ys has shape [BT, 1, z_dim] so we need to put it back to [BT, z_dim]
+        z_s = solution.ys.reshape(B * T, self.z_dim)
+        _mem(f"solution obtained in {solve_time} seconds")
+
+        # Decode the resulting values from latent space z_s back to physical space
         tic = time()
-        n_s_ravel = self.decoder(z_s)
+        n_s_flat = self.decoder(z_s)
         toc = time()
         dec_time = toc - tic
-        ## Reshape correctly
-        n_s = n_s_ravel.reshape(1, tstep.shape[-1], self.n_dim)
+
+        ## Reshape to initial batch tensor
+        n_s = n_s_flat.reshape(B, T, self.n_dim)
+        z_s = z_s.reshape(B, T, self.z_dim)
+        status = solution.status.reshape(B, T)
         #print('\nencoder time:', enc_time)
         #print('solver  time:', solve_time)
         #print('decoder time:', dec_time)
 
-        return n_s, z_s, solution.status
+        return n_s, z_s, status
 
 
 

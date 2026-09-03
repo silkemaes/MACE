@@ -3,11 +3,10 @@
 
 #except the following files
 !.gitignore
-!train.py
 !data
 !docs
 !input
-!src/
+!src
 !load&test.ipynb
 !MACE_to_Fortran.py
 !MACE.png
@@ -16,5 +15,6 @@
 !README.md
 !requirements.txt
 !routine.ipynb
+!splitdataset.py
 !train.py
 !test.py
