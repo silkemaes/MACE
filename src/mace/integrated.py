@@ -42,39 +42,38 @@ def evaluate(n,p,dt, model, loss_obj, status):
     nb_evol = model.nb_evol
 
     ## 1.
-    n  = n.to(DEVICE)     
-    p  = p.to(DEVICE) 
-    dt = dt.to(DEVICE)
+    n  = n.view(n.shape[1], n.shape[2]).to(DEVICE)     
+    p  = p.view(p.shape[1], p.shape[2]).to(DEVICE) 
+    dt = dt.view(dt.shape[1]).to(DEVICE)
 
-    n0  = n[:,0:-nb_evol,:]
-    p0  = p[:,:-nb_evol,:]
-    dt0 = dt[:,:-nb_evol]
+    n0  = n[0:-nb_evol]
+    p0  = p[0:-nb_evol]
+    dt0 = dt[0:-nb_evol]
 
-    nhat_evol = list()  # predicted evolution
-    n_evol    = list()  # list to split up real abundances to compare with predicted ones
+    nhat_evol = list()  ## predicted evolution
+    n_evol    = list()  ## list to split up real abundances to compare with predicted ones
     
     ## 2. Calculate the first step of the evolution
-    n_hat, z_hat, modstatus = model(n0[:,:-1,:],p0,dt0)    # Give the solver abundances[0:tlast-1]
-    nhat_evol.append(n_hat)                     # store the first step of the predicted evolution
-    n_evol.append(n[:,0:-nb_evol+0,:][:,:-1,:])         # store the first step of the evolution
+    n_hat, z_hat, modstatus = model(n0[:-1],p0,dt0)   
+    n_hat = n_hat.view(-1, 468)                 ## remove unnecessary dimension (i.e. batch size = 1)
+    nhat_evol.append(n_hat)                     ## store the first step of the predicted evolution
+    n_evol.append(n[0:-nb_evol+0][:-1])         ## store the first step of the evolution
     status += modstatus.sum().item()
 
     ## 3. Subsequent steps of the evolution
     for i in range(1,nb_evol):
-        pi = p[:,i:-nb_evol+i,:]
-        dti = dt[:,i:-nb_evol+i]
-        n_hat,z_hat, modstatus = model(n_hat, pi, dti)  # Give the solver abundances[0:tlast-1]
+        n_hat,z_hat, modstatus = model(n_hat,p[i:-nb_evol+i],dt[i:-nb_evol+i])   
+        n_hat = n_hat.view(-1, 468) 
         nhat_evol.append(n_hat)
-        n_evol.append(n[:,i:-nb_evol+i,:][:,:-1,:])
+        n_evol.append(n[i:-nb_evol+i][:-1])
         status += modstatus.sum().item()
 
     ## 4. 
-    nhat_evol = torch.stack(nhat_evol, dim=2) # [B, T-nb_evol-1, nb_evol, n_dim]
-    n_evol    = torch.stack(n_evol, dim=2)    # [B, T-nb_evol-1, nb_evol, n_dim]
+    nhat_evol = torch.stack(nhat_evol).permute(1,0,2)
+    n_evol = torch.stack(n_evol).permute(1,0,2)
 
     ## 5.
-    print(n[:,:-1,:].shape, n_evol.shape, nhat_evol.shape, z_hat.shape, p.shape)
-    loss = loss_obj.calc_loss(n[:,:-1,:], n_evol, nhat_evol, z_hat, p, model)
+    loss = loss_obj.calc_loss(n, n_evol, nhat_evol, z_hat, p, model)
 
     ## 6.
     return loss, status
@@ -95,15 +94,14 @@ def run_epoch(data_loader, model, loss_obj, training):
     - status of the solver
     '''    
         
+
     loss_obj.init_loss()
     optimiser = model.optimiser
 
     status = 0
 
-    print(data_loader.dataset.__len__())
-
     for i, (n,p,dt) in enumerate(data_loader):
-        print(i, n.shape, p.shape, dt.shape, flush=True)
+
         loss, status = evaluate(n, p, dt, model, loss_obj, status)
 
         if training == True:
