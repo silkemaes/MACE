@@ -302,9 +302,11 @@ class CSEmod():
     Class to load a 1D CSE model, calculated with the classical fortan code.
     For more info on this model, see https://github.com/MarieVdS/rate22_cse_code.
     '''
-    def __init__(self, path, inpackage = False, data = 'test'):
+    def __init__(self, path, inpackage = False, data = 'test', chempy = False):
         '''
         Load the 1D CSE model, given a path.
+
+        - chempy: True if path is a ChemPy-style path on the author's cluster (default False).
 
         The abundances are stored in a file 'csfrac_smooth.out', 
         the physical parameters are stored in a file 'csphyspar_smooth.out'.
