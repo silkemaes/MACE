@@ -24,7 +24,8 @@ class Encoder(nn.Module):
     - nb_hidden: number of hidden layers; options are '1' or '2'
     - ae_type: type of autoencoder; options are 'simple' or 'complex'
         The complex autoencoder has more nodes in the hidden layers, 
-        and this more trainable parameters.
+        and this more trainable parameters. The 'linear' option is for 
+        testing in a PCA enviroment.
 
     """
     def __init__(self, input_dim, latent_dim, nb_hidden = 1, ae_type = 'complex'):
@@ -35,7 +36,9 @@ class Encoder(nn.Module):
             if ae_type == 'simple': 
                 input_dim --> 256 --> 128 --> 64 --> latent_dim
             if ae_type == 'complex':
-                input_dim --> 512 --> 256 --> 64 --> latent_dim        
+                input_dim --> 512 --> 256 --> 64 --> latent_dim     
+        if ae_type == 'linear':
+            input_dim --> latent_dim    
         '''
         super(Encoder, self).__init__()
         hidden_out_dim = 64
@@ -75,6 +78,14 @@ class Encoder(nn.Module):
         
         self.LeakyReLU = nn.LeakyReLU(0.2)
         self.Tanh = nn.Tanh()
+
+        if ae_type=='linear':
+            self.hidden = nn.ModuleList()
+            self.layer_in = nn.Linear(input_dim, latent_dim)
+            self.layer_out = nn.Identity()
+            self.LeakyReLU = nn.Identity()
+            self.Tanh = nn.Identity()
+
         
     def forward(self, x):
         '''
@@ -102,7 +113,8 @@ class Decoder(nn.Module):
     - nb_hidden: number of hidden layers; options are '1' or '2'
     - ae_type: type of autoencoder; options are 'simple' or 'complex'
         The complex autoencoder has more nodes in the hidden layers,
-        and this more trainable parameters.
+        and this more trainable parameters. The 'linear' option is for
+        testing in a PCA enviroment.
 
     """
     def __init__(self, latent_dim, output_dim, nb_hidden = 2, ae_type = 'complex'):
@@ -113,7 +125,9 @@ class Decoder(nn.Module):
             if ae_type == 'simple':
                 latent_dim --> 128 --> 256 --> output_dim
             if ae_type == 'complex':
-                latent_dim --> 256 --> 512 --> output_dim
+                latent_dim --> 256 --> 512 --> output_dim     
+        if ae_type == 'linear':
+            input_dim --> latent_dim    
         '''
         super(Decoder, self).__init__()
 
@@ -150,6 +164,12 @@ class Decoder(nn.Module):
                 self.layer_out = nn.Linear(hidden2_dim, output_dim)
         
         self.LeakyReLU = nn.LeakyReLU(0.2)
+
+        if ae_type=='linear':
+            self.hidden = nn.ModuleList()
+            self.layer_in = nn.Identity()
+            self.layer_out = nn.Linear(latent_dim, output_dim)
+            self.LeakyReLU = nn.Identity()
         
     def forward(self, z):
         ''' 

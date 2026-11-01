@@ -1,0 +1,32 @@
+## input model
+
+lr          = 1.e-4
+nb_epochs   = 400
+ini_epochs  = 5
+losstype    = abs_idn
+z_dim       = 8
+nb_samples  = 10
+scheme      = int
+nb_evol     = 16
+nb_hidden   = 1
+ae_type     = linear
+nb_test     = 3
+
+
+
+## loss fractions
+
+abs = 1
+grd = 1 
+idn = 1
+elm = 0
+
+
+
+## model name
+
+Name = 20261101_095054
+
+Name = 20261101_180048
+
+Name = 20261101_180048
