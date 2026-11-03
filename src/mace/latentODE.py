@@ -30,14 +30,13 @@ class A(nn.Module):
         self.layer_hidden = nn.Linear(hidden_dim1,hidden_dim2)
         self.layer_out = nn.Linear(hidden_dim2, out_dim)
 
-        self.layer_out.weight.data = torch.zeros_like(self.layer_out.weight)
+        #self.layer_out.weight.data = torch.zeros_like(self.layer_out.weight)
         # print(self.layer_out.bias.data.shape)
-        bias = torch.diag(-torch.ones(z_dim))
-        self.layer_out.bias.data = bias.ravel()
-        self.layer_hidden.weight.requires_grad_(True)
-        self.layer_hidden.bias.requires_grad_(True)
+        #bias = torch.diag(-torch.ones(z_dim))
+        #self.layer_out.bias.data = bias.ravel()
+        #self.layer_hidden.weight.requires_grad_(True)
+        #self.layer_hidden.bias.requires_grad_(True)
 
-        
         self.LeakyReLU = nn.LeakyReLU(0.2)
         
     def forward(self, p):
