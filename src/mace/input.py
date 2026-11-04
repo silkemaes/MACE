@@ -40,6 +40,10 @@ class Input():
         self.nb_hidden   = int(inputfile['nb_hidden'])
         self.ae_type     = str(inputfile['ae_type'])
         self.nb_test     = int(inputfile['nb_test'])  
+        if 'data_type' not in inputfile.keys():
+            self.data_type = 'CSE'
+        else:
+            self.data_type = str(inputfile['data_type'])  ## phantom or cse
 
         ## fractions for losses
         self.abs = float(inputfile['abs'])
@@ -52,6 +56,7 @@ class Input():
         print('Name:', self.name)
         print('------------------------------')
         print('     inputfile:', self.file)
+        print('   data type:', self.data_type)
         print('      # hidden:', self.nb_hidden)
         print('       ae type:', self.ae_type)
         print('# z dimensions:', self.z_dim)

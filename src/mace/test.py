@@ -135,7 +135,7 @@ def test_evolution(model, input, printing = True, start_idx=0):
     return np.array(n_evol).reshape(-1,468), np.array(mace_time)
 
 
-def test_model(model, testpath, meta, specs=[], inpackage = False, datapath = 'test', printing = True, plotting = False, save = False):
+def test_model(data_type, model, testpath, meta, specs=[], inpackage = False, datapath = 'test', printing = True, plotting = False, save = False):
     '''
     Test the model on a test set.
 
@@ -144,9 +144,8 @@ def test_model(model, testpath, meta, specs=[], inpackage = False, datapath = 't
         - plotting: plot the results, default = False
     '''
 
-    model1D, input, info = ds.get_test_data(testpath, meta, inpackage = inpackage, datapath = datapath)
-    id = info['path'] +'_'+ info['name']
-
+    model1D, input, info = ds.get_test_data(data_type, testpath, meta, inpackage = inpackage, datapath = datapath)
+    id = info['name'].split('.')[0]
     n, n_hat, t, step_time = test_step(model, input, printing = printing)
     n_evol, evol_time  = test_evolution(model, input, start_idx=0, printing = printing)
 
@@ -172,16 +171,16 @@ def test_model(model, testpath, meta, specs=[], inpackage = False, datapath = 't
             specs = ['CO', 'H2O','OH',  'C2H2',  'C2H', 'CH3C5NH+', 'C10H2+']
 
         ## plotting results for the step test
-        fig_step = plot_abs(model1D, n, n_hat, specs=specs, step = True)
+        fig_step = plot_abs(model1D, data_type, n, n_hat, specs=specs, step = True)
         if save == True:
-            plt.savefig(model.path+'figs/step'+id+'.png', dpi=300)
-            print('\nStep test plot saved as', model.path+'step'+id+'.png')
-        
+            plt.savefig(model.path+'figs/part_'+id+'.png', dpi=300)
+            print('\nStep test plot saved as', model.path+'figs/part_'+id+'.png')
+
         ## plotting results for the evolution test
-        fig_evol = plot_abs(model1D, n, n_evol, specs=specs)
+        fig_evol = plot_abs(model1D, data_type, n, n_evol, specs=specs)
         if save == True:
-            plt.savefig(model.path+'figs/evol'+id+'.png', dpi=300)
-            print('Evolution test plot saved as', model.path+'evol'+id+'.png')
+            plt.savefig(model.path+'figs/evol_'+id+'.png', dpi=300)
+            print('Evolution test plot saved as', model.path+'figs/evol_'+id+'.png')
 
         plt.show()
 
