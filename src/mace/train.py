@@ -98,11 +98,12 @@ def train(model,
         
         calc_time = (time()-start_time)     ## in seconds
         if calc_time < 60.:
-            print("              time [secs]: ", np.round(calc_time,2))
-        elif calc_time >= 60.:
+            print("              time [sec]: ", np.round(calc_time,2))
+        elif calc_time >= 60. and calc_time < 3600.:
             print("              time [mins]: ", np.round(calc_time/60.,2))
-        elif calc_time > 3600.:
+        elif calc_time >= 3600.:
             print("              time [hours]: ", np.round(calc_time/(60.*60.),2))
+        #print number of samples per second
     
     print('\n \tDONE!')
 

@@ -9,8 +9,23 @@ https://ui.adsabs.harvard.edu/abs/2024arXiv240503274M/abstract
 
 
 import torch
+import resource
+
+def cuda_mem(tag):
+    allocated = torch.cuda.memory_allocated() / 1024**3
+    reserved = torch.cuda.memory_reserved() / 1024**3
+    peak = torch.cuda.max_memory_allocated() / 1024**3
+    print(
+        f"[CUDA] {tag}: allocated={allocated:.2f} GiB, "
+        f"reserved={reserved:.2f} GiB, peak={peak:.2f} GiB"
+    )
 
 
+def _mem(tag=""):
+    rss_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss  # Linux: KB
+    print(f"[MEM] {tag} maxrss={rss_kb/1024/1024:.3f} GB", flush=True)
+
+    
 def evaluate(n,p,dt, model, loss_obj, status):
     '''
     < Core of the integrated training scheme >
@@ -71,10 +86,16 @@ def evaluate(n,p,dt, model, loss_obj, status):
     ## 4. 
     nhat_evol = torch.stack(nhat_evol, dim=2) # [B, T-nb_evol-1, nb_evol, n_dim]
     n_evol    = torch.stack(n_evol, dim=2)    # [B, T-nb_evol-1, nb_evol, n_dim]
+    _mem('After stacking evolutions')
+    if model.DEVICE == torch.device("cuda"):
+        cuda_mem('Forward pass done')
 
     ## 5.
     print(n[:,:-1,:].shape, n_evol.shape, nhat_evol.shape, z_hat.shape, p.shape)
     loss = loss_obj.calc_loss(n[:,:-1,:], n_evol, nhat_evol, z_hat, p, model)
+    _mem('After loss calculation')
+    if model.DEVICE == torch.device("cuda"):
+        cuda_mem('Loss calculation done')
 
     ## 6.
     return loss, status
@@ -100,15 +121,15 @@ def run_epoch(data_loader, model, loss_obj, training):
 
     status = 0
 
-    print(data_loader.dataset.__len__())
-
     for i, (n,p,dt) in enumerate(data_loader):
-        print(i, n.shape, p.shape, dt.shape, flush=True)
+        print('Batch', i+1, 'of', len(data_loader), flush=True)
+        if model.DEVICE == torch.device("cuda"):
+            torch.cuda.reset_peak_memory_stats()
         loss, status = evaluate(n, p, dt, model, loss_obj, status)
 
         if training == True:
             ## Backpropagation
-            optimiser.zero_grad()
+            optimiser.zero_grad(set_to_none=True)
             loss.backward()
             optimiser.step()
 

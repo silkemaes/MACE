@@ -15,7 +15,7 @@ window_stride = 1000
 dataset_ratios = (0.7,  # training set
                   0.15, # validation set
                   0.15) # test set
-dir_data = '/STER/hydroModels/camille/phantom/macetraining/3d/v17-5_5e7_a20/chem_trace/'
+dir_data = '/STER/hydroModels/camille/phantom/macetraining/3d/v17-5_5e7/chem_trace'
 dir_save = '/STER/hydroModels/camille/phantom/macetraining/MACE/data'
 
 def split_dataset(file, dir_data, dir_save, window_length, window_stride, start_index=0):
@@ -26,11 +26,7 @@ def split_dataset(file, dir_data, dir_save, window_length, window_stride, start_
             data.append(line.strip().split())
     data = data[1:]  # skip the header
     if len(data) - start_index < window_length:
-        print(f"    - File {file} is too short ({len(data)} lines), saving as is.", flush=True)
-        chunk_file = os.path.join(dir_save, f"{file[:-5]}_00.chem")
-        with open(chunk_file, 'w') as f:
-            for line in data[start_index:]:
-                f.write(' '.join(line) + '\n')
+        print(f"    - File {file} is too short ({len(data)} lines), required length is {window_length + start_index}. Skipping.", flush=True)
         return
     # split the data into chunks
     chunk_count = 0

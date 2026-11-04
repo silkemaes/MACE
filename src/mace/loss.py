@@ -206,27 +206,31 @@ class Loss():
         Returns:
         - mse of the abs and idn losses
         '''
-
+        
         if 'abs' in self.losstype:
+            print('abs', flush=True)
             abs = abs_loss(n_evol, nhat_evol)  /self.norm['abs']* self.fract['abs']
         if 'abs' not in self.losstype:
             abs = torch.from_numpy(np.array([0.]))
-
+        
         if 'grd' in self.losstype:
+            print('grd', flush=True)
             grd = grd_loss(n_evol,nhat_evol)   /self.norm['grd']* self.fract['grd']
         if 'grd' not in self.losstype:
             grd = torch.from_numpy(np.array([0.]))
-
+        
         if 'idn' in self.losstype:
+            print('idn', flush=True)
             idn = idn_loss(n, p, model)   /self.norm['idn']* self.fract['idn']
         if 'idn' not in self.losstype:
             idn = torch.from_numpy(np.array([0.]))
 
         if 'elm' in self.losstype:
+            print('elm', flush=True)
             elm = elm_loss(z_hat,model, self.M) /self.norm['elm']* self.fract['elm']
         if 'elm' not in self.losstype:
             elm = torch.from_numpy(np.array([0.]))
-
+        print('losses calculated', flush=True)
         loss = abs.mean() + grd.mean() + idn.mean() + elm.mean()
         self.adjust_loss('tot', loss.item())
         self.adjust_loss('abs', abs.mean().item())
@@ -278,8 +282,9 @@ def abs_loss(x, x_hat):
     '''
     Return the squared absolute loss (abs) per x_i.
     '''
+    print(x.shape, x_hat.shape)
     loss = (x-x_hat)**2
-    # print(x.shape, x_hat.shape)
+    print(loss.shape)
     return loss
 
 

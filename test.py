@@ -27,9 +27,10 @@ dt_fracts = {4 : 0.296, 5: 0.269,8: 0.221,10: 0.175,12: 0.146,16: 0.117,20: 0.09
 
 # Load the model
 outloc  = parentpath+'model/'
-dirname = '20260630_111730'    
+dirname = 'z8n16_20260921_234125'    
 
-trained = load.Trained_MACE(outloc=outloc, dirname=dirname, epoch=14)
+
+trained = load.Trained_MACE(outloc=outloc, dirname=dirname, epoch=0)
 meta = trained.get_meta()
 model = trained.model
 

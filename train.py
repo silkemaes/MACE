@@ -55,15 +55,20 @@ meta = input.make_meta(path)
 # Set up PyTorch 
 cuda   = False
 DEVICE = torch.device("cuda" if cuda else "cpu")
-batch_size = 1 
-kwargs = {'num_workers': 1, 'pin_memory': True} 
+batch_size = 1
+kwargs = {'num_workers': 0, 'pin_memory': True} 
 
-print(f'\nMACE will be trained using {torch.get_num_threads()} threads')
+if torch.cuda.is_available():
+    print(f"using GPU acceleration with: {torch.cuda.get_device_name(0)}.")
+else:
+    print(f"No GPU available. Training will run on CPU with {torch.get_num_threads()} threads.")
+
 
 ## Load training & test data sets 
 traindata, testdata, data_loader, test_loader = ds.get_data(data_type=input.data_type,dt_fract=input.dt_fract,
-                                                            nb_samples=input.nb_samples, batch_size=batch_size,
-                                                            nb_test=input.nb_test,kwargs=kwargs, inpackage=True)
+                                                            nb_samples=input.nb_samples, nb_valid=input.nb_valid,
+                                                            batch_size=batch_size,nb_test=input.nb_test,
+                                                            kwargs=kwargs, inpackage=True)
 
 ## Make model
 model = mace.Solver(n_dim=input.n_dim, p_dim=4,z_dim = input.z_dim, 

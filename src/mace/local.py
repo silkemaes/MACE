@@ -45,6 +45,7 @@ def run_epoch(data_loader, model, loss_obj, training):
 
         ## Calculate losses
         print('calculate losses...', flush=True)
+        print(n[:,:-1,:].shape, n[:,1:,:].shape, n_hat.shape, z_hat.shape, p.shape)
         loss = loss_obj.calc_loss(n[:,:-1,:],n[:,1:,:], n_hat, z_hat, p, model)
         status += modstatus.sum().item()
 

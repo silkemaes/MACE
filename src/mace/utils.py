@@ -180,8 +180,16 @@ def load_model(loc, meta, epoch):
         file = 'nn/nn'+str(epoch)+'.pt'
     else:
         file = 'nn/nn.pt'
+    try:
+        model.load_state_dict(torch.load(loc+file))
+    except Exception as e:
+        print(f"Error loading model: {e}")
+        try:
+            model.load_state_dict(torch.load(loc+file, map_location=torch.device('cpu')))
+        except Exception as e:
+            #stop
+            raise RuntimeError("Failed to load model.")
 
-    model.load_state_dict(torch.load(loc+file))
 
     num_params = count_parameters(model)
     print(f'The model has {num_params} trainable parameters')

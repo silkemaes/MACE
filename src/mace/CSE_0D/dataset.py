@@ -80,12 +80,10 @@ def get_data(data_type, nb_samples, dt_fract, nb_valid, nb_test, inpackage, batc
 
     print('Dataset:')
     print('------------------------------')
-    print('  total # of samples:', len(train) + len(valid))
+    print('  total # of samples:', len(train) + nb_valid + nb_test)
     print('#   training samples:', len(train))
-    print('# validation samples:', len(valid))
-    print('               ratio:',
-          np.round(len(valid) / (len(train) + len(valid)), 2))
-    print('     #  test samples:', train.nb_test)
+    print('# validation samples:', nb_valid)
+    print('     #  test samples:', nb_test)
 
     data_loader = DataLoader(dataset=train,
                              batch_size=batch_size,
@@ -807,22 +805,24 @@ class PhantomData(Dataset):
             6. Set the cutoff value for the abundances 
                 --> self.cutoff
         '''
-        print('> Train state:', train)
+        print('> When training state is', train)
 
         loc = str(Path().cwd()) + '/'
         # atleast_1d to ensure path is an array, because loadtxt returns an array scalar (0D array)
         # if only one path is is in the path file
         #path = np.atleast_1d(np.loadtxt(loc + 'data/paths_train_data.txt', dtype=str))
-        if batch_size > 1:
-            print('Batch size > 1, using split data')
-            path_train = np.atleast_1d(np.loadtxt(loc + 'data/path_train_split.txt', dtype=str))
-        else:
-            path_train = np.atleast_1d(np.loadtxt(loc + 'data/path_train.txt', dtype=str))
+        path_train = np.atleast_1d(np.loadtxt(loc + 'data/path_train.txt', dtype=str))
         path_valid = np.atleast_1d(np.loadtxt(loc + 'data/path_valid.txt', dtype=str))
         path_test = np.atleast_1d(np.loadtxt(loc + 'data/path_test.txt', dtype=str))
         # check that all paths exist
         paths = np.concatenate((path_train, path_valid, path_test))
-        print('Found samples:', len(paths))
+        print(f'A total of {len(paths)} samples were found in the indicated paths.')
+
+        if batch_size > 1:
+            print('Batch size > 1, using split version of dataset (samples were split into smaller equal chunks)')
+            print('Validation and testing will use the original dataset.')
+            path_train = np.atleast_1d(np.loadtxt(loc + 'data/path_train_split.txt', dtype=str))
+            print(f'Number of available split training samples: {len(path_train)}')
 
         ## select a certain number of paths, given by nb_samples or nb_valid
         np.random.seed(0)
@@ -833,19 +833,22 @@ class PhantomData(Dataset):
                 )
             self.idxs = utils.generate_random_numbers(nb_samples, 0, len(path_train))
             self.path = path_train[self.idxs]
+            print('Number of selected training samples:', len(self.path))
         else:
             if nb_valid > len(path_valid):
+                print(nb_valid)
+                print(len(path_valid))
                 raise ValueError(
                     'Error: The dataset provided in path_valid.txt contains less data than required by nb_valid, please review the input files.'
                 )
+
             self.idxs = utils.generate_random_numbers(nb_valid, 0, len(path_valid))
             self.path = path_valid[self.idxs]
-        print('Number of selected samples:', len(self.path))
+            print('Number of selected validation samples:', len(self.path))
 
         ## select random test paths
         self.testpath = list()
         self.nb_test = nb_test
-        print('Total number of available test samples:', nb_test)
         if nb_test > len(path_test):
             raise ValueError(
                 'Error: The dataset provided in path_test.txt contains less data than required by nb_test, please review the input files.'
@@ -915,7 +918,7 @@ class PhantomData(Dataset):
         '''
         mod = Phantommod(self.path[idx], data=self.datapath)
         delta_t, n, p = mod.split_in_0D()
-
+        print(f"Processing model {self.path[idx]}")
         ## physical parameters
         p_transf = np.empty_like(p)
         for j in range(p.shape[1]):
