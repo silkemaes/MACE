@@ -10,7 +10,7 @@ import os
 import multiprocessing as mp
 import time
 
-DIRS = ['/STER/hydroModels/camille/phantom/macetraining/3d/v17-5_5e7_a20/chem_output/']
+DIRS = ['/path/to/dir']
 SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 outputfile = os.path.join(SOURCE_DIR,'data', 'minmax.txt')
 
