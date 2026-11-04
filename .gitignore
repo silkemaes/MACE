@@ -148,3 +148,6 @@ MACE.md
 # bort
 bort/
 CLAUDE.md
+# local training runs (keep only the shipped model in git)
+model/*
+!model/20240604_160152/
