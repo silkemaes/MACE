@@ -44,6 +44,9 @@ class Input():
             self.data_type = 'CSE'
         else:
             self.data_type = str(inputfile['data_type'])  ## phantom or cse
+        ## latent ODE type (optional key, default False = G with trainable C, A, B):
+        ##   g_nn = True  -> Gnn, where C, A, B are computed from p by neural networks
+        self.g_nn = str(inputfile.get('g_nn', 'False')).lower() in ('true', '1', 'yes')
 
         ## fractions for losses
         self.abs = float(inputfile['abs'])
@@ -62,6 +65,7 @@ class Input():
         print('# z dimensions:', self.z_dim)
         print('        scheme:', self.scheme)
         print('  # evolutions:', self.nb_evol)
+        print('          g_nn:', self.g_nn)
         print('     loss type:', self.losstype)
         print('      # epochs:', self.nb_epochs)
         print(' learning rate:', self.lr)
@@ -83,6 +87,7 @@ class Input():
                     'nb_hidden' : self.nb_hidden,
                     'ae_type'   : self.ae_type,
                     'nb_test'   : self.nb_test,
+                    'g_nn'      : self.g_nn,
                     'done'      : 'false',
                 }
 
@@ -120,6 +125,7 @@ class Input():
             'nb_hidden' : self.nb_hidden,
             'ae_type'   : self.ae_type,
             'nb_test'   : self.nb_test,
+            'g_nn'      : self.g_nn,
             'done'      : 'true'
         }
 

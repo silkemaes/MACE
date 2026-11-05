@@ -69,6 +69,7 @@ model = mace.Solver(n_dim=input.n_dim, p_dim=4,z_dim = input.z_dim,
                     scheme=input.scheme, nb_evol=input.nb_evol,
                     path = path,
                     DEVICE = DEVICE,
+                    g_nn = input.g_nn,
                     lr=input.lr )
 
 num_params = utils.count_parameters(model)

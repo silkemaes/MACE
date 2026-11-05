@@ -303,7 +303,8 @@ def idn_loss(x,p, model):
     E = model.encoder
     D = model.decoder
 
-    x_E     = torch.cat((p, x), axis=-1) # type: ignore
+    ## Same encoder input as in Solver.forward: with g_nn, p goes to the latent ODE (Gnn) instead of the encoder
+    x_E     = x if model.g_nn else torch.cat((p, x), axis=-1) # type: ignore
 
     loss = (x-D(E(x_E)))**2 
 

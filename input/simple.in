@@ -1,7 +1,7 @@
 ## input model
 
 lr          = 1.e-4
-nb_epochs   = 400
+nb_epochs   = 150
 ini_epochs  = 5
 losstype    = abs_idn
 z_dim       = 8
@@ -24,7 +24,3 @@ elm = 0
 
 
 ## model name
-
-Name = 20261101_170445
-
-Name = 20261103_121945
