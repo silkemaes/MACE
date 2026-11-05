@@ -10,6 +10,7 @@ This function only works for this specific dataset.
 import matplotlib.pyplot as plt
 from matplotlib          import rcParams
 rcParams.update({'figure.dpi': 200})
+import numpy as np
 
 import src.mace.utils as utils
 
@@ -18,7 +19,7 @@ import src.mace.utils as utils
 
 
 
-def plot_abs(model1D, modeltype, n, n_hat, specs, step=False):
+def plot_abs(model1D, modeltype, n, n_hat, specs, step=False, log=False):
     '''
     Function to plot the 1D abundance profiles of a model (middle panel, ax1), 
     together with the density (rho) and temperature (T) profile (upper panel, ax3 & ax4, respectively).
@@ -89,13 +90,15 @@ def plot_abs(model1D, modeltype, n, n_hat, specs, step=False):
         ## real abundances
         ax1.plot(r, n[:, idx], '--', lw=lw, color=line.get_color(), alpha=a)
         ## relative error
+        if log:
+            err = np.abs(err)
         ax2.plot(r,
-                 err[:, idx],
-                 '-',
-                 label=spec,
-                 ms=ms,
-                 lw=lw,
-                 color=line.get_color())
+            err[:, idx],
+            '-',
+            label=spec,
+            ms=ms,
+            lw=lw,
+            color=line.get_color())
     ## indicate where 0 is on the error plot
     ax2.plot([1e14, 1e18], [0, 0], '--k', lw=0.5)
 
@@ -124,7 +127,8 @@ def plot_abs(model1D, modeltype, n, n_hat, specs, step=False):
     ax4.set_xscale('log')
     ax3.set_yscale('linear')
 
-    ax2.set_yscale('linear')
+    if not log:
+        ax2.set_yscale('linear')
 
     for ax in [ax1, ax3, ax4]:
         ax.set_xticklabels([])
