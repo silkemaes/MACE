@@ -37,7 +37,6 @@ class Input():
         self.nb_samples  = int(inputfile['nb_samples'])
         self.nb_evol     = int(inputfile['nb_evol'])
         self.n_dim       = 468
-        self.nb_hidden   = int(inputfile['nb_hidden'])
         self.ae_type     = str(inputfile['ae_type'])
         self.nb_test     = int(inputfile['nb_test'])  
         if 'data_type' not in inputfile.keys():
@@ -57,7 +56,6 @@ class Input():
         print('------------------------------')
         print('     inputfile:', self.file)
         print('   data type:', self.data_type)
-        print('      # hidden:', self.nb_hidden)
         print('       ae type:', self.ae_type)
         print('# z dimensions:', self.z_dim)
         print('        scheme:', self.scheme)
@@ -80,7 +78,6 @@ class Input():
                     'inputfile' : self.file,
                     'scheme'    : self.scheme,
                     'nb_evol'   : self.nb_evol,
-                    'nb_hidden' : self.nb_hidden,
                     'ae_type'   : self.ae_type,
                     'nb_test'   : self.nb_test,
                     'done'      : 'false',
@@ -117,7 +114,6 @@ class Input():
             'inputfile' : self.file,
             'scheme'    : self.scheme,
             'nb_evol'   : self.nb_evol,
-            'nb_hidden' : self.nb_hidden,
             'ae_type'   : self.ae_type,
             'nb_test'   : self.nb_test,
             'done'      : 'true'

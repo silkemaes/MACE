@@ -434,6 +434,10 @@ class CSEmod():
                 inp_path = self.path + 'input.txt'
             if data == 'train':
                 parentpath = str(Path(__file__).parent)[:-15]
+                ## paths_train_data.txt lists '<model>/csfrac_smooth.out' (old format, stripped
+                ## with path[:-18] before the merge with main); the new format lists only '<model>'.
+                ## Accept both.
+                path = path.removesuffix('csfrac_smooth.out').rstrip('/')
                 self.path = parentpath + 'data/train/' + path + '/'
                 self.model = self.path
                 self.name = self.path

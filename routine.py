@@ -18,7 +18,7 @@ from src.mace.input             import Input
 
 source_dir = os.path.dirname(os.path.abspath(__file__))
 
-specs_dict, idx_specs = utils.get_specs()
+specs_dict = utils.get_specs()
 
 start = time()
 now = dt.datetime.now()
@@ -65,7 +65,7 @@ traindata, testdata, data_loader, test_loader = ds.get_data(dt_fract=input.dt_fr
                                                             nb_test=input.nb_test,kwargs=kwargs, inpackage=True)
 ## Make model
 model = mace.Solver(n_dim=input.n_dim, p_dim=4,z_dim = input.z_dim, 
-                    nb_hidden=input.nb_hidden, ae_type=input.ae_type, 
+                    ae_type=input.ae_type, 
                     scheme=input.scheme, nb_evol=input.nb_evol,
                     path = path,
                     DEVICE = DEVICE,

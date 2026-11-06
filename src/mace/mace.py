@@ -30,7 +30,6 @@ class Solver(nn.Module):
                  n_dim,
                  p_dim,
                  z_dim,
-                 nb_hidden,
                  ae_type,
                  scheme,
                  nb_evol,
@@ -40,7 +39,7 @@ class Solver(nn.Module):
                  g_nn=False,
                  atol=1e-5,
                  rtol=1e-25):
-        # def __init__(self,  p_dim, z_dim, DEVICE, n_dim, nb_hidden, ae_type, g_nn = False, atol = 1e-5, rtol = 1e-25):
+        # def __init__(self,  p_dim, z_dim, DEVICE, n_dim, ae_type, g_nn = False, atol = 1e-5, rtol = 1e-25):
         '''
         Initialising the Solver class with the hyperparameters.
 
@@ -48,7 +47,6 @@ class Solver(nn.Module):
         - p_dim: number of dimension of the physical input
         - z_dim: number of dimension of the latent space
         
-        - nb_hidden: number of hidden layers in the encoder and decoder
         - ae_type: type of autoencoder used
 
         - scheme: type of scheme used to train the model 
@@ -115,11 +113,9 @@ class Solver(nn.Module):
         ## Setting the autoencoder (encoder + decoder)
         self.encoder = ae.Encoder(input_dim=input_ae_dim,
                                   latent_dim=z_dim,
-                                  nb_hidden=nb_hidden,
                                   ae_type=ae_type)
         self.decoder = ae.Decoder(latent_dim=z_dim,
                                   output_dim=n_dim,
-                                  nb_hidden=nb_hidden,
                                   ae_type=ae_type)
 
     def set_status(self, status, type):
