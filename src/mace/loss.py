@@ -2,7 +2,10 @@ import torch
 import torch.nn as nn
 import warnings
 import numpy as np
+import matplotlib.pyplot as plt
 import os
+import json
+from matplotlib.lines import Line2D
 
 
 
@@ -27,6 +30,7 @@ class LossTerm(nn.Module):
         self._sum    = 0. # loss sum over the current epoch
         self._count  = 0 # amount of calls in current epoch
 
+    # Computing
     def compute(self, **input):
         '''
         Throws NotImplementedError. Override with loss based on **input.
@@ -44,6 +48,7 @@ class LossTerm(nn.Module):
         self._count += 1 # count calls within epoch
         return value          
 
+    # History
     def setScale(self, scale):
         '''
         Set the normalisation scale of the LossTerm.
@@ -141,17 +146,19 @@ class Loss(nn.Module):
         self._tot_sum = 0. # running loss sum over the current epoch
         self._count = 0 # amount of calls in current epoch
 
+    # Computing
     def forward(self, **input):
         '''
         For every loss term, computes weight * scale * value(input).
         Returns sum of the above, and raw loss terms.
         '''
         parts = {name:term(**input) for name,term in self.terms.items()}
-        value = sum(term.weight * term.scale * parts[name] for name,term in self.terms.items()) ## type:ignore
-        self._tot_sum += value.detach()
+        value = sum(term.weight * term.scale * parts[name] for name,term in self.terms.items()) ##type:ignore
+        self._tot_sum += value.detach() ##type:ignore
         self._count   += 1 # count calls within epoch
         return value, parts
 
+    # History
     def endEpoch(self):
         '''
         Store the mean loss of this epoch in history and reset the accumulator.
@@ -160,7 +167,15 @@ class Loss(nn.Module):
             term.endEpoch() ## type:ignore
         self.tot_history.append(float(self._tot_sum) / self._count)
         self._tot_sum, self._count = 0., 0
-                 
+
+    def getHistory(self, **interval):
+        '''
+        Returns a dict with the selected history of all stored losses.
+        '''
+        history = self.getTermHistory(**interval)
+        history['tot'] = self.getTotHistory(**interval)
+        return history
+
     def getTermHistory(self, start=0, stop=None):
         '''
         Returns a dict with the selected history of raw LossTerms.
@@ -172,14 +187,6 @@ class Loss(nn.Module):
         Returns a list with the selected history of the total loss.
         '''
         return self.tot_history[start:stop]
-
-    def getHistory(self, **interval):
-        '''
-        Returns a dict with the selected history of all stored losses.
-        '''
-        history = self.getTermHistory(**interval)
-        history['tot'] = self.getTotHistory(**interval)
-        return history
 
     def normalize(self, N=5):
         '''
@@ -198,12 +205,153 @@ class Loss(nn.Module):
         for name, term in self.terms.items():
             term.setScale(mean_loss / mean_losses[name]) ## type:ignore
 
+    # Storage
     def save(self, path, **interval):
         '''
-        Save the LossTerms to a eponymous .npy files in the given path.
+        Save the history, weight and scale of LossTerms
+        to eponymous files in the given path.
         '''
         os.makedirs(path, exist_ok=True)
-        for name, term in self.getHistory(**interval).items():
-            if not term:
+        self.saveHistory(path, **interval)
+        self.saveWeight(path)
+        self.saveScale(path)
+
+    def saveHistory(self,path,**interval):
+        for name, hist in self.getHistory(**interval).items():
+            if not hist:
                 warnings.warn(f'No history for loss term "{name}" yet.', RuntimeWarning)
-            np.save(path+'/'+name+'.npy', term)
+            np.save(f'{path}/{name}.npy', hist)
+
+    def saveWeight(self,path):
+        with open(f'{path}/weight.json', 'w') as f:
+            json.dump({name:float(term.weight) for name,term in self.terms.items()}, f, indent=4) ## type:ignore
+
+    def saveScale(self,path):
+        with open(f'{path}/scale.json', 'w') as f:
+            json.dump({name:float(term.scale) for name,term in self.terms.items()}, f, indent=4) ## type:ignore
+
+    def load(self, path):
+        '''
+        Override the history, weight and scale of LossTerms
+        by those in the given path.
+        '''
+        if not os.path.isdir(path): raise FileNotFoundError(f"Invalid path at {path}")
+        self.loadHistory(path)
+        self.loadWeight(path)
+        self.loadScale(path)
+
+    def loadHistory(self,path):
+        for name in self.getHistory().keys():
+            if not os.path.exists(f'{path}/{name}.npy'):
+                raise FileNotFoundError(f"Missing history for '{name}' term in {path}.")
+            hist = np.load(f'{path}/{name}.npy').tolist()
+            if name=='tot': self.tot_history = hist
+            else:   self.terms[name].history = hist
+        print(f"Loaded losses for {self.getHistory().keys()}")
+
+    def loadWeight(self,path):
+        if not os.path.exists(f'{path}/weight.json'):
+            raise FileNotFoundError(f"Missing weight.json in {path}. Load old models using Loss.loadHistory().")
+        with open(f'{path}/weight.json') as f:
+            weights = json.load(f)
+        for name, term in self.terms.items():
+            term.weight = weights[name]
+
+    def loadScale(self,path):
+        if not os.path.exists(f'{path}/scale.json'):
+            raise FileNotFoundError(f"Missing scale.json in {path}. Load old models using Loss.loadHistory().")
+        with open(f'{path}/scale.json') as f:
+            scales = json.load(f)
+        for name, term in self.terms.items():
+            term.setScale(scales[name]) ## type:ignore
+
+
+
+##################
+### Loss Setup ###
+##################
+
+def setup_loss(types:str, weights=None):
+    '''
+    Sets up a loss with terms_like_this and weights.
+
+    Accepted losses: abs, grd, idn
+    '''
+    terms = {}
+    if weights is None:
+        weights=[1 for t in types.split('_')]
+    if len(types.split('_')) != len(weights):
+        raise RuntimeError(f"{len(weights)} weights for {len(types.split('_'))} lossterms.")
+    
+    for i, t in enumerate(types.split('_')):
+        if   t=="abs": terms[t] = AbsLoss(weights[i])
+        elif t=='grd': terms[t] = GrdLoss(weights[i])
+        elif t=='idn': terms[t] = IdnLoss(weights[i])
+        else: raise RuntimeError(f"Unrecognized loss type: {t}")
+    return Loss(terms)
+
+def load_loss(path, types=None):
+    '''
+    Load a Loss saved with Loss.save().
+    If types is not given, the loss terms are read from weight.json.
+    '''
+    if not types:
+        with open(f'{path}/weight.json') as f:
+            types = '_'.join(json.load(f)) ## keys in saved order
+    loss_fn = setup_loss(types)
+    loss_fn.load(path)
+    return loss_fn
+
+def load_old_loss(path, types='abs_idn', **weights):
+    '''
+    Load a depracated loss history into a new Loss object.
+    Old loss combined raw, weight, and scale, 
+    so they are all standard set to 1 here. 
+    Not ideal for training further.
+    You can add weights in **kwargs.
+    '''
+    loss_fn = setup_loss(types, **weights)
+    loss_fn.loadHistory(path)
+    return loss_fn
+
+
+
+##################
+### Loss Plots ###
+##################
+
+COLORS = {'tot': 'k', 
+          'abs': 'cornflowerblue', 
+          'grd': 'gold', 
+          'idn': 'salmon', 
+          'elm': 'darkorchid'}
+STYLES = {'train': dict(ls='-',  marker='.'),
+          'valid': dict(ls='--', marker='x'),
+          'test':  dict(ls=':',  marker='^')}
+
+def plot(losses:dict, ax=None, log=True, ms=3, **interval):
+    '''
+    Plot per-epoch losses. Colour = loss term, line style = dataset.
+
+    losses: {dataset: Loss}, e.g. {'train': trainloss, 'valid': validloss}
+    
+    Claude is 100% responsible for this one, I hold no accountability
+    '''
+    if ax is None:
+        _, ax = plt.subplots(figsize=(6, 3))
+
+    histories = {dataset: loss.getHistory(**interval) for dataset, loss in losses.items()}
+    for dataset, history in histories.items():
+        for term, values in history.items():
+            ax.plot(values, color=COLORS.get(term, 'grey'), ms=ms, **STYLES[dataset])
+
+    terms    = dict.fromkeys(t for h in histories.values() for t in h)   ## unique, in order
+    handles  = [Line2D([], [], color='grey', label=d, **STYLES[d]) for d in histories]
+    handles += [Line2D([], [], color=COLORS.get(t, 'grey'), lw=4, label=t) for t in terms]
+    ax.legend(handles=handles, loc='upper right', fontsize=10)
+
+    if log: ax.set_yscale('log')
+    ax.set_xlabel('epoch')
+    ax.set_ylabel('loss')
+    ax.grid(True, ls='--', lw=0.2)
+    return ax
