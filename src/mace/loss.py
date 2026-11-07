@@ -172,9 +172,9 @@ class Loss(nn.Module):
         '''
         Returns a dict with the selected history of all stored losses.
         '''
-        history = self.getTermHistory(**interval)
-        history['tot'] = self.getTotHistory(**interval)
-        return history
+        totHist = {'tot': self.getTotHistory(**interval)}
+        termHist = self.getTermHistory(**interval)
+        return totHist|termHist
 
     def getTermHistory(self, start=0, stop=None):
         '''
