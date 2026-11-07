@@ -6,7 +6,24 @@ import matplotlib.pyplot as plt
 import os
 import json
 from matplotlib.lines import Line2D
+## TODO hook methods into
+# - train.py
+# - integrated.py (current)
+# - load.py
+# - routine.py
+# - local.py (eventually)
 
+
+'''
+Initialize losses using setup_loss(type, weights)
+Pass loss types as abs_grd_idn.
+
+Creating a new loss term:
+- Subclass LossTerm
+- Add args to Loss.forward() docs
+- Add term name to setup_loss()
+- Add term color to COLOR
+'''
 
 
 ##################
@@ -73,8 +90,8 @@ class AbsLoss(LossTerm):
     def compute(self, n_e, n_e_hat, **_):
         '''
         Arguments:
-        - n_e:      Real evolution
-        - n_e_hat:  Predicted evolution
+        - n_e:     Real evolution
+        - n_e_hat: Predicted evolution
         '''
         return (n_e - n_e_hat)**2
 
@@ -87,10 +104,10 @@ class GrdLoss(LossTerm):
     def compute(self, n_e, n_e_hat, **_):
         '''
         Arguments:
-        - n_e:      Real evolution
-        - n_e_hat:  Predicted evolution
+        - n_e:     Real evolution
+        - n_e_hat: Predicted evolution
         '''
-        return (torch.gradient(n_e)[0] - torch.gradient(n_e_hat[0])[0])**2 # TODO fix ts
+        return (torch.gradient(n_e,dim=1)[0] - torch.gradient(n_e_hat[0], dim=1)[0])**2 # TODO fix ts
 
 
 class IdnLoss(LossTerm):
@@ -101,14 +118,11 @@ class IdnLoss(LossTerm):
     def compute(self, n, p, model, **_):
         '''
         Arguments:
-        - n:        Data abundance sample
-        - p:        Data physical sample
-        - model:    MACE model (must have autoencoder)
+        - n:       Data abundance sample
+        - p:       Data physical sample
+        - model:   MACE model (must have autoencoder)
         '''
-        E = model.encoder  # TODO make solver return z to skip this
-        D = model.decoder
-        x = torch.cat((p, n), dim=-1) # TODO switch up for Gnn models
-        return (n - D( E( x )))**2 
+        return (n - model.decode(model.encode(n,p)))**2 
 
 
 class MseLoss(LossTerm):
@@ -133,6 +147,13 @@ class Loss(nn.Module):
     '''
     A collection of LossTerms. LossTerms are stored in a dict.
     Tracks all previous losses.
+
+    Loss.forward() with the following arguments:
+    - n_e:     Real evolution
+    - n_e_hat: Predicted evolution
+    - n:       Data abundance sample
+    - p:       Data physical sample
+    - model:   MACE model
     '''
     def __init__(self, terms:dict):
         '''
@@ -302,15 +323,14 @@ def load_loss(path, types=None):
     loss_fn.load(path)
     return loss_fn
 
-def load_old_loss(path, types='abs_idn', **weights):
+def load_old_loss(path, types='abs_idn', weights=None):
     '''
     Load a depracated loss history into a new Loss object.
     Old loss combined raw, weight, and scale, 
     so they are all standard set to 1 here. 
     Not ideal for training further.
-    You can add weights in **kwargs.
     '''
-    loss_fn = setup_loss(types, **weights)
+    loss_fn = setup_loss(types, weights)
     loss_fn.loadHistory(path)
     return loss_fn
 

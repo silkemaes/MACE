@@ -21,5 +21,6 @@
     "owner": "Silke Maes",
     "p" : "array[4]: density, temperature, xi, Av",
     "info" : "https://ui.adsabs.harvard.edu/abs/2024ApJ...969...79M/abstract",
-    "nb_test": 3
+    "nb_test": 3,
+    "version": "1"
 }
