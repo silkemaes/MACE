@@ -1,114 +1,112 @@
-'''
-This script contains the core of training a MACE model.
-'''
-
 from time                   import time
-import matplotlib.pyplot    as plt
-import numpy                as np
 import torch
-import src.mace.loss        as loss
 
+
+def make_windows(n, p, dt, e):
+    '''
+    Cut one 1D entry into windows with length e
+
+    For use in rollout: (n[r], p[r], dt[r])--> n[r+1].
+
+    - n:  (N,   n_dim) abundances
+    - p:  (N-1, p_dim) physical parameters
+    - dt: (N-1,)       time steps
+    - e:  window length (1 = local scheme, nb_evol = integrated scheme)
+
+    Returns (with M =  #windows, window j starts at row j)
+    - n0:     (M,    n_dim) starting abundances,  n0[j]       = n[j]
+    - p_seq:  (M, e, p_dim) physics per step,     p_seq[j, i] = p[j+i]
+    - dt_seq: (M, e)        time step per step,   dt_seq[j,i] = dt[j+i]
+    - n_e:    (M, e, n_dim) targets,              n_e[j, i]   = n[j+i+1]
+    '''
+    N      = n.shape[0]
+    if e > N:
+        raise RuntimeError(f"Can't evolve {e} datapoints in dataset with lenght {N}.")
+    n0     = n[:N-e]
+    p_seq  = p.unfold(0, e, 1).transpose(1, 2)
+    dt_seq = dt.unfold(0, e, 1)
+    n_e    = n[1:].unfold(0, e, 1).transpose(1, 2)
+    return n0, p_seq, dt_seq, n_e
+
+def run_epoch(model,
+              loader,
+              loss,
+              nb_evol,
+              device,
+              optimiser=None):
+    '''
+    Single data pass over an epoch.
+
+    - model:        MACE
+    - loader:       DataLoader yielding (n, p, dt) for one 1D model, batch_size = 1
+    - loss:         src.mace.loss.Loss
+    - device        device on which MACE is stored
+    - optimiser:    if None, does a validation epoch (requires no_grad())
+    '''
+    nb_failed, nb_solves = 0, 0
+
+    for n, p, dt in loader:
+        # drop the batch dimension (batch_size = 1)
+        n, p, dt = n[0].to(device), p[0].to(device), dt[0].to(device)
+
+        n0, p_seq, dt_seq, n_e = make_windows(n, p, dt, nb_evol)
+        n_e_hat, status = model.rollout(n0, p_seq, dt_seq)
+
+        loss_value, _ = loss(n_e=n_e, 
+                       n_e_hat=n_e_hat, 
+                       n=n[:-1], 
+                       p=p, 
+                       model=model)
+
+        if optimiser is not None:
+            optimiser.zero_grad()
+            loss_value.backward()
+            optimiser.step()
+
+        nb_failed += int((status!=0).sum())
+        nb_solves += status.numel()
+
+    loss.endEpoch()
+    return nb_failed, nb_solves
 
 def train(model,
-          data_loader, test_loader, 
-          end_epochs, 
-          trainloss, testloss, 
-          start_epochs = 0,                 ## option to restart training from a certain epoch
-          plot = False, log = True, show = False, save_epoch = 10,
-          start_time = time()):
+          train_loader, valid_loader,
+          train_loss, valid_loss, 
+          optimiser, 
+          nb_epochs, 
+          nb_evol=1):
     '''
-    Train the model for a number of epochs in the local way (for details; see paper).
-    
-    Input:
-        - model         = ML architecture to be trained    
-        - data_loader   = training data, torch tensor
-        - test_loader   = validation data, torch tensor
-        - end_epochs    = total number of epochs to train
-        - trainloss     = object that stores the losses of the training
-        - testloss      = object that stores the losses of the validation
-        - start_epochs  = epoch to start from (default = 0)
-        - plot          = plot the losses (boolean)
-        - log           = use logscale in plots (boolean)
-        - show          = show the plots (boolean)
-        - save_epoch    = save the model every "save_epoch" epochs (default = 10)
-        - start_time    = time to start from (default = 0)
+    Training loop.
 
-    Process:
-        1. initialise the optimiser --> Adam optimiser 
-        Per epoch:
-        2. train the model
-        3. validate the model
-        4. save the model every 10 epochs
-            - save the losses
-            - save the status
-        5. plot the losses if plot == True
-
-    Returns:
-        - optimiser
+    - model:        MACE
+    - train_loader: DataLoader yielding (n, p, dt) for one 1D model, batch_size = 1
+    - valid_loader: DataLoader yielding (n, p, dt) for one 1D model, batch_size = 1
+    - train_loss:   src.mace.loss.Loss (optimised over)
+    - valid_loss:   src.mace.loss.Loss (no gradient)
+    - optimiser:    torch optimiser over model.parameters()
+    - nb_epochs:    number of epochs
+    - nb_evol:      window length e
     '''
-    model.set_optimiser()
-    path = model.path
-    
+    device = next(model.parameters()).device
 
-    if model.scheme == 'loc':
-        print('\nLocal training scheme in use.')
-        from src.mace.local import run_epoch
-    elif model.scheme == 'int':
-        print('\nIntegrated training scheme in use.')
-        from src.mace.integrated import run_epoch
-    else:
-        print('\nInvalid training scheme input. Please choose either "loc" or "int".')
-        
+    for epoch in range(nb_epochs):
+        tic = time()
 
-    print('\n>>> Training model...')
-
-
-    for epoch in range(start_epochs, end_epochs):
-
-        ## --- Training ---
-        
         model.train()
-        nb, status = run_epoch(data_loader, model, trainloss, training=True)
-        
-        ## save status
-        model.set_status(status/4, 'train')
+        nb_failed, nb_solves = run_epoch(model, train_loader, train_loss, 
+                                         nb_evol, device, optimiser)
+        model.eval()
+        with torch.no_grad():
+            run_epoch(model, valid_loader, valid_loss, 
+                      nb_evol, device)
 
-        ## ---- Validating ----
+        print(f'Epoch {epoch+1}/{nb_epochs}:\n'
+              f' - Train Loss {train_loss.getTotHistory()[-1]:.3e} | '
+              f' - Valid Loss {valid_loss.getTotHistory()[-1]:.3e},\n'
+              f' - Failed solves {nb_failed}/{nb_solves} | {time()-tic:.1f} s')
 
-        model.eval() ## zelfde als torch.no_grad
-        nb, status = run_epoch(test_loader, model, testloss, training=False)
-        
-        ## save status
-        model.set_status(status/4, 'test')
-        
-        ## --- save model every "save_epoch" epochs ---
-        if (start_epochs+epoch)%save_epoch == 0 and path != None:
-            ## nn
-            torch.save(model.state_dict(),path+'/nn/nn'+str(int((epoch)/save_epoch))+'.pt')
-            trainpath = path+'/train'
-            testpath  = path+'/valid'
-            ## losses
-            trainloss.save(trainpath)
-            testloss.save(testpath)
-            ## plot, every save this fig is updated
-            fig = loss.plot(trainloss, testloss, ylim = False, log = log, show = False)
-            plt.savefig(path+'/loss.png')
-        
-        # print(trainloss.get_loss('tot'))
-        print("Epoch", epoch + 1, "complete!", "\tAverage training loss: ", np.round(trainloss.get_loss('tot')[epoch], 5), "\tAverage validation loss: ", np.round(testloss.get_loss('tot')[epoch],5))
-        
-        calc_time = (time()-start_time)     ## in seconds
-        if calc_time < 60.:
-            print("              time [secs]: ", np.round(calc_time,2))
-        elif calc_time >= 60.:
-            print("              time [mins]: ", np.round(calc_time/60.,2))
-        elif calc_time > 3600.:
-            print("              time [hours]: ", np.round(calc_time/(60.*60.),2))
-    
-    print('\n \tDONE!')
+    # Rescale the validation loss to match the training loss
+    for name, term in valid_loss.terms.items(): 
+        term.setScale(train_loss.terms[name].scale)
 
-    if plot == True:
-        print('\n >>> Plotting...')
-        loss.plot(trainloss, testloss, ylim = False, log = log, show = show)
-
-    return 
+    return train_loss

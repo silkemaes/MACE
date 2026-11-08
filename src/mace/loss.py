@@ -107,7 +107,7 @@ class GrdLoss(LossTerm):
         - n_e:     Real evolution
         - n_e_hat: Predicted evolution
         '''
-        return (torch.gradient(n_e,dim=1)[0] - torch.gradient(n_e_hat[0], dim=1)[0])**2 # TODO fix ts
+        return (torch.gradient(n_e,dim=1)[0] - torch.gradient(n_e_hat,dim=1)[0])**2 # TODO fix ts
 
 
 class IdnLoss(LossTerm):
@@ -122,7 +122,7 @@ class IdnLoss(LossTerm):
         - p:       Data physical sample
         - model:   MACE model (must have autoencoder)
         '''
-        return (n - model.decode(model.encode(n,p)))**2 
+        return (n - model.autoencode(n,p))**2
 
 
 class MseLoss(LossTerm):

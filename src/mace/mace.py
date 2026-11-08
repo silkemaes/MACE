@@ -24,12 +24,15 @@ class AutoEncoder(nn.Module):
                  in_dim,
                  z_dim,
                  out_dim,
-                 ae_type='simple'):
+                 ae_type='simple',
+                 use_p = False):
         super().__init__()
         # Dimensions
         self.in_dim = in_dim
         self.z_dim = z_dim
         self.out_dim = out_dim
+        # Flag: consider extra input for encoder
+        self.use_p = use_p
         # Autoencoder (self.encoder/decoder)
         self.setAutoencoder(ae_type)
 
@@ -41,16 +44,20 @@ class AutoEncoder(nn.Module):
                                   latent_dim=self.z_dim,
                                   ae_type=ae_type)
 
-    def encode(self, n):
+    def encode(self, n, p=None):
         '''
         Encode the real state (n)
 
-        - n: (B, in_dim) real states
+        - n: (B, n_dim) real states
+        - p: (B, p_dim) physical parameters (optional)
 
         Returns
         - z: (B, z_dim) corresponding latent states
         '''
-        z = self.encoder(n)
+        x = n
+        if self.use_p: # Feed p into encode
+            x = torch.cat((p, n), dim=-1) #type:ignore
+        z = self.encoder(x)
         return z
 
     def decode(self, z):
@@ -60,22 +67,37 @@ class AutoEncoder(nn.Module):
         - z: (B, z_dim) latent states
 
         Returns
-        - n: (B, out_dim) corresponding real states
+        - n: (B, n_dim) corresponding real states
         '''
         n = self.decoder(z)
         return n
 
-    def forward(self, n):
+    def autoencode(self, n, p=None):
         '''
-        Auto-encodes n. Returns D(E(n)) and E(n).
+        Auto-encodes n. Returns D(E(n)).
 
         - n: (B, in_dim) real states
+        - p: (B, p_dim)  physical parameters (optional)
 
         Returns:
         - n_hat: (B, out_dim) corresponding real states
-        - z:     (B, z_dim) 
         '''
-        z = self.encode(n)
+        z = self.encode(n, p)
+        n_hat = self.decode(z)
+        return n_hat
+
+    def forward(self, n, p=None):
+        '''
+        Auto-encodes n. Returns D(E(n)) and E(n).
+
+        - n: (B, n_dim) real states
+        - p: (B, p_dim)  physical parameters (optional)
+
+        Returns:
+        - n_hat: (B, out_dim) corresponding real states
+        - z:     (B, z_dim)   corresponding latent states 
+        '''
+        z = self.encode(n,p)
         n_hat = self.decode(z)
         return n_hat, z
     
@@ -101,12 +123,10 @@ class MACE(AutoEncoder):
                  rtol=1e-2):
         '''
         Main MACE architecture. Contains all updateable weights.
-        
-        Planned to include self propagation as _rollout_()
         '''
         in_dim = p_dim + n_dim
         if g_nn: in_dim = n_dim
-        super().__init__(in_dim, z_dim, n_dim, ae_type)
+        super().__init__(in_dim, z_dim, n_dim, ae_type, use_p=not g_nn)
         # Dimensions (in_dim, z_dim, out_dim are set by AutoEncoder)
         self.n_dim, self.p_dim = n_dim, p_dim
         # Keep track of version for loading old weights
@@ -157,22 +177,6 @@ class MACE(AutoEncoder):
         solution = self._solver.solve(problem, term=self._term, args=p) # Args is ignored if not self.g_nn
         return solution.ys[:, -1], solution.status
 
-    def encodeState(self, n, p):
-        '''
-        Creates the correct input for self.encode,
-        then runs self.encode()
-        
-        - n: (B, n_dim) real states
-        - p: (B, p_dim) physical parameters
-
-        Returns
-        - z: (B, z_dim) latent states
-        '''
-        x = n
-        if not self.g_nn: # Feed p into encode
-            x = torch.cat((p, n), dim=-1)
-        return self.encode(x)
-
     def forward(self, n0, p, dt):
         '''
         Evolves n0 over a timestep dt using physical state p.
@@ -186,27 +190,27 @@ class MACE(AutoEncoder):
         - z1:    (B, z_dim) evolved latent states
         - status:(B,)       ODE solver error codes
         '''
-        z0 = self.encodeState(n0, p)
+        z0 = self.encode(n0, p)
         z1, status = self.solveNeuralODE(z0, p, dt)
         n1 = self.decode(z1)
         return n1, z1, status
 
-    def rollout(self, n0, p_seq, dt):
+    def rollout(self, n0, p_seq, dt_seq):
         '''
         Repeatedly evolves a starting state n0 
-        over a timestep dt, injecting p at every step i.
+        over a timestep dt, injecting p at every step e.
 
         - n0:    (B,    n_dim) initial real states
-        - p_seq: (B, i, p_dim) physical parameters per step
-        - dt:    (B, i)        time step sizes
+        - p_seq: (B, e, p_dim) physical parameters per step
+        - dt_seq:(B, e)        time step sizes
 
         Returns
-        - n_e_hat:(B, i, n_dim) predicted real states after each step
-        - status: (B, i)        torchode status codes (0 = success, see torchode.status_codes.Status)
+        - n_e_hat:(B, e, n_dim) predicted real states after each step
+        - status: (B, e)        torchode status codes (0 = success, see torchode.status_codes.Status)
         '''
         n, n_e_hat, status = n0, [], []
         for i in range(p_seq.shape[1]):
-            n, _, s = self(n, p_seq[:, i], dt[:, i])
+            n, _, s = self(n, p_seq[:, i], dt_seq[:, i])
             n_e_hat.append(n)
             status.append(s)
         return torch.stack(n_e_hat, dim=1), torch.stack(status, dim=1)
