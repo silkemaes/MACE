@@ -363,10 +363,10 @@ def plot(losses:dict, ax=None, log=True, ms=3, **interval):
     histories = {dataset: loss.getHistory(**interval) for dataset, loss in losses.items()}
     for dataset, history in histories.items():
         for term, values in history.items():
-            ax.plot(values, color=COLORS.get(term, 'grey'), ms=ms, **STYLES[dataset])
+            ax.plot(values, color=COLORS.get(term, 'grey'), ms=ms, **STYLES[dataset]) #type:ignore
 
     terms    = dict.fromkeys(t for h in histories.values() for t in h)   ## unique, in order
-    handles  = [Line2D([], [], color='grey', label=d, **STYLES[d]) for d in histories]
+    handles  = [Line2D([], [], color='grey', label=d, **STYLES[d]) for d in histories] #type:ignore
     handles += [Line2D([], [], color=COLORS.get(t, 'grey'), lw=4, label=t) for t in terms]
     ax.legend(handles=handles, loc='upper right', fontsize=10)
 

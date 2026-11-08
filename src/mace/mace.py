@@ -152,8 +152,8 @@ class MACE(AutoEncoder):
         # adapt g to torchode's calling convention f(t, z[, args]).
         term = to.ODETerm(self.g, with_args=self.g_nn, with_stats=False)
         # setup solver with custom backprop (adjoint)
-        solver = to.AutoDiffAdjoint(to.Dopri5(),
-                                    to.IntegralController(atol=atol, rtol=rtol))
+        solver = to.AutoDiffAdjoint(to.Dopri5(), #type:ignore all around
+                                    to.IntegralController(atol=atol, rtol=rtol)) #type:ignore
         # object.__setattr__ bypasses nn.Module's automatic submodule registration
         object.__setattr__(self, '_term', term)
         object.__setattr__(self, '_solver', solver)
@@ -171,7 +171,7 @@ class MACE(AutoEncoder):
         - status:(B,)       torchode status codes (0 = success, see torchode.status_codes.Status)
         '''
         problem = to.InitialValueProblem(y0=z0,
-                                         t_start=torch.zeros_like(dt),
+                                         t_start=torch.zeros_like(dt), #type:ignore
                                          t_end=dt,
                                          t_eval=dt[:, None]) # TODO:remove this (will slightly break old models)
         solution = self._solver.solve(problem, term=self._term, args=p) # Args is ignored if not self.g_nn

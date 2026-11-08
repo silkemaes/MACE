@@ -102,7 +102,7 @@ def train(model,
 
         print(f'Epoch {epoch+1}/{nb_epochs}:\n'
               f' - Train Loss {train_loss.getTotHistory()[-1]:.3e} | '
-              f' - Valid Loss {valid_loss.getTotHistory()[-1]:.3e},\n'
+              f'Valid Loss {valid_loss.getTotHistory()[-1]:.3e},\n'
               f' - Failed solves {nb_failed}/{nb_solves} | {time()-tic:.1f} s')
 
     # Rescale the validation loss to match the training loss
