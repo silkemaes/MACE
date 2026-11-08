@@ -66,7 +66,6 @@ class Encoder(nn.Module):
 
 
 
-
 class Decoder(nn.Module):
     """
     Decoder neural network.
@@ -117,30 +116,6 @@ class Decoder(nn.Module):
         return h
 
     
-    
-class Autoencoder(nn.Module):
-    """
-    Autoencoder.
-
-    Combines the Encoder and Decoder.
-    """
-    def __init__(self, Encoder, Decoder):
-        super(Autoencoder, self).__init__()
-        
-        self.Encoder = Encoder
-        self.Decoder = Decoder
-                
-    def forward(self, x):
-        '''
-        Forward pass of the autoencoder.
-        '''
-        h = self.Encoder(x)
-        h = self.Decoder(h)
-        return h
-
-
-    
-
 
 def get_overview(coder):
     '''
