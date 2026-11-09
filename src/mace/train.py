@@ -33,7 +33,8 @@ def run_epoch(model,
               loss,
               nb_evol,
               device,
-              optimiser=None):
+              optimiser=None,
+              batch_size=None):
     '''
     Single data pass over an epoch.
 
@@ -42,29 +43,36 @@ def run_epoch(model,
     - loss:         src.mace.loss.Loss
     - device        device on which MACE is stored
     - optimiser:    if None, does a validation epoch (requires no_grad())
+    - batch_size:   Amount of windows passed per loss computation.
     '''
     nb_failed, nb_solves = 0, 0
 
     for n, p, dt in loader:
         # drop the batch dimension (batch_size = 1)
         n, p, dt = n[0].to(device), p[0].to(device), dt[0].to(device)
-
         n0, p_seq, dt_seq, n_e = make_windows(n, p, dt, nb_evol)
-        n_e_hat, status = model.rollout(n0, p_seq, dt_seq)
 
-        loss_value, _ = loss(n_e=n_e, 
-                       n_e_hat=n_e_hat, 
-                       n=n[:-1], 
-                       p=p, 
-                       model=model)
-
+        M = n0.shape[0]
+        windowBatches = torch.arange(M, device=device)
         if optimiser is not None:
-            optimiser.zero_grad()
-            loss_value.backward()
-            optimiser.step()
+            windowBatches = torch.randperm(M, device=device)
 
-        nb_failed += int((status!=0).sum())
-        nb_solves += status.numel()
+        for m in windowBatches.split(batch_size or M):
+            n_e_hat, status = model.rollout(n0[m], p_seq[m], dt_seq[m])
+
+            loss_value, _ = loss(n_e=n_e[m], 
+                            n_e_hat=n_e_hat, 
+                            n=n0[m], 
+                            p=p_seq[m,0], 
+                            model=model)
+
+            if optimiser is not None:
+                optimiser.zero_grad()
+                loss_value.backward()
+                optimiser.step()
+
+            nb_failed += int((status!=0).sum())
+            nb_solves += status.numel()
 
     loss.endEpoch()
     return nb_failed, nb_solves
@@ -74,7 +82,8 @@ def train(model,
           train_loss, valid_loss, 
           optimiser, 
           nb_epochs, 
-          nb_evol=1):
+          nb_evol=1,
+          batch_size=None):
     '''
     Training loop.
 
@@ -86,6 +95,7 @@ def train(model,
     - optimiser:    torch optimiser over model.parameters()
     - nb_epochs:    number of epochs
     - nb_evol:      window length e
+    - batch_size:   Amount of windows passed per train loss computation.
     '''
     device = next(model.parameters()).device
 
@@ -94,7 +104,8 @@ def train(model,
 
         model.train()
         nb_failed, nb_solves = run_epoch(model, train_loader, train_loss, 
-                                         nb_evol, device, optimiser)
+                                         nb_evol, device, 
+                                         optimiser, batch_size)
         model.eval()
         with torch.no_grad():
             run_epoch(model, valid_loader, valid_loss, 
