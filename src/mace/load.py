@@ -11,82 +11,32 @@ together with the training and test losses, and the meta data.
 import src.mace.utils       as utils
 import src.mace.loss        as loss
 import matplotlib.pyplot    as plt
+from pathlib import Path
+import os
 
 
 
-class Trained_MACE():
+def load_MACE(dir, epoch=-1):
     '''
-    Class to load a trained MACE model.
+    Loads a MACE model from weights. Loads losses.
+
+    - dir:      Directory where meta.json is stored
+    - epoch:    Epoch to load. Defaults to last weights.
+
+    Returns
+    - model:    A MACE model with loaded weights
+    - lossses:  A dict with Loss objects (train, valid, test)
+    - meta:     meta.json
     '''
-    def __init__(self, outloc, dirname, epoch = -1):
-        '''
-        Load all the components of a MACE model.
+    meta = utils.load_meta(dir)
+    model = utils.load_model(dir, meta, epoch)
 
-        Input:
-            - outloc: output location
-            - dirname: name of the directory
-            - epoch: specific epoch to load
-                if epoch == -1, the last epoch is loaded (i.e. final state of the model)
-                if epoch >= 0, the epoch*10's epoch is loaded
-        
-        Returns:
-            - meta: file with meta data
-            - model: torch model
-            - trainloss: training loss per epoch
-            - testloss: test loss per epoch
-        '''
+    losses = {}
 
-        self.loc   = outloc+dirname+'/'
-        self.epoch = epoch
+    for d_ in [d_ for d_ in Path(dir).iterdir() if d_.is_dir()]:
+        d_ = os.path.basename(os.path.normpath(d_))
+        if d_ in ('train', 'valid', 'test'):
+            print(f'Found {d_}ing losses')
+            losses[d_] = loss.load_loss(f'{dir}/{d_}')
 
-        self.meta = utils.load_meta(self.loc)
-
-        self.model, self.num_params = utils.load_model(self.loc, self.meta, epoch)
-
-        self.trainloss = loss.LoadedLoss(self.loc, self.meta, 'train')
-
-        self.testloss  = loss.LoadedLoss(self.loc, self.meta, 'valid')
-
-        self.plotpath = self.loc + 'figs/'
-
-        utils.makeOutputDir(self.plotpath)
-
-        
-    def get_meta(self):
-        return self.meta
-    
-    def get_model(self):
-        return self.model
-    
-    def get_trainloss(self):
-        return self.trainloss
-    
-    def get_testloss(self):
-        return self.testloss
-    
-    def get_num_params(self):
-        return self.num_params
-    
-    def get_loc(self):
-        return self.loc
-    
-    def get_epoch(self):
-        return self.epoch
-    
-    def plot_loss(self, log=True, ylim=False, limits=None, save = True):
-
-        len = self.get_meta()['epochs']
-
-        fig = loss.plot(self.trainloss, self.testloss, len, log = log, ylim = ylim, limits = limits)
-
-        if save == True:
-            plt.savefig(self.plotpath+'loss.png')
-
-        plt.show()
-
-        return fig
-    
-
-
-        
-
+    return model, losses, meta

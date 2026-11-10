@@ -9,6 +9,7 @@ import json
 import torch
 import src.mace.mace    as mace
 from pathlib import Path
+from src.mace.input             import Input
 
 
 def makeOutputDir(path):
@@ -157,35 +158,50 @@ def generate_random_numbers(n, start, end):
 
 
 
-def load_model(loc, meta, epoch):
+def overwrite_weights(model, dir, epoch=-1):
     '''
-    Load a MACE model.
+    Overwrites a MACE model's weights by the given 
+    '''
+    if epoch >= 0:
+        infile = f'nn/nn{epoch}.pt'
+    else:
+        infile = 'nn/nn.pt'
+    state_dict = torch.load(f'{dir}/{infile}', map_location='cpu', weights_only=True)
 
-    Option to load a specific epoch file, or the latest epoch.
+    model.eval()
+    model.load_state_dict(state_dict) 
+    model.eval()
 
-        if sepr == True, the model is loaded from the epoch file, indicated with epoch
 
-        meta; meta data from the model, needed to know the hyperparameters
+
+def load_model(dir, meta, epoch=-1):
+    '''
+    Initializes MACE model. Tries to recover parameters from meta.json and input file.
+    Overwrites MACE weights by those found in meta.json.
+
+    - dir:      Directory where meta.json is stored
+    - meta:     meta.json
+    - epoch:    Epoch to load. Defaults to last weights.
     
     '''
-    n_dim = 468
-    cuda   = False
-    DEVICE = torch.device("cuda" if cuda else "cpu")
+    try:
+        input = Input(meta['inputfile'], dir) #TODO unlink these variables from input
+        n_dim = input.n_dim # TODO include in meta.json
+    except FileNotFoundError:
+        print('Loading currently relies on retracing the input file.\n',
+              f'Failed to find {meta["inputfile"]}.\n',
+              'n_dim should be stored in meta.json soon.')
+        n_dim = 468
 
-    # model = mace.Solver(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, ae_type=meta['ae_type'], DEVICE = DEVICE)
-
-    model = mace.Solver(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, ae_type=meta['ae_type'], scheme = meta['scheme'],nb_evol=meta['nb_evol'] , lr = meta['lr'], path = loc,DEVICE = DEVICE)
-
-    if epoch >= 0:
-        file = 'nn/nn'+str(epoch)+'.pt'
-    else:
-        file = 'nn/nn.pt'
-
-    model.load_state_dict(torch.load(loc+file))
-
+    p_dim = 4 # TODO include in meta.json
+    z_dim = meta['z_dim']
+    ae_type = meta['ae_type']
+    # TODO include atol and rtol in meta.json
+    
+    model = mace.MACE(n_dim, p_dim, z_dim, ae_type)
+    overwrite_weights(model, dir, epoch)
     num_params = count_parameters(model)
-    print(f'The model has {num_params} trainable parameters')
-
+    
     return model, num_params
 
 
