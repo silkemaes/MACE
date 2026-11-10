@@ -9,7 +9,6 @@ import json
 import torch
 import src.mace.mace    as mace
 from pathlib import Path
-from src.mace.input             import Input
 
 
 def makeOutputDir(path):
@@ -176,29 +175,23 @@ def overwrite_weights(model, dir, epoch=-1):
 
 def load_model(dir, meta, epoch=-1):
     '''
-    Initializes MACE model. Tries to recover parameters from meta.json and input file.
+    Initializes MACE model. Loads hyperparameters from meta.json.
     Overwrites MACE weights by those found in meta.json.
 
     - dir:      Directory where meta.json is stored
-    - meta:     meta.json
+    - metadata: meta.json
     - epoch:    Epoch to load. Defaults to last weights.
     
     '''
-    try:
-        input = Input(meta['inputfile'], dir) #TODO unlink these variables from input
-        n_dim = input.n_dim # TODO include in meta.json
-    except FileNotFoundError:
-        print('Loading currently relies on retracing the input file.\n',
-              f'Failed to find {meta["inputfile"]}.\n',
-              'n_dim should be stored in meta.json soon.')
-        n_dim = 468
-
-    p_dim = 4 # TODO include in meta.json
+    n_dim = meta['n_dim']
+    p_dim = meta['p_dim']
     z_dim = meta['z_dim']
     ae_type = meta['ae_type']
-    # TODO include atol and rtol in meta.json
+    g_nn = meta["g_nn"]
+    atol = meta["atol"]
+    rtol = meta["rtol"]
     
-    model = mace.MACE(n_dim, p_dim, z_dim, ae_type)
+    model = mace.MACE(n_dim, p_dim, z_dim, ae_type, g_nn, atol, rtol)
     overwrite_weights(model, dir, epoch)
     num_params = count_parameters(model)
     
@@ -213,10 +206,10 @@ def load_meta(loc):
     '''
     ## loading meta file
     with open(loc+'meta.json', 'r') as f:
-        meta=f.read()
-    meta  = json.loads(meta)
+        metadata=f.read()
+    metadata  = json.loads(metadata)
 
-    return meta
+    return metadata
 
 
 

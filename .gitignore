@@ -7,6 +7,8 @@
 !data/
 !docs/
 !input
+!input/example.in
+!input/example_v2.in
 !MACE_fortran
 !src
 !load&test.ipynb

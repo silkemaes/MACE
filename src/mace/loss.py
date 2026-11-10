@@ -292,26 +292,29 @@ class Loss(nn.Module):
 ### Loss Setup ###
 ##################
 
-def setup_loss(types:str, weights=None):
+def setup_loss(losstypes:dict|str={'abs':1,'idn':1}, weights=None):
     '''
-    Sets up a loss with terms_like_this and weights.
+    Sets up a loss with {types: weights} or types_like_this.
 
     Accepted losses: abs, grd, idn
     '''
     terms = {}
-    if weights is None:
-        weights=[1 for t in types.split('_')]
-    if len(types.split('_')) != len(weights):
-        raise RuntimeError(f"{len(weights)} weights for {len(types.split('_'))} lossterms.")
+    if isinstance(losstypes, str):
+        lst = {}
+        for i, t in enumerate(losstypes.split('_')):
+            lst[t] = 1
+            if weights is not None:
+                lst[t] = weights[i]
+        losstypes = lst
     
-    for i, t in enumerate(types.split('_')):
-        if   t=="abs": terms[t] = AbsLoss(weights[i])
-        elif t=='grd': terms[t] = GrdLoss(weights[i])
-        elif t=='idn': terms[t] = IdnLoss(weights[i])
+    for t, weight in losstypes.items():
+        if   t=="abs": terms[t] = AbsLoss(weight)
+        elif t=='grd': terms[t] = GrdLoss(weight)
+        elif t=='idn': terms[t] = IdnLoss(weight)
         else: raise RuntimeError(f"Unrecognized loss type: {t}")
     return Loss(terms)
 
-def load_loss(path, types=None):
+def load_loss(path, types:str|None=None):
     '''
     Load a Loss saved with Loss.save().
     If types is not given, the loss terms are read from weight.json.
@@ -323,7 +326,7 @@ def load_loss(path, types=None):
     loss_fn.load(path)
     return loss_fn
 
-def load_old_loss(path, types='abs_idn', weights=None):
+def load_old_loss(path, types:str='abs_idn', weights=None):
     '''
     Load a depracated loss history into a new Loss object.
     Old loss combined raw, weight, and scale, 
