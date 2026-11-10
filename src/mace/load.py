@@ -26,10 +26,10 @@ def load_MACE(dir, epoch=-1):
     Returns
     - model:    A MACE model with loaded weights
     - lossses:  A dict with Loss objects (train, valid, test)
-    - meta:     meta.json
+    - metadata:     meta.json
     '''
-    meta = utils.load_meta(dir)
-    model = utils.load_model(dir, meta, epoch)
+    metadata = utils.load_meta(dir)
+    model, _ = utils.load_model(dir, metadata, epoch)
 
     losses = {}
 
@@ -39,4 +39,4 @@ def load_MACE(dir, epoch=-1):
             print(f'Found {d_}ing losses')
             losses[d_] = loss.load_loss(f'{dir}/{d_}')
 
-    return model, losses, meta
+    return model, losses, metadata
