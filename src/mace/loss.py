@@ -300,12 +300,10 @@ def setup_loss(losstypes:dict|str={'abs':1,'idn':1}, weights=None):
     '''
     terms = {}
     if isinstance(losstypes, str):
-        lst = {}
-        for i, t in enumerate(losstypes.split('_')):
-            lst[t] = 1
-            if weights is not None:
-                lst[t] = weights[i]
-        losstypes = lst
+        types = losstypes.split('_')
+        if weights is not None and len(types) != len(weights):
+            raise ValueError(f"Amount of losstypes ({len(types)}) does not match amount of weights ({len(weights)})")
+        losstypes = {t: (1 if weights is None else weights[i]) for i, t in enumerate(types)}
     
     for t, weight in losstypes.items():
         if   t=="abs": terms[t] = AbsLoss(weight)

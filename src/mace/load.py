@@ -26,7 +26,7 @@ def load_MACE(dir, epoch=-1):
     Returns
     - model:    A MACE model with loaded weights
     - lossses:  A dict with Loss objects (train, valid, test)
-    - metadata:     meta.json
+    - metadata: meta.json
     '''
     metadata = utils.load_meta(dir)
     model, _ = utils.load_model(dir, metadata, epoch)

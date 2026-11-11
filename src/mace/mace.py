@@ -14,27 +14,49 @@ import src.mace.latentODE   as lODE
 
 
 
-class AutoEncoder(nn.Module):
+class MACE(nn.Module):
     '''
-    Parent class of MACE
-    Builds an autoencoder with the passed arguments
-    Idk seems nice
+    Main MACE architecture. 
+    Contains an encoder, decoder, and nODE solver.
+
+    - n_dim:    Amount of chemical abundances
+    - p_dim:    Amount of physical parameters
+    - z_dim:    Amount of latent dimensions
+    - ae_type:  'simple' or 'linear'
+    - g_nn:     Move physical input to nODE (broken)
+    - atol:     Absolute tolerance of nODE solutions
+    - rtol:     Relative tolerance of nODE solutions
     '''
+    # ODE helpers, unregistered as submodules (see setNeuralODE)
+    # Kind of nasty but better on memory
+    _term:   to.ODETerm
+    _solver: to.AutoDiffAdjoint
+
     def __init__(self, 
-                 in_dim,
+                 n_dim,
+                 p_dim,
                  z_dim,
-                 out_dim,
                  ae_type='simple',
-                 use_p = False):
+                 g_nn=False,
+                 atol=1e-5,
+                 rtol=1e-2):
+        '''
+        Main MACE architecture. Contains all updateable weights.
+        '''
         super().__init__()
-        # Dimensions
-        self.in_dim = in_dim
-        self.z_dim = z_dim
-        self.out_dim = out_dim
-        # Flag: consider extra input for encoder
-        self.use_p = use_p
+        # Flags 
+        self.g_nn = g_nn # use neural ODE
+        self.use_p = not g_nn # consider extra input for encoder
+        # Data dimensions
+        self.n_dim, self.p_dim, self.z_dim = n_dim, p_dim, z_dim
+        # AE dimensions
+        self.in_dim = n_dim
+        if self.use_p: self.in_dim = p_dim + n_dim
+        self.out_dim = n_dim
         # Autoencoder (self.encoder/decoder)
         self.setAutoencoder(ae_type)
+        # Neural ODE (self.g, self._term, self._solver)
+        self.setNeuralODE(atol, rtol)
 
     def setAutoencoder(self, ae_type):
         self.encoder = ae.Encoder(input_dim=self.in_dim,
@@ -76,8 +98,8 @@ class AutoEncoder(nn.Module):
         '''
         Auto-encodes n. Returns D(E(n)).
 
-        - n: (B, in_dim) real states
-        - p: (B, p_dim)  physical parameters (optional)
+        - n: (B, n_dim) real states
+        - p: (B, p_dim) physical parameters (optional)
 
         Returns:
         - n_hat: (B, out_dim) corresponding real states
@@ -85,56 +107,6 @@ class AutoEncoder(nn.Module):
         z = self.encode(n, p)
         n_hat = self.decode(z)
         return n_hat
-
-    def forward(self, n, p=None):
-        '''
-        Auto-encodes n. Returns D(E(n)) and E(n).
-
-        - n: (B, n_dim) real states
-        - p: (B, p_dim)  physical parameters (optional)
-
-        Returns:
-        - n_hat: (B, out_dim) corresponding real states
-        - z:     (B, z_dim)   corresponding latent states 
-        '''
-        z = self.encode(n,p)
-        n_hat = self.decode(z)
-        return n_hat, z
-    
-        
-class MACE(AutoEncoder):
-    '''
-    Rework of MACE.py
-    will fix documentation later 
-    glory to mamdanistan
-    '''
-    # ODE helpers, unregistered as submodules (see setNeuralODE)
-    # ts some nasty ass code but who cares
-    _term:   to.ODETerm
-    _solver: to.AutoDiffAdjoint
-
-    def __init__(self, 
-                 n_dim,
-                 p_dim,
-                 z_dim,
-                 ae_type='simple',
-                 g_nn=False,
-                 atol=1e-5,
-                 rtol=1e-2):
-        '''
-        Main MACE architecture. Contains all updateable weights.
-        '''
-        in_dim = p_dim + n_dim
-        if g_nn: in_dim = n_dim
-        super().__init__(in_dim, z_dim, n_dim, ae_type, use_p=not g_nn)
-        # Dimensions (in_dim, z_dim, out_dim are set by AutoEncoder)
-        self.n_dim, self.p_dim = n_dim, p_dim
-        # Keep track of version for loading old weights
-        self.version = '2'
-        # Neural version flag
-        self.g_nn = g_nn
-        # Neural ODE (self.g, self._term, self._solver)
-        self.setNeuralODE(atol, rtol)
 
     def setNeuralODE(self, atol, rtol):
         '''

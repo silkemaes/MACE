@@ -6,6 +6,10 @@ class Meta():
     '''
     Load .in files to metadata. Store metadata to .json files.
     
+    - inflile:  Path to .in file  
+    - name:     Name of current model
+    - complain: Give warnings for missing inputs
+
     Required input variables:
     - self.n_dim, self.p_dim, self.z_dim
     - lr, nb_evol, nb_train, nb_valid
