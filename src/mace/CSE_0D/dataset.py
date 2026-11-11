@@ -27,6 +27,7 @@ import sys
 
 import numpy as np
 import torch
+import math
 from torch.utils.data import Dataset, DataLoader
 import src.mace.utils as utils
 from pathlib import Path
@@ -180,8 +181,8 @@ def get_abs(n):
     This function reverses the normalisation of the abundances.
     '''
     cutoff = 1e-20
-    nmin = np.log10(cutoff)
-    nmax = np.log10(0.85e-1)
+    nmin = math.log10(cutoff)
+    nmax = math.log10(0.85e-1)
 
     return 10**utils.unscale(n, nmin, nmax)
 

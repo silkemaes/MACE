@@ -91,7 +91,7 @@ def train(model,
           nb_evol=1,
           batch_size=None):
     '''
-    Training loop.
+    Training and validation loop.
 
     - model:        MACE
     - train_loader: DataLoader yielding (n, p, dt) for one 1D model, batch_size = 1

@@ -16,14 +16,26 @@ import torch
 
 import src.mace.CSE_0D.dataset  as ds
 import src.mace.utils           as utils
+import src.mace.loss            as loss
 import src.mace.train           as train
 from src.mace.CSE_0D.plotting   import plot_abs
 
 ## Im fairly certain I can make this outta recycled validation code
 ## fosho
 
-## may gods wrath strike down whoever made these dataloaders different
-
+def test_model_v2(model, loader, meta=None, 
+                  losstype:dict|str|None=None, nb_evol=None):
+    if meta is None:
+        stepLoss = loss.setup_loss(losstype) #type:ignore
+        evolLoss = loss.setup_loss(losstype) #type:ignore
+    else:
+        stepLoss = loss.setup_loss(meta.lossweights)
+        evolLoss = loss.setup_loss(meta.lossweights)
+        nb_evol = meta.nb_evol
+    
+    device = next(model.parameters()).device
+    train.run_epoch(model, loader, stepLoss, 1, device)
+    train.run_epoch(model, loader, evolLoss, nb_evol, device)
 
 
 def test_step(model, input, printing = True):
