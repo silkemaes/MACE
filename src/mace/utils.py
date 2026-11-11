@@ -9,6 +9,7 @@ import os
 import numpy            as np
 import json
 import torch
+import math
 import src.mace.mace    as mace
 from pathlib import Path
 
@@ -31,7 +32,7 @@ def relative_error(x,x_hat):
 
         x contains one element more than x_hat (the initial value of the system)
     '''
-    res = np.abs((x[1:]-x_hat)/x[1:])
+    res = abs((x[1:]-x_hat)/x[1:])
     return res
 
 def temp(Tstar, eps, r):
@@ -61,10 +62,10 @@ def error(n,n_hat):
         - err: the error per species, for each sample
         - the summed error, averaged by the number of samples in n
     '''
-    err = (np.log10(n[:])-np.log10(n_hat))[:]/np.log10(n[:][:])
+    err = (math.log10(n[:])-math.log10(n_hat))[:]/math.log10(n[:][:]) #type:ignore # TODO check this
     nb_samples = len(n[:,0])
 
-    return err, np.abs(err).sum()/nb_samples
+    return err, torch.abs(err).sum()/nb_samples
 
 
 def get_absolute_residuals(real, pred):
@@ -98,7 +99,7 @@ def unscale(x, min, max):
     '''
     Unscale the data from the range [0,1] to the original range [min,max]
     '''
-    unscaled = x*np.abs(max-min)+min
+    unscaled = x*abs(max-min)+min
     return unscaled
 
 
