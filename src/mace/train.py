@@ -1,6 +1,10 @@
+'''
+Training functionality for MACE. Supports local and integrated schemes.
+
+Version 2.0
+'''
 from time                   import time
 import torch
-
 
 def make_windows(n, p, dt, e):
     '''
@@ -18,6 +22,8 @@ def make_windows(n, p, dt, e):
     - p_seq:  (M, e, p_dim) physics per step,     p_seq[j, i] = p[j+i]
     - dt_seq: (M, e)        time step per step,   dt_seq[j,i] = dt[j+i]
     - n_e:    (M, e, n_dim) targets,              n_e[j, i]   = n[j+i+1]
+
+    @Claude (discovering torch.unfold)
     '''
     N      = n.shape[0]
     if e > N:
@@ -53,9 +59,9 @@ def run_epoch(model,
         n0, p_seq, dt_seq, n_e = make_windows(n, p, dt, nb_evol)
 
         M = n0.shape[0]
-        windowBatches = torch.arange(M, device=device)
+        windowBatches = torch.arange(M, device=device) # valid: linearly pass windows
         if optimiser is not None:
-            windowBatches = torch.randperm(M, device=device)
+            windowBatches = torch.randperm(M, device=device) # train: mix windows
 
         for m in windowBatches.split(batch_size or M):
             n_e_hat, status = model.rollout(n0[m], p_seq[m], dt_seq[m])
@@ -66,7 +72,7 @@ def run_epoch(model,
                             p=p_seq[m,0], 
                             model=model)
 
-            if optimiser is not None:
+            if optimiser is not None: # train: refresh optim and clear autograd
                 optimiser.zero_grad()
                 loss_value.backward()
                 optimiser.step()

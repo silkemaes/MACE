@@ -4,9 +4,11 @@ i.e., test the trained model.
 
     - Test the model on 1 consecutive time step or on the evolution of the system.
     - Test the model on a full evolution of the system.
+
+TODO: port to V2 (urgent)
+
+Version 1.0
 '''
-
-
 from time                   import time
 import numpy                as np
 import matplotlib.pyplot    as plt
@@ -14,7 +16,13 @@ import torch
 
 import src.mace.CSE_0D.dataset  as ds
 import src.mace.utils           as utils
+import src.mace.train           as train
 from src.mace.CSE_0D.plotting   import plot_abs
+
+## Im fairly certain I can make this outta recycled validation code
+## fosho
+
+## may gods wrath strike down whoever made these dataloaders different
 
 
 
@@ -185,4 +193,3 @@ def test_model(data_type, model, testpath, meta, specs=[], inpackage = False, da
         plt.show()
 
     return err_test, err_evol, step_time, np.sum(evol_time), n, n_hat, n_evol
-            

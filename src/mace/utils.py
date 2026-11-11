@@ -1,5 +1,7 @@
 '''
 This script contains utility functions for MACE.
+
+Half-ported to Version 2.0
 '''
 
 

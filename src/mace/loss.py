@@ -1,19 +1,3 @@
-import torch
-import torch.nn as nn
-import warnings
-import numpy as np
-import matplotlib.pyplot as plt
-import os
-import json
-from matplotlib.lines import Line2D
-## TODO hook methods into
-# - train.py
-# - integrated.py (current)
-# - load.py
-# - routine.py
-# - local.py (eventually)
-
-
 '''
 Initialize losses using setup_loss(type, weights)
 Pass loss types as abs_grd_idn.
@@ -23,7 +7,18 @@ Creating a new loss term:
 - Add args to Loss.forward() docs
 - Add term name to setup_loss()
 - Add term color to COLOR
+
+Version 2.0
 '''
+import torch
+import torch.nn as nn
+import warnings
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+import json
+from matplotlib.lines import Line2D
+
 
 
 ##################
@@ -238,16 +233,25 @@ class Loss(nn.Module):
         self.saveScale(path)
 
     def saveHistory(self,path,**interval):
+        '''
+        Save raw histories and total history to path
+        '''
         for name, hist in self.getHistory(**interval).items():
             if not hist:
                 warnings.warn(f'No history for loss term "{name}" yet.', RuntimeWarning)
             np.save(f'{path}/{name}.npy', hist)
 
     def saveWeight(self,path):
+        '''
+        @Claude
+        '''
         with open(f'{path}/weight.json', 'w') as f:
             json.dump({name:float(term.weight) for name,term in self.terms.items()}, f, indent=4) ## type:ignore
 
     def saveScale(self,path):
+        '''
+        @Claude
+        '''
         with open(f'{path}/scale.json', 'w') as f:
             json.dump({name:float(term.scale) for name,term in self.terms.items()}, f, indent=4) ## type:ignore
 
@@ -262,6 +266,9 @@ class Loss(nn.Module):
         self.loadScale(path)
 
     def loadHistory(self,path):
+        '''
+        Load raw histories and total history from path
+        '''
         for name in self.getHistory().keys():
             if not os.path.exists(f'{path}/{name}.npy'):
                 raise FileNotFoundError(f"Missing history for '{name}' term in {path}.")
@@ -271,6 +278,9 @@ class Loss(nn.Module):
         print(f"Loaded losses for {self.getHistory().keys()}")
 
     def loadWeight(self,path):
+        '''
+        @Claude
+        '''
         if not os.path.exists(f'{path}/weight.json'):
             raise FileNotFoundError(f"Missing weight.json in {path}. Load old models using Loss.loadHistory().")
         with open(f'{path}/weight.json') as f:
@@ -279,6 +289,9 @@ class Loss(nn.Module):
             term.weight = weights[name]
 
     def loadScale(self,path):
+        '''
+        @Claude
+        '''
         if not os.path.exists(f'{path}/scale.json'):
             raise FileNotFoundError(f"Missing scale.json in {path}. Load old models using Loss.loadHistory().")
         with open(f'{path}/scale.json') as f:
@@ -312,15 +325,17 @@ def setup_loss(losstypes:dict|str={'abs':1,'idn':1}, weights=None):
         else: raise RuntimeError(f"Unrecognized loss type: {t}")
     return Loss(terms)
 
-def load_loss(path, types:str|None=None):
+def load_loss(path, types:str|None=None, weights=None):
     '''
     Load a Loss saved with Loss.save().
     If types is not given, the loss terms are read from weight.json.
+
+    @Claude
     '''
     if not types:
         with open(f'{path}/weight.json') as f:
             types = '_'.join(json.load(f)) ## keys in saved order
-    loss_fn = setup_loss(types)
+    loss_fn = setup_loss(types, weights)
     loss_fn.load(path)
     return loss_fn
 
@@ -330,6 +345,8 @@ def load_old_loss(path, types:str='abs_idn', weights=None):
     Old loss combined raw, weight, and scale, 
     so they are all standard set to 1 here. 
     Not ideal for training further.
+
+    @Claude
     '''
     loss_fn = setup_loss(types, weights)
     loss_fn.loadHistory(path)
@@ -356,7 +373,7 @@ def plot(losses:dict, ax=None, log=True, ms=3, **interval):
 
     losses: {dataset: Loss}, e.g. {'train': trainloss, 'valid': validloss}
     
-    Claude is 100% responsible for this one, I hold no accountability
+    @Claude
     '''
     if ax is None:
         _, ax = plt.subplots(figsize=(6, 3))

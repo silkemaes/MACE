@@ -4,9 +4,9 @@ and provides the user with the possibility to apply (test) the model on a test d
 
 The class Trained_MACE() contains the loaded model, 
 together with the training and test losses, and the meta data.
+
+Version 2.0
 '''
-
-
 
 import src.mace.utils       as utils
 import src.mace.loss        as loss

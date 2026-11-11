@@ -5,6 +5,8 @@ Classes:
     - Encoder: neural network for the encoder
     - Decoder: neural network for the decoder
     - Autoencoder: neural network for the autoencoder
+
+Version 2.0
 '''
 
 

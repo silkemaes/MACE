@@ -1,3 +1,10 @@
+'''
+Metadata holder for MACE models.
+
+TODO: ponder Meta.update_meta()
+
+Version 2.0
+'''
 import json
 
 dt_fracts = {4 : 0.296, 5: 0.269,8: 0.221,10: 0.175,12: 0.146,16: 0.117,20: 0.09,25: 0.078,32: 0.062,48: 0.043,64: 0.033,128: 0.017}

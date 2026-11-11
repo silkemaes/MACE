@@ -113,6 +113,8 @@ class MACE(nn.Module):
         Build the latent ODE dz/dt = g(z)
 
         Only g is registered as a submodule.
+
+        @Claude (avoid double gradient)
         '''
         # set G and tolerances
         if self.g_nn:
