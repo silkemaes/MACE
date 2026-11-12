@@ -23,19 +23,52 @@ from src.mace.CSE_0D.plotting   import plot_abs
 ## Im fairly certain I can make this outta recycled validation code
 ## fosho
 
-def test_model_v2(model, loader, meta=None, 
-                  losstype:dict|str|None=None, nb_evol=None):
-    if meta is None:
-        stepLoss = loss.setup_loss(losstype) #type:ignore
-        evolLoss = loss.setup_loss(losstype) #type:ignore
-    else:
-        stepLoss = loss.setup_loss(meta.lossweights)
-        evolLoss = loss.setup_loss(meta.lossweights)
-        nb_evol = meta.nb_evol
-    
+def test_model_v2(model, loader):
+    '''
+    Tests a model against given data.
+
+    - mode:     The trained solver to be tested
+    - loader:   Dataloader with test data
+
+    Returns:
+    - errors (idn, evol):   Mean unnormalized abundance errors 
+    - times (au, evol):     Mean evaluation ime
+
+    '''
     device = next(model.parameters()).device
-    train.run_epoch(model, loader, stepLoss, 1, device)
-    train.run_epoch(model, loader, evolLoss, nb_evol, device)
+
+    # Object to store errors and time (general)
+    errors = [[],[]]
+    times  = [[],[]]
+
+    # Iterate over every entry
+    with torch.no_grad():
+        for n, p, dt in loader:
+            n, p, dt = n[0].to(device), p[0].to(device), dt[0].to(device)
+
+            # Identity replicaton
+            n_i = n[:-1]
+            tic = time()
+            n_i_hat = model.autoencode(n_i, p)
+            times[0].append(time()-tic)
+            _,err_idn = utils.error(ds.get_abs(n_i), ds.get_abs(n_i_hat))
+            errors[0].append(err_idn)
+
+            # Evolution accuracy
+            n0 = n[:1] # oh my god this stinkin bug took 2 hours
+            p_seq  = p[None] # Add extra dimension (N) -> (1,N)
+            dt_seq = dt[None]
+            n_e = n[1:][None]
+            tic=time()
+            n_e_hat,_ = model.rollout(n0, p_seq, dt_seq)
+            times[1].append(time()-tic)
+            _,err_evol = utils.error(ds.get_abs(n_e[0]), ds.get_abs(n_e_hat[0]))
+            errors[1].append(err_evol)
+
+    errors = np.mean(errors, axis=1)
+    times = np.mean(times, axis=1)
+
+    return errors, times
 
 
 def test_step(model, input, printing = True):
@@ -153,6 +186,7 @@ def test_evolution(model, input, printing = True, start_idx=0):
         print('Total   time [s]:', toc_tot-tic_tot)
 
     return np.array(n_evol).reshape(-1,468), np.array(mace_time)
+
 
 
 def test_model(data_type, model, testpath, meta, specs=[], inpackage = False, datapath = 'test', printing = True, plotting = False, save = False):

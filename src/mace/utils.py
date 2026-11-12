@@ -62,7 +62,7 @@ def error(n,n_hat):
         - err: the error per species, for each sample
         - the summed error, averaged by the number of samples in n
     '''
-    err = (math.log10(n[:])-math.log10(n_hat))[:]/math.log10(n[:][:]) #type:ignore # TODO check this
+    err = (torch.log10(n[:])-torch.log10(n_hat))[:]/torch.log10(n[:][:])# TODO check this
     nb_samples = len(n[:,0])
 
     return err, torch.abs(err).sum()/nb_samples
