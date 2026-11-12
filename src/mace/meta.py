@@ -3,8 +3,12 @@ Metadata holder for MACE models.
 Top-level object.
 
 TODO: think really hard about a better way to do this
-that doesn't bork user experience
+that doesn't bork user experience, ts spaghetti
 
+Adding meta parameter: 
+- add in .setMeta()
+- add in .makeMeta() OR .updateMeta()
+- add in .print() [optional]
 Version 2.0
 '''
 import json
@@ -43,16 +47,16 @@ class Meta():
         if None not in (meta_path, infile):
             raise ValueError('Too many arguments: choose meta_path or infile.')
         if meta_path is not None:
-            self.loadMeta(meta_path)
+            self.loadJson(meta_path)
         elif infile is not None:
             self.loadInfile(infile, name)
         else:
             raise ValueError('Needs a meta_path or infile_in.')
 
-    def loadInfile(self, infile, name):
+    def loadInfile(self, path, name):
         '''
         Setup '''
-        self.file = infile
+        self.file = path
 
         if name is not None:
             with open(self.file, 'a') as file:
@@ -77,7 +81,7 @@ class Meta():
 
         self.setMeta()
 
-    def loadMeta(self, path):
+    def loadJson(self, path):
         '''
         Load an existing meta.json into self.meta.
 
@@ -86,7 +90,7 @@ class Meta():
         with open(os.path.join(path, 'meta.json')) as f:
             self.meta = json.load(f)
 
-        if self.name is None: # Overwrite name if empty
+        if self.name is None or self.name=='Unnamed': # Overwrite name if empty
             self.name = self.meta.get('name')
         self.meta['name'] = self.name
         self.file = self.meta.get('inputfile')
@@ -211,7 +215,7 @@ class Meta():
             if path is None: # No existing or given path to search
                 raise RuntimeError('No path found to write metadata to.')
             if os.path.exists(os.path.join(path, 'meta.json')): # Check for existing metadata
-                self.loadMeta(path)
+                self.loadJson(path)
             else: # No meta.json exists yet
                 if self.complain:         # Notify of new path
                     print(f'No existing meta.json found, creating at {path}/meta.json')

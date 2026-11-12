@@ -158,64 +158,6 @@ def generate_random_numbers(n, start, end):
     '''
     return np.random.randint(start, end, size=n)
 
-
-
-def overwrite_weights(model, dir, epoch=-1):
-    '''
-    Overwrites a MACE model's weights by the given 
-    '''
-    if epoch >= 0:
-        infile = f'nn/nn{epoch}.pt'
-    else:
-        infile = 'nn/nn.pt'
-    state_dict = torch.load(f'{dir}/{infile}', map_location='cpu', weights_only=True)
-
-    model.eval()
-    model.load_state_dict(state_dict) 
-    model.eval()
-
-
-
-def load_model(dir, meta, epoch=-1):
-    '''
-    Initializes MACE model. Loads hyperparameters from meta.json.
-    Overwrites MACE weights by those found in meta.json.
-
-    - dir:      Directory where meta.json is stored
-    - metadata: meta.json
-    - epoch:    Epoch to load. Defaults to last weights.
-    
-    '''
-    n_dim = meta['n_dim']
-    p_dim = meta['p_dim']
-    z_dim = meta['z_dim']
-    ae_type = meta['ae_type']
-    g_nn = meta["g_nn"]
-    atol = meta["atol"]
-    rtol = meta["rtol"]
-    
-    model = mace.MACE(n_dim, p_dim, z_dim, ae_type, g_nn, atol, rtol)
-    overwrite_weights(model, dir, epoch)
-    num_params = count_parameters(model)
-    
-    return model, num_params
-
-
-
-def load_meta(loc):
-    '''
-    Load the meta file of a MACE model,
-    given the output location (outloc) and the name of the directory (loc).
-    '''
-    ## loading meta file
-    with open(loc+'meta.json', 'r') as f:
-        metadata=f.read()
-    metadata  = json.loads(metadata)
-
-    return metadata
-
-
-
 def count_parameters(model):
     '''
     Count the number of trainable parameters in a model.

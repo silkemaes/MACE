@@ -11,8 +11,10 @@ Version 2.0
 import src.mace.utils       as utils
 import src.mace.loss        as loss
 import src.mace.meta        as meta
+import src.mace.mace        as mace
 import matplotlib.pyplot    as plt
 from pathlib import Path
+import torch
 import os
 
 
@@ -29,8 +31,8 @@ def load_MACE(dir, epoch=-1):
     - lossses:  A dict with Loss objects (train, valid, test)
     - metadata: meta.json
     '''
-    metadata = meta.Meta(meta_path=dir, name=dir)
-    model, _ = utils.load_model(dir, metadata, epoch)
+    metadata = meta.Meta(meta_path=dir)
+    model, _ = load_model(dir, metadata, epoch)
 
     losses = {}
 
@@ -41,3 +43,41 @@ def load_MACE(dir, epoch=-1):
             losses[d_] = loss.load_loss(f'{dir}/{d_}')
 
     return model, losses, metadata
+
+def load_model(dir, meta, epoch=-1):
+    '''
+    Initializes MACE model. Loads hyperparameters from meta.json.
+    Overwrites MACE weights by those found in meta.json.
+
+    - dir:      Directory where meta.json is stored
+    - metadata: meta.json
+    - epoch:    Epoch to load. Defaults to last weights.
+    
+    '''
+    n_dim = meta.n_dim
+    p_dim = meta.p_dim
+    z_dim = meta.z_dim
+    ae_type = meta.ae_type
+    g_nn = meta.g_nn
+    atol = meta.atol
+    rtol = meta.rtol
+    
+    model = mace.MACE(n_dim, p_dim, z_dim, ae_type, g_nn, atol, rtol)
+    overwrite_weights(model, dir, epoch)
+    num_params = utils.count_parameters(model)
+    
+    return model, num_params
+
+def overwrite_weights(model, dir, epoch=-1):
+    '''
+    Overwrites a MACE model's weights by those in dir/nn/nn{epoch}.pt
+    '''
+    if epoch >= 0:
+        infile = f'nn/nn{epoch}.pt'
+    else:
+        infile = 'nn/nn.pt'
+    state_dict = torch.load(f'{dir}/{infile}', map_location='cpu', weights_only=True)
+
+    model.eval()
+    model.load_state_dict(state_dict) 
+    model.eval()
