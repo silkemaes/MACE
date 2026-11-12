@@ -102,8 +102,12 @@ def train(model,
     - nb_epochs:    number of epochs
     - nb_evol:      window length e
     - batch_size:   Amount of windows passed per train loss computation.
+
+    Returns:
+    exit_code:      Summed nODE solver status. Should be 0.
     '''
     device = next(model.parameters()).device
+    exit_code = 0.
 
     for epoch in range(nb_epochs):
         tic = time()
@@ -117,6 +121,7 @@ def train(model,
             run_epoch(model, valid_loader, valid_loss, 
                       nb_evol, device)
 
+        exit_code += nb_failed
         print(f'Epoch {epoch+1}/{nb_epochs}:\n'
               f' - Train Loss {train_loss.getTotHistory()[-1]:.3e} | '
               f'Valid Loss {valid_loss.getTotHistory()[-1]:.3e},\n'
@@ -126,4 +131,4 @@ def train(model,
     for name, term in valid_loss.terms.items(): 
         term.setScale(train_loss.terms[name].scale)
 
-    return train_loss
+    return exit_code

@@ -10,6 +10,7 @@ Version 2.0
 
 import src.mace.utils       as utils
 import src.mace.loss        as loss
+import src.mace.meta        as meta
 import matplotlib.pyplot    as plt
 from pathlib import Path
 import os
@@ -28,7 +29,7 @@ def load_MACE(dir, epoch=-1):
     - lossses:  A dict with Loss objects (train, valid, test)
     - metadata: meta.json
     '''
-    metadata = utils.load_meta(dir)
+    metadata = meta.Meta(meta_path=dir, name=dir)
     model, _ = utils.load_model(dir, metadata, epoch)
 
     losses = {}
