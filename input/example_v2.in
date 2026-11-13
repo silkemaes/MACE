@@ -8,14 +8,15 @@ atol        = 1e-5
 rtol        = 1e-2
 g_nn        = False
 
-
+## DATASET INPUT
+nb_train    = 7
+nb_valid    = 3
+nb_valid    = 3
+seed        = 0
 
 ## TRAINING INPUT
 lr          = 1.e-4
 nb_evol     = 16
-nb_train    = 10
-nb_valid    = 3
-
 ini_epochs  = 5
 nb_epochs   = 150
 data_type   = 1DCSE
