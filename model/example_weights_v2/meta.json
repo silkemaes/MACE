@@ -26,6 +26,7 @@
     "owner": "Silke Maes",
     "info": "https://ui.adsabs.harvard.edu/abs/2024ApJ...969...79M/abstract",
     "nb_valid": 3,
+    "nb_test": 3,
     "atol": 1e-05,
     "rtol": 0.01,
     "version": "2"
