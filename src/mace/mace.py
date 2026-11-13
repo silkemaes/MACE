@@ -3,7 +3,7 @@ MACE architecture.
 
 Reworked from the ground up with love :D
 
-Version 2.0
+Version 2.1
 '''
 
 import torch.nn             as nn
@@ -23,6 +23,7 @@ class MACE(nn.Module):
     - p_dim:    Amount of physical parameters
     - z_dim:    Amount of latent dimensions
     - ae_type:  'simple' or 'linear'
+    - p_out:    Have AE return p (for separate idn loss)
     - atol:     Absolute tolerance of nODE solutions
     - rtol:     Relative tolerance of nODE solutions
     '''
@@ -36,6 +37,7 @@ class MACE(nn.Module):
                  p_dim,
                  z_dim,
                  ae_type='simple',
+                 p_out= False,
                  atol=1e-5,
                  rtol=1e-2):
         '''
@@ -44,9 +46,11 @@ class MACE(nn.Module):
         super().__init__()
         # Data dimensions
         self.n_dim, self.p_dim, self.z_dim = n_dim, p_dim, z_dim
-        # AE dimensions (encoder input = cat(p, n))
+        # AE dimensions
+        self.p_out = p_out
         self.in_dim = p_dim + n_dim
         self.out_dim = n_dim
+        if self.p_out: self.out_dim = p_dim + n_dim
         # Autoencoder (self.encoder/decoder)
         self.setAutoencoder(ae_type)
         # Neural ODE (self.g, self._term, self._solver)
@@ -82,9 +86,13 @@ class MACE(nn.Module):
 
         Returns
         - n: (B, n_dim) corresponding real states
+        - p: (B, p_dim) corresponding physical parameters
         '''
-        n = self.decoder(z)
-        return n
+        x = self.decoder(z)
+        if not self.p_out:
+            return x, None
+        p, n = x.split([self.p_dim, self.n_dim], dim=-1)
+        return n, p
 
     def autoencode(self, n, p):
         '''
@@ -94,11 +102,12 @@ class MACE(nn.Module):
         - p: (B, p_dim) physical parameters
 
         Returns:
-        - n_hat: (B, out_dim) corresponding real states
+        - n_hat: (B, n_dim) corresponding real states
+        - p_hat: (B, p_dim) corresponding physical parameters
         '''
         z = self.encode(n, p)
-        n_hat = self.decode(z)
-        return n_hat
+        n_hat, p_hat = self.decode(z)
+        return n_hat, p_hat
 
     def setNeuralODE(self, atol, rtol):
         '''
@@ -153,8 +162,8 @@ class MACE(nn.Module):
         - status:(B,)       ODE solver error codes
         '''
         z0 = self.encode(n0, p)
-        z1, status = self.solveNeuralODE(z0, p, dt)
-        n1 = self.decode(z1)
+        z1, status = self.solveNeuralODE(z0, dt)
+        n1, _ = self.decode(z1)
         return n1, z1, status
 
     def rollout(self, n0, p_seq, dt_seq):

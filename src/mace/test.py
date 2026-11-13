@@ -6,6 +6,7 @@ i.e., test the trained model.
     - Test the model on a full evolution of the system.
 
 TODO: add plotting to test_model
+TODO: check p loss during idn testing
 
 Version 2.0
 '''
@@ -49,8 +50,9 @@ def testModel(model, loader):
 
             # Identity replicaton
             n_i = n[:-1]
+            p_i = p
             tic = time()
-            n_i_hat = model.autoencode(n_i, p)
+            n_i_hat, p_i_hat = model.autoencode(n_i, p_i) # TODO
             times['idn'].append(time()-tic)
             _,err_idn = utils.error(ds.get_abs(n_i), ds.get_abs(n_i_hat))
             errors['idn'].append(float(err_idn))

@@ -9,7 +9,7 @@ Adding meta parameter:
 - add in .setMeta()
 - add in .makeMeta() OR .updateMeta()
 - add in .print() [optional]
-Version 2.0
+Version 2.1
 '''
 import json
 import os
@@ -32,10 +32,10 @@ class Meta():
     Required input variables:
     - self.n_dim, self.p_dim, self.z_dim
     - lr, nb_evol, nb_train, nb_valid
-    - losstype
+    - losstype (see loss.py)
 
     Optional input variables:
-    - ae_type, atol, rtol, g_nn
+    - ae_type, p_out, atol, rtol
     - ini_epochs, nb_epochs, data_type
     '''
     # Setup
@@ -108,9 +108,9 @@ class Meta():
         self.p_dim      = int(self._req('p_dim'))
         self.z_dim      = int(self._req('z_dim'))
         self.ae_type    = str(self._opt('ae_type', 'simple'))
+        self.p_out       = str(self._opt('p_out', False)).lower() in ('true','1')
         self.atol       = float(self._opt('atol', 1e-5))
         self.rtol       = float(self._opt('rtol', 1e-2))
-        self.g_nn       = str(self._opt('g_nn', False)).lower() in ('true','1')
 
         ## TRAINING INPUT
         self.lr          = float(self._req('lr'))
@@ -157,7 +157,7 @@ class Meta():
         print('     inputfile:', self.file)
         print(f'    #n, #p, #z: {self.n_dim} {self.p_dim} {self.z_dim}')
         print('   Autoencoder:', self.ae_type)
-        print('      Neural G:', self.g_nn)
+        print('   Physics out:', self.p_out)
         print(' Learning Rate:', self.lr)
         print('       #Epochs:', self.nb_epochs)
         print('   #Evolutions:', self.nb_evol)
@@ -180,9 +180,9 @@ class Meta():
                     'p_dim'     : self.p_dim,
                     'z_dim'     : self.z_dim,
                     'ae_type'   : self.ae_type,
+                    'p_out'      : self.p_out,
                     'atol'      : self.atol,
                     'rtol'      : self.rtol,
-                    'g_nn'      : self.g_nn,
                     'lr'        : self.lr,
                     'nb_evol'   : self.nb_evol,
                     'nb_train'  : self.nb_train,

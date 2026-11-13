@@ -5,7 +5,7 @@ and provides the user with the possibility to apply (test) the model on a test d
 The class Trained_MACE() contains the loaded model, 
 together with the training and test losses, and the meta data.
 
-Version 2.0
+Version 2.1
 '''
 
 import src.mace.utils       as utils
@@ -19,19 +19,20 @@ import os
 
 
 
-def load_MACE(dir, epoch=-1):
+def load_MACE(dir, epoch=-1, complain=True):
     '''
     Loads a MACE model from weights. Loads losses.
 
     - dir:      Directory where meta.json is stored
     - epoch:    Epoch to load. Defaults to last weights.
+    - complain: Verbosity
 
     Returns
     - model:    A MACE model with loaded weights
     - lossses:  A dict with Loss objects (train, valid, test)
     - metadata: meta.json
     '''
-    metadata = meta.Meta(meta_path=dir)
+    metadata = meta.Meta(meta_path=dir, complain=complain)
     model, _ = load_model(dir, metadata, epoch)
 
     losses = {}
@@ -58,10 +59,11 @@ def load_model(dir, meta, epoch=-1):
     p_dim = meta.p_dim
     z_dim = meta.z_dim
     ae_type = meta.ae_type
+    p_out = meta.p_out
     atol = meta.atol
     rtol = meta.rtol
 
-    model = mace.MACE(n_dim, p_dim, z_dim, ae_type, atol=atol, rtol=rtol)
+    model = mace.MACE(n_dim, p_dim, z_dim, ae_type, p_out=p_out, atol=atol, rtol=rtol)
     overwrite_weights(model, dir, epoch)
     num_params = utils.count_parameters(model)
     

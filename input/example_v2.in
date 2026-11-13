@@ -4,9 +4,9 @@ p_dim       = 4
 z_dim       = 8
 
 ae_type     = simple
+p_out       = false
 atol        = 1e-5
 rtol        = 1e-2
-g_nn        = False
 
 
 

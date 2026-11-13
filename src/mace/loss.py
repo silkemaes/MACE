@@ -1,6 +1,6 @@
 '''
 Initialize losses using setup_loss(type, weights)
-Pass loss types as abs_grd_idn.
+Pass loss types as abs_grd_idn_pidn or dicts.
 
 Creating a new loss term:
 - Subclass LossTerm
@@ -8,7 +8,7 @@ Creating a new loss term:
 - Add term name to setup_loss()
 - Add term color to COLOR
 
-Version 2.0
+Version 2.1
 '''
 import torch
 import torch.nn as nn
@@ -108,7 +108,7 @@ class GrdLoss(LossTerm):
 class IdnLoss(LossTerm):
     '''
     Identity difference on dataset
-    (n0 - D( E( n0 )))²
+    (n - D( E( n,p )))²
     '''
     def compute(self, n, p, model, **_):
         '''
@@ -117,7 +117,20 @@ class IdnLoss(LossTerm):
         - p:       Data physical sample
         - model:   MACE model (must have autoencoder)
         '''
-        return (n - model.autoencode(n,p))**2
+        n_hat, _ = model.autoencode(n,p)
+        return (n - n_hat)**2
+
+
+class PhysIdnLoss(LossTerm):
+    '''
+    Identity difference on physical state
+    (p - D( E( n,p )))²
+    '''
+    def compute(self, n, p, model, **_):
+        _, p_hat = model.autoencode(n, p)
+        if p_hat is None:
+            raise RuntimeError("'pidn' loss needs a model with p_out=True")
+        return (p - p_hat)**2
 
 
 class MseLoss(LossTerm):
@@ -322,6 +335,7 @@ def setup_loss(losstypes:dict|str={'abs':1,'idn':1}, weights=None):
         if   t=="abs": terms[t] = AbsLoss(weight)
         elif t=='grd': terms[t] = GrdLoss(weight)
         elif t=='idn': terms[t] = IdnLoss(weight)
+        elif t=='pidn': terms[t] = PhysIdnLoss(weight)
         else: raise RuntimeError(f"Unrecognized loss type: {t}")
     return Loss(terms)
 
@@ -362,7 +376,7 @@ COLORS = {'tot': 'k',
           'abs': 'cornflowerblue', 
           'grd': 'gold', 
           'idn': 'salmon', 
-          'elm': 'darkorchid'}
+          'pidn':'maroon'}
 STYLES = {'train': dict(ls='-',  marker='.'),
           'valid': dict(ls='--', marker='x'),
           'test':  dict(ls=':',  marker='^')}
