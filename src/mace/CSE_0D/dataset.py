@@ -124,9 +124,9 @@ def get_test_data(data_type,
         data_class = CSEdata
         mod_class = CSEmod
 
-    data = data_class(nb_samples=meta['nb_train'],
-                      dt_fract=meta['dt_fract'],
-                      nb_test=meta['nb_valid'],
+    data = data_class(nb_samples=meta.nb_train,
+                      dt_fract=meta.dt_fract,
+                      nb_test=meta.nb_valid,
                       train=train,
                       fraction=0.7,
                       cutoff=1e-20,
