@@ -265,27 +265,16 @@ class CSEdata(Dataset):
 
         ## select a certain number of paths, given by nb_samples
         np.random.seed(0)
-        if nb_samples > len(paths):
-            raise ValueError(
-                'Error: The dataset provided in paths_train_data.txt contains less data than required by nb_samples, please review the input files.'
-            )
-        self.idxs = utils.generate_random_numbers(nb_samples, 0, len(paths))
-        print(self.idxs)
+        if nb_samples + nb_test > len(paths):
+            raise ValueError('Not enough models in paths_train_data.txt for nb_samples + nb_test.')
+        perm = np.random.permutation(len(paths))
+        self.idxs = perm[:nb_samples]
         self.path = paths[self.idxs]
+        print(self.idxs)
 
-        ## select a random test path, that is not in the training set
-        # self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
-        self.testpath = list()
-        # self.testpath.append(paths[self.test_idx][0])
         self.nb_test = nb_test
-        print('number of test paths:', nb_test)
-        count = 0
-        while count < nb_test:
-            self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
-            if self.test_idx not in self.idxs:
-                count += 1
-                self.testpath.append(paths[self.test_idx][0])
-            print('count:', count, '\r', end='')
+        self.test_idx = perm[nb_samples:nb_samples + nb_test]
+        self.testpath = list(paths[self.test_idx])
         print('Selected test paths:', len(self.testpath))
 
         # print('test path:', self.testpath)
@@ -840,23 +829,15 @@ class PhantomData(Dataset):
 
         ## select a certain number of paths, given by nb_samples
         np.random.seed(0)
-        if nb_samples > len(paths):
-            raise ValueError(
-                'Error: The dataset provided in paths_train_data.txt contains less data than required by nb_samples, please review the input files.'
-            )
-        self.idxs = utils.generate_random_numbers(nb_samples, 0, len(paths))
+        if nb_samples + nb_test > len(paths):
+            raise ValueError('Not enough models in paths_train_data.txt for nb_samples + nb_test.')
+        perm = np.random.permutation(len(paths))
+        self.idxs = perm[:nb_samples]
         self.path = paths[self.idxs]
 
-        ## select a random test path, that is not in the training set
-        self.testpath = list()
         self.nb_test = nb_test
-        print('number of test paths:', nb_test)
-        count = 0
-        while count < nb_test:
-            self.test_idx = utils.generate_random_numbers(1, 0, len(paths))
-            if self.test_idx not in self.idxs:
-                count += 1
-                self.testpath.append(paths[self.test_idx][0])
+        self.test_idx = perm[nb_samples:nb_samples + nb_test]
+        self.testpath = list(paths[self.test_idx])
         print('Selected test paths:', len(self.testpath))
 
         self.M = np.load(loc + 'data/M_rate16.npy')
