@@ -36,7 +36,7 @@ specs_dict = utils.get_specs()
 
 AU_to_cm = 1.495978707e13
 
-def get_data(data_type, nb_samples, dt_fract, nb_test, inpackage, batch_size,
+def get_data(data_type, meta, inpackage, batch_size,
              kwargs):
     '''
     Prepare the data for training and validating the emulator.
@@ -62,15 +62,11 @@ def get_data(data_type, nb_samples, dt_fract, nb_test, inpackage, batch_size,
             'Error: data_type not recognised (Phantom or 1DCSE), defaulting to 1DCSE'
         )
         data_class = CSEdata
-    train = data_class(nb_samples=nb_samples,
-                       dt_fract=dt_fract,
-                       nb_test=nb_test,
+    train = data_class(meta=meta,
                        inpackage=inpackage,
                        train=True,
                        datapath='train')
-    valid = data_class(nb_samples=nb_samples,
-                       dt_fract=dt_fract,
-                       nb_test=nb_test,
+    valid = data_class(meta=meta,
                        inpackage=inpackage,
                        train=False,
                        datapath='train')
@@ -82,7 +78,7 @@ def get_data(data_type, nb_samples, dt_fract, nb_test, inpackage, batch_size,
     print('# validation samples:', len(valid))
     print('               ratio:',
           np.round(len(valid) / (len(train) + len(valid)), 2))
-    print('     #  test samples:', train.nb_test)
+    print('     #  test samples:', len(train.testpath))
 
     data_loader = DataLoader(dataset=train,
                              batch_size=batch_size,
@@ -124,11 +120,8 @@ def get_test_data(data_type,
         data_class = CSEdata
         mod_class = CSEmod
 
-    data = data_class(nb_samples=meta.nb_train,
-                      dt_fract=meta.dt_fract,
-                      nb_test=meta.nb_valid,
+    data = data_class(meta=meta,
                       train=train,
-                      fraction=0.7,
                       cutoff=1e-20,
                       inpackage=inpackage)
 
@@ -210,25 +203,17 @@ class CSEdata(Dataset):
     '''
 
     def __init__(self,
-                 nb_samples,
-                 dt_fract,
-                 nb_test,
+                 meta,
                  inpackage=False,
                  train=True,
                  datapath='train',
-                 fraction=0.7,
                  cutoff=1e-20):
         '''
         Initialising the attributes of the dataset.
 
         Input:
-            - nb_samples [int]: number of 1D models to use for training & validation
-            - dt_fract [float]: fraction of the timestep to use, depends on number of latent species 
-                (see latent dynamics in paper)
-            - nb_test [int]: number of 1D models to uses for testing
+            - meta [object]: contains dataset metadata
             - train [boolean]: True if training, False if testing
-            - fraction [float]: fraction of the dataset to use for training, 1-fraction is used for validation,
-                default = 0.7
             - cutoff [float]: cutoff value for the abundances, depends on tolerances of classical chemistry kinetics solver, 
                 default = 1e-20
             - scale [str]: type of scaling to use, default = 'norm'
@@ -238,23 +223,14 @@ class CSEdata(Dataset):
             - take np.log10 of abudances
 
         Structure:
-            1. Load the paths of the 1D models
-            2. Select a certain number of paths, given by nb_samples 
-                --> self.path
-            3. Select a random test path, that is not in the training set 
-                --> self.testpath
-            4. Load the rates matrix M (matrix needed for the 'element loss', see appendix of paper)
-                (Currently not used) 
-                --> self.M
+            1. Load the paths of the models
+            2. Select a certain number of paths, given by nb_train, nb_test, nb_valid
+            3. Shuffle the paths according to seed
+            4. Split the paths into train, test, and valid sets
             5. Set the min and max values of the physical parameters and abundances, 
                 resulting from a search through the full dataset; see 'minmax.json' file.
                 These values are used for normalisation of the data. 
                 --> self.mins, self.maxs
-            6. Set the cutoff value for the abundances 
-                --> self.cutoff
-            7. Set the fraction of the dataset to use for training 
-                --> self.fraction
-            8. Split the dataset in train and test set 
         '''
         print('> Train state:', train)
 
@@ -263,24 +239,34 @@ class CSEdata(Dataset):
         paths = np.loadtxt(loc + 'data/paths_train_data.txt', dtype=str)
         print('Found paths:', len(paths))
 
-        ## select a certain number of paths, given by nb_samples
-        np.random.seed(0)
-        if nb_samples + nb_test > len(paths):
-            raise ValueError('Not enough models in paths_train_data.txt for nb_samples + nb_test.')
+        self.cutoff = cutoff
+        self.train = train
+        self.inpackage = inpackage
+        self.datapath = datapath
+
+        ## select a certain number of paths
+        nb_samples = meta.nb_train + meta.nb_valid + meta.nb_test
+        if nb_samples > len(paths):
+            raise ValueError('Not enough models in paths_train_data.txt for training, validation and testing.')
+
+        ## permute paths randomly
+        np.random.seed(meta.seed)
         perm = np.random.permutation(len(paths))
-        self.idxs = perm[:nb_samples]
-        self.path = paths[self.idxs]
-        print(self.idxs)
+        train_idx = perm[:meta.nb_train]
+        valid_idx = perm[meta.nb_train:meta.nb_train + meta.nb_valid]
+        test_idx = perm[meta.nb_train + meta.nb_valid:nb_samples]
 
-        self.nb_test = nb_test
-        self.test_idx = perm[nb_samples:nb_samples + nb_test]
-        self.testpath = list(paths[self.test_idx])
+        if self.train:
+            self.path = paths[train_idx]
+            print('Selected train paths:', len(self.path))
+        else:
+            self.path = paths[valid_idx]
+            print('Selected valid paths:', len(self.path))
+        self.testpath = paths[test_idx]
         print('Selected test paths:', len(self.testpath))
+        print('\n')
 
-        # print('test path:', self.testpath)
-
-        self.M = np.load(loc + 'data/M_rate16.npy')
-
+        # Load physics
         ## These values are the results from a search through the full dataset; see 'minmax.json' file
         self.logrho_min = np.log10(0.008223)
         self.logrho_max = np.log10(5009000000.0)
@@ -292,7 +278,7 @@ class CSEdata(Dataset):
         self.Av_min = np.log10(2.141e-05)
         self.Av_max = np.log10(1246.0)
         self.dt_max = 434800000000.0
-        self.dt_fract = dt_fract
+        self.dt_fract = meta.dt_fract
         self.n_min = np.log10(cutoff)
         self.n_max = np.log10(0.85e-1)  ## initial abundance He
 
@@ -304,22 +290,6 @@ class CSEdata(Dataset):
             self.logrho_max, self.logT_max, self.logdelta_max, self.Av_max,
             self.n_max, self.dt_max
         ])
-
-        self.cutoff = cutoff
-        self.fraction = fraction
-        self.train = train
-        self.inpackage = inpackage
-        self.datapath = datapath
-
-        ## Split in train and test set
-        N = int(self.fraction * len(self.path))
-        if self.train:
-            self.path = self.path[:N]
-        else:
-            self.path = self.path[N:]
-
-        print('Selected paths:', len(self.path))
-        print('\n')
 
     def __len__(self):
         '''
@@ -407,12 +377,6 @@ class CSEmod():
             self.model = path[34:-51]
             self.name = path[-43:-18]
             inp_path = self.path[:-26] + 'inputChemistry_' + self.name + '.txt'
-
-        #if chempy == True:
-        #    self.path = path[:-17]
-        #    self.model = path[21:-51]
-        #    self.name = path[-43:-18]
-        #    inp_path = self.path[:-26]+ 'inputChemistry_'+self.name+'.txt'
 
         if inpackage:
             if data == 'test':
@@ -764,28 +728,18 @@ class PhantomData(Dataset):
     '''
 
     def __init__(self,
-                 nb_samples,
-                 dt_fract,
-                 nb_test,
+                 meta,
                  inpackage=False,
                  train=True,
                  datapath='train',
-                 fraction=0.7,
                  cutoff=1e-20):
         '''
         Initialising the attributes of the dataset.
 
         Input:
-            - nb_samples [int]: number of 1D models to use for training & validation
-            - dt_fract [float]: fraction of the timestep to use, depends on number of latent species 
-                (see latent dynamics in paper)
-            - nb_test [int]: number of 1D models to uses for testing
-            - train [boolean]: True if training, False if testing
-            - fraction [float]: fraction of the dataset to use for training, 1-fraction is used for validation,
-                default = 0.7
+            - meta [object]: contains dataset parameters like nb_train, nb_test, nb_valid, seed
             - cutoff [float]: cutoff value for the abundances, depends on tolerances of classical chemistry kinetics solver, 
                 default = 1e-20
-            - scale [str]: type of scaling to use, default = 'norm'
 
         Preprocess on data:
             - clip all abundances to cutoff
@@ -793,22 +747,13 @@ class PhantomData(Dataset):
 
         Structure:
             1. Load the paths of the models
-            2. Select a certain number of paths, given by nb_samples 
-                --> self.path
-            3. Select a random test path, that is not in the training set 
-                --> self.testpath
-            4. Load the rates matrix M (matrix needed for the 'element loss', see appendix of paper)
-                (Currently not used) 
-                --> self.M
+            2. Select a certain number of paths, given by nb_train, nb_test, nb_valid
+            3. Shuffle the paths according to seed
+            4. Split the paths into train, test, and valid sets
             5. Set the min and max values of the physical parameters and abundances, 
                 resulting from a search through the full dataset; see 'minmax.json' file.
                 These values are used for normalisation of the data. 
                 --> self.mins, self.maxs
-            6. Set the cutoff value for the abundances 
-                --> self.cutoff
-            7. Set the fraction of the dataset to use for training 
-                --> self.fraction
-            8. Split the dataset in train and test set 
         '''
         print('> Train state:', train)
 
@@ -820,28 +765,41 @@ class PhantomData(Dataset):
         paths = np.array([])
         for p in path:
             # decode if path is bytes
-            ps = os.listdir(p)
+            ps = sorted(os.listdir(p))
             if isinstance(ps[0], bytes):
                 ps = [_.decode('utf-8') for _ in ps]
             paths = np.append(paths, [os.path.join(p, _) for _ in ps])
         paths = paths.flatten()
         print('Found paths:', len(paths))
 
+        self.cutoff = cutoff
+        self.train = train
+        self.inpackage = inpackage
+        self.datapath = datapath
+
+        ## select paths for training and testing
+        nb_samples = meta.nb_train + meta.nb_test + meta.nb_valid
+        if nb_samples > len(paths):
+                    raise ValueError('Not enough models in paths_train_data.txt for training, validation and testing.')
+
         ## select a certain number of paths, given by nb_samples
-        np.random.seed(0)
-        if nb_samples + nb_test > len(paths):
-            raise ValueError('Not enough models in paths_train_data.txt for nb_samples + nb_test.')
+        np.random.seed(meta.seed)
         perm = np.random.permutation(len(paths))
-        self.idxs = perm[:nb_samples]
-        self.path = paths[self.idxs]
+        train_idx = perm[:meta.nb_train]
+        valid_idx = perm[meta.nb_train:meta.nb_train + meta.nb_valid]
+        test_idx = perm[meta.nb_train + meta.nb_valid:nb_samples]
 
-        self.nb_test = nb_test
-        self.test_idx = perm[nb_samples:nb_samples + nb_test]
-        self.testpath = list(paths[self.test_idx])
+        if self.train:
+            self.path = paths[train_idx]
+            print('Selected train paths:', len(self.path))
+        else:
+            self.path = paths[valid_idx]
+            print('Selected valid paths:', len(self.path))
+        self.testpath = paths[test_idx]
         print('Selected test paths:', len(self.testpath))
+        print('\n')
 
-        self.M = np.load(loc + 'data/M_rate16.npy')
-
+        # Load physics
         ## These values are the results from a search through the full dataset; see 'minmax.json' file
         with open(loc + 'data/minmax.json', 'r') as f:
             minmax = json.load(f)
@@ -855,7 +813,7 @@ class PhantomData(Dataset):
         self.Av_min = np.log10(y + minmax['Av_min'])
         self.Av_max = np.log10(y + minmax['Av_max'])
         self.dt_max = minmax['dt_max']
-        self.dt_fract = dt_fract
+        self.dt_fract = meta.dt_fract
         self.n_min = np.log10(cutoff)
         self.n_max = np.log10(0.85e-1)  ## initial abundance He
 
@@ -867,22 +825,6 @@ class PhantomData(Dataset):
             self.logrho_max, self.logT_max, self.logdelta_max, self.Av_max,
             self.n_max, self.dt_max
         ])
-
-        self.cutoff = cutoff
-        self.fraction = fraction
-        self.train = train
-        self.inpackage = inpackage
-        self.datapath = datapath
-
-        ## Split in train and test set
-        N = int(self.fraction * len(self.path))
-        if self.train:
-            self.path = self.path[:N]
-        else:
-            self.path = self.path[N:]
-
-        print('Selected paths:', len(self.path))
-        print('\n')
 
     def __len__(self):
         '''
