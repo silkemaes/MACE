@@ -23,7 +23,6 @@ class MACE(nn.Module):
     - p_dim:    Amount of physical parameters
     - z_dim:    Amount of latent dimensions
     - ae_type:  'simple' or 'linear'
-    - g_nn:     Move physical input to nODE (broken)
     - atol:     Absolute tolerance of nODE solutions
     - rtol:     Relative tolerance of nODE solutions
     '''
@@ -37,21 +36,16 @@ class MACE(nn.Module):
                  p_dim,
                  z_dim,
                  ae_type='simple',
-                 g_nn=False,
                  atol=1e-5,
                  rtol=1e-2):
         '''
         Main MACE architecture. Contains all updateable weights.
         '''
         super().__init__()
-        # Flags 
-        self.g_nn = g_nn # use neural ODE
-        self.use_p = not g_nn # consider extra input for encoder
         # Data dimensions
         self.n_dim, self.p_dim, self.z_dim = n_dim, p_dim, z_dim
-        # AE dimensions
-        self.in_dim = n_dim
-        if self.use_p: self.in_dim = p_dim + n_dim
+        # AE dimensions (encoder input = cat(p, n))
+        self.in_dim = p_dim + n_dim
         self.out_dim = n_dim
         # Autoencoder (self.encoder/decoder)
         self.setAutoencoder(ae_type)
@@ -66,19 +60,17 @@ class MACE(nn.Module):
                                   latent_dim=self.z_dim,
                                   ae_type=ae_type)
 
-    def encode(self, n, p=None):
+    def encode(self, n, p):
         '''
         Encode the real state (n)
 
         - n: (B, n_dim) real states
-        - p: (B, p_dim) physical parameters (optional)
+        - p: (B, p_dim) physical parameters
 
         Returns
         - z: (B, z_dim) corresponding latent states
         '''
-        x = n
-        if self.use_p: # Feed p into encode
-            x = torch.cat((p, n), dim=-1) #type:ignore
+        x = torch.cat((p, n), dim=-1)
         z = self.encoder(x)
         return z
 
@@ -94,12 +86,12 @@ class MACE(nn.Module):
         n = self.decoder(z)
         return n
 
-    def autoencode(self, n, p=None):
+    def autoencode(self, n, p):
         '''
         Auto-encodes n. Returns D(E(n)).
 
         - n: (B, n_dim) real states
-        - p: (B, p_dim) physical parameters (optional)
+        - p: (B, p_dim) physical parameters
 
         Returns:
         - n_hat: (B, out_dim) corresponding real states
@@ -116,15 +108,12 @@ class MACE(nn.Module):
 
         @Claude (avoid double gradient)
         '''
-        # set G and tolerances
-        if self.g_nn:
-            self.g = lODE.Gnn(self.p_dim, self.z_dim)
-        else:
-            self.g = lODE.G(self.z_dim)
+        # set g and tolerances
+        self.g = lODE.G(self.z_dim)
         self.atol, self.rtol = atol, rtol
 
-        # adapt g to torchode's calling convention f(t, z[, args]).
-        term = to.ODETerm(self.g, with_args=self.g_nn, with_stats=False)
+        # adapt g to torchode's calling convention f(t, z).
+        term = to.ODETerm(self.g, with_args=False, with_stats=False)
         # setup solver with custom backprop (adjoint)
         solver = to.AutoDiffAdjoint(to.Dopri5(), #type:ignore all around
                                     to.IntegralController(atol=atol, rtol=rtol)) #type:ignore
@@ -132,12 +121,11 @@ class MACE(nn.Module):
         object.__setattr__(self, '_term', term)
         object.__setattr__(self, '_solver', solver)
 
-    def solveNeuralODE(self, z0, p, dt):
+    def solveNeuralODE(self, z0, dt):
         '''
         Integrate the latent ODE from t = 0 to t = dt, independently per batch row.
 
         - z0: (B, z_dim) initial latent states
-        - p:  (B, p_dim) physical parameters (only used by Gnn)
         - dt: (B,)       time steps
 
         Returns
@@ -148,7 +136,7 @@ class MACE(nn.Module):
                                          t_start=torch.zeros_like(dt), #type:ignore
                                          t_end=dt,
                                          t_eval=dt[:, None]) # TODO:remove this (will slightly break old models)
-        solution = self._solver.solve(problem, term=self._term, args=p) # Args is ignored if not self.g_nn
+        solution = self._solver.solve(problem, term=self._term)
         return solution.ys[:, -1], solution.status
 
     def forward(self, n0, p, dt):

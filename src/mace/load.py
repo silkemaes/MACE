@@ -58,11 +58,10 @@ def load_model(dir, meta, epoch=-1):
     p_dim = meta.p_dim
     z_dim = meta.z_dim
     ae_type = meta.ae_type
-    g_nn = meta.g_nn
     atol = meta.atol
     rtol = meta.rtol
-    
-    model = mace.MACE(n_dim, p_dim, z_dim, ae_type, g_nn, atol, rtol)
+
+    model = mace.MACE(n_dim, p_dim, z_dim, ae_type, atol=atol, rtol=rtol)
     overwrite_weights(model, dir, epoch)
     num_params = utils.count_parameters(model)
     
