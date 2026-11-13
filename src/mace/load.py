@@ -4,89 +4,80 @@ and provides the user with the possibility to apply (test) the model on a test d
 
 The class Trained_MACE() contains the loaded model, 
 together with the training and test losses, and the meta data.
+
+Version 2.0
 '''
-
-
 
 import src.mace.utils       as utils
 import src.mace.loss        as loss
+import src.mace.meta        as meta
+import src.mace.mace        as mace
 import matplotlib.pyplot    as plt
+from pathlib import Path
+import torch
+import os
 
 
 
-class Trained_MACE():
+def load_MACE(dir, epoch=-1):
     '''
-    Class to load a trained MACE model.
+    Loads a MACE model from weights. Loads losses.
+
+    - dir:      Directory where meta.json is stored
+    - epoch:    Epoch to load. Defaults to last weights.
+
+    Returns
+    - model:    A MACE model with loaded weights
+    - lossses:  A dict with Loss objects (train, valid, test)
+    - metadata: meta.json
     '''
-    def __init__(self, outloc, dirname, epoch = -1):
-        '''
-        Load all the components of a MACE model.
+    metadata = meta.Meta(meta_path=dir)
+    model, _ = load_model(dir, metadata, epoch)
 
-        Input:
-            - outloc: output location
-            - dirname: name of the directory
-            - epoch: specific epoch to load
-                if epoch == -1, the last epoch is loaded (i.e. final state of the model)
-                if epoch >= 0, the epoch*10's epoch is loaded
-        
-        Returns:
-            - meta: file with meta data
-            - model: torch model
-            - trainloss: training loss per epoch
-            - testloss: test loss per epoch
-        '''
+    losses = {}
 
-        self.loc   = outloc+dirname+'/'
-        self.epoch = epoch
+    for d_ in [d_ for d_ in Path(dir).iterdir() if d_.is_dir()]:
+        d_ = os.path.basename(os.path.normpath(d_))
+        if d_ in ('train', 'valid', 'test'):
+            print(f'Found {d_}ing losses')
+            losses[d_] = loss.load_loss(f'{dir}/{d_}')
 
-        self.meta = utils.load_meta(self.loc)
+    return model, losses, metadata
 
-        self.model, self.num_params = utils.load_model(self.loc, self.meta, epoch)
+def load_model(dir, meta, epoch=-1):
+    '''
+    Initializes MACE model. Loads hyperparameters from meta.json.
+    Overwrites MACE weights by those found in meta.json.
 
-        self.trainloss = loss.LoadedLoss(self.loc, self.meta, 'train')
-
-        self.testloss  = loss.LoadedLoss(self.loc, self.meta, 'valid')
-
-        self.plotpath = self.loc + 'figs/'
-
-        utils.makeOutputDir(self.plotpath)
-
-        
-    def get_meta(self):
-        return self.meta
+    - dir:      Directory where meta.json is stored
+    - metadata: meta.json
+    - epoch:    Epoch to load. Defaults to last weights.
     
-    def get_model(self):
-        return self.model
+    '''
+    n_dim = meta.n_dim
+    p_dim = meta.p_dim
+    z_dim = meta.z_dim
+    ae_type = meta.ae_type
+    g_nn = meta.g_nn
+    atol = meta.atol
+    rtol = meta.rtol
     
-    def get_trainloss(self):
-        return self.trainloss
+    model = mace.MACE(n_dim, p_dim, z_dim, ae_type, g_nn, atol, rtol)
+    overwrite_weights(model, dir, epoch)
+    num_params = utils.count_parameters(model)
     
-    def get_testloss(self):
-        return self.testloss
-    
-    def get_num_params(self):
-        return self.num_params
-    
-    def get_loc(self):
-        return self.loc
-    
-    def get_epoch(self):
-        return self.epoch
-    
-    def plot_loss(self, log=True, ylim=False, limits=None, save = True):
+    return model, num_params
 
-        len = self.get_meta()['epochs']
+def overwrite_weights(model, dir, epoch=-1):
+    '''
+    Overwrites a MACE model's weights by those in dir/nn/nn{epoch}.pt
+    '''
+    if epoch >= 0:
+        infile = f'nn/nn{epoch}.pt'
+    else:
+        infile = 'nn/nn.pt'
+    state_dict = torch.load(f'{dir}/{infile}', map_location='cpu', weights_only=True)
 
-        fig = loss.plot(self.trainloss, self.testloss, len, log = log, ylim = ylim, limits = limits)
-
-        if save == True:
-            plt.savefig(self.plotpath+'loss.png')
-
-        plt.show()
-
-        return fig
-    
-
-
-        
-
+    model.eval()
+    model.load_state_dict(state_dict) 
+    model.eval()

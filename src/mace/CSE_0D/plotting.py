@@ -141,4 +141,4 @@ def plot_abs(model1D, modeltype, n, n_hat, specs, step=False):
 
     plt.tight_layout()
 
-    return fig
+    return fig, [ax3,ax1,ax2]

@@ -1,301 +1,190 @@
 '''
-This script contains the MACE model architecture, called Solver.
-It combines the autoencoder with the latent ODE, and includes solving the ODE in the forward pass.
+MACE architecture.
 
-Also an old version of the solver is available still, which is compatible with an older version of the autoencoder.
+Reworked from the ground up with love :D
+
+Version 2.0
 '''
-
-
 
 import torch.nn             as nn
 import torch
-import numpy                as np
 import torchode             as to      # Lienen, M., & Günnemann, S. 2022, in The Symbiosis of Deep Learning and Differential Equations II, NeurIPS. https://openreview.net/forum?id=uiKVKTiUYB0
 import src.mace.autoencoder as ae
 import src.mace.latentODE   as lODE
-from time                   import time
 
 
-class Solver(nn.Module):
+
+class MACE(nn.Module):
     '''
-    The Solver class presents the full architecture of MACE.
-    Components:
-        1) Encoder; neural network with adjustable amount of nodes and layers
-        2) Latent ODE; ODE given by function g, with trainable elements 
-        3) Decoder; neural network with adjustable amount of nodes and layers
+    Main MACE architecture. 
+    Contains an encoder, decoder, and nODE solver.
 
+    - n_dim:    Amount of chemical abundances
+    - p_dim:    Amount of physical parameters
+    - z_dim:    Amount of latent dimensions
+    - ae_type:  'simple' or 'linear'
+    - g_nn:     Move physical input to nODE (broken)
+    - atol:     Absolute tolerance of nODE solutions
+    - rtol:     Relative tolerance of nODE solutions
     '''
+    # ODE helpers, unregistered as submodules (see setNeuralODE)
+    # Kind of nasty but better on memory
+    _term:   to.ODETerm
+    _solver: to.AutoDiffAdjoint
 
-    def __init__(self,
+    def __init__(self, 
                  n_dim,
                  p_dim,
                  z_dim,
-                 nb_hidden,
-                 ae_type,
-                 scheme,
-                 nb_evol,
-                 lr,
-                 path,
-                 DEVICE,
+                 ae_type='simple',
                  g_nn=False,
                  atol=1e-5,
-                 rtol=1e-25):
-        # def __init__(self,  p_dim, z_dim, DEVICE, n_dim, nb_hidden, ae_type, g_nn = False, atol = 1e-5, rtol = 1e-25):
+                 rtol=1e-2):
         '''
-        Initialising the Solver class with the hyperparameters.
-
-        - n_dim: number of dimensions of the physical output
-        - p_dim: number of dimension of the physical input
-        - z_dim: number of dimension of the latent space
-        
-        - nb_hidden: number of hidden layers in the encoder and decoder
-        - ae_type: type of autoencoder used
-
-        - scheme: type of scheme used to train the model 
-            - 'loc': local training scheme
-            - 'int': integrated training scheme
-            (see Maes et al., 2024 for more details)
-        - nb_evol: number of evolutions used during the integrated training scheme
-
-        - lr: learning rate of the training optimiser 
-
-        - path: path to the model. Here the model will be saved as well as its test results
-
-        - DEVICE: device to run the model on (cuda or cpu)
-        
-        - g_nn: boolean:
-            True: use a neural network version of G (Gnn class)
-            False: use the G class (default)
-
-        - atol: absolute tolerance of the ODE solver, default 1e-5
-        - rtol: relative tolerance of the ODE solver, default 1e-2
-
-        This class builds the architecture of MACE; with the encoder, decoder and latent ODE.
-        It also sets up the ODE solver, with the adjoint method from the torchode package (Lienen & Günnemann 2022).
+        Main MACE architecture. Contains all updateable weights.
         '''
-        super(Solver, self).__init__()
+        super().__init__()
+        # Flags 
+        self.g_nn = g_nn # use neural ODE
+        self.use_p = not g_nn # consider extra input for encoder
+        # Data dimensions
+        self.n_dim, self.p_dim, self.z_dim = n_dim, p_dim, z_dim
+        # AE dimensions
+        self.in_dim = n_dim
+        if self.use_p: self.in_dim = p_dim + n_dim
+        self.out_dim = n_dim
+        # Autoencoder (self.encoder/decoder)
+        self.setAutoencoder(ae_type)
+        # Neural ODE (self.g, self._term, self._solver)
+        self.setNeuralODE(atol, rtol)
 
-        self.scheme = scheme
-        self.nb_evol = nb_evol
-
-        self.lr = lr
-
-        self.path = path
-
-        self.status_train = list()
-        self.status_test = list()
-
-        self.p_dim = p_dim
-        self.z_dim = z_dim
-        self.n_dim = n_dim
-
-        self.DEVICE = DEVICE
-        self.g_nn = g_nn
-
-        ## Setting the neural ODE
-        input_ae_dim = n_dim
-        if not self.g_nn:
-            self.g = lODE.G(z_dim)
-            input_ae_dim = input_ae_dim + p_dim
-            self.odeterm = to.ODETerm(self.g, with_args=False)
-        if self.g_nn:
-            self.g = lODE.Gnn(p_dim, z_dim)
-            self.odeterm = to.ODETerm(self.g, with_args=True)
-
-        self.step_method = to.Dopri5(term=self.odeterm)
-        self.step_size_controller = to.IntegralController(atol=atol,
-                                                          rtol=rtol,
-                                                          term=self.odeterm)
-        self.adjoint = to.AutoDiffAdjoint(self.step_method,
-                                          self.step_size_controller).to(
-                                              self.DEVICE)  # type: ignore
-
-        self.jit_solver = torch.compile(self.adjoint)
-
-        ## Setting the autoencoder (encoder + decoder)
-        self.encoder = ae.Encoder(input_dim=input_ae_dim,
-                                  latent_dim=z_dim,
-                                  nb_hidden=nb_hidden,
+    def setAutoencoder(self, ae_type):
+        self.encoder = ae.Encoder(input_dim=self.in_dim,
+                                  latent_dim=self.z_dim,
                                   ae_type=ae_type)
-        self.decoder = ae.Decoder(latent_dim=z_dim,
-                                  output_dim=n_dim,
-                                  nb_hidden=nb_hidden,
+        self.decoder = ae.Decoder(output_dim=self.out_dim,
+                                  latent_dim=self.z_dim,
                                   ae_type=ae_type)
 
-    def set_status(self, status, type):
+    def encode(self, n, p=None):
         '''
-        Sets the status of the torchode solver. 
-        (See torchode code/documentation for more information on the status of the solver)
-        '''
-        if type == 'train':
-            self.status_train.append(status)
-        elif type == 'test':
-            self.status_test.append(status)
+        Encode the real state (n)
 
-    def get_status(self, type):
-        '''
-        Returns the status of the torchode solver.
-        (See torchode code/documentation for more information on the status of the solver)'''
-        if type == 'train':
-            return np.array(self.status_train)
-        elif type == 'test':
-            return np.array(self.status_test)
+        - n: (B, n_dim) real states
+        - p: (B, p_dim) physical parameters (optional)
 
-    def set_optimiser(self):
+        Returns
+        - z: (B, z_dim) corresponding latent states
         '''
-        Sets the optimiser for the model for its training.
+        x = n
+        if self.use_p: # Feed p into encode
+            x = torch.cat((p, n), dim=-1) #type:ignore
+        z = self.encoder(x)
+        return z
+
+    def decode(self, z):
         '''
-        self.optimiser = torch.optim.Adam(self.parameters(), lr=self.lr)
+        Decode the latent state (z)
 
-        return
+        - z: (B, z_dim) latent states
 
-    def forward(self, n_0, p, tstep):
+        Returns
+        - n: (B, n_dim) corresponding real states
         '''
-        Forward function giving the workflow of the MACE architecture.
-            - n_0: abundances input
-            - p: physical input
-            - tstep: time steps to solve the ODE
+        n = self.decoder(z)
+        return n
 
-        Currently, this forward pass is written in such a way that it can only
-        handle a batch size of 1. Therefore, some transformations on the data
-        are done to make sure the batch size is 1.
-            >> In a later version, MACE will be made compatible with batch sizes > 1.
-        There is code in place to time the encoder, solver and decoder, but this is commented out.
-        
+    def autoencode(self, n, p=None):
+        '''
+        Auto-encodes n. Returns D(E(n)).
+
+        - n: (B, n_dim) real states
+        - p: (B, p_dim) physical parameters (optional)
 
         Returns:
-            - n_s: the predicted abundances at the time steps tstep
-            - z_s: the predicted latent space at the time steps tstep
-            - solution.status: the status of the ODE solver
+        - n_hat: (B, out_dim) corresponding real states
         '''
+        z = self.encode(n, p)
+        n_hat = self.decode(z)
+        return n_hat
 
-        x_0 = n_0  ## use NN version of G
-        if not self.g_nn:  ## DON'T use NN version of G
-            ## Ravel the abundances n_0 and physical input p to x_0
-            x_0 = torch.cat((p, n_0), axis=-1)  # type: ignore
-        ## Encode x_0, returning the encoded z_0 in latent space
-        tic = time()
-        z_0 = self.encoder(x_0)
-        toc = time()
-        enc_time = toc - tic
-        ## Create initial value problem
-        t_start = torch.zeros_like(tstep)
-        t_end = tstep
-        problem = to.InitialValueProblem(
-            y0=z_0.to(self.DEVICE),
-            t_eval=tstep.view(z_0.shape[0], -1).to(self.DEVICE),
-            t_start=t_start,
-            t_end=t_end,
-        )
+    def setNeuralODE(self, atol, rtol):
+        '''
+        Build the latent ODE dz/dt = g(z)
 
-        ## Solve initial value problem. Details are set in the __init__() of this class.
-        tic = time()
-        solution = self.jit_solver.solve(problem, args=p)
-        toc = time()
-        solve_time = toc - tic
-        z_s = solution.ys.view(-1, self.z_dim)  ## want batches
-        ## Decode the resulting values from latent space z_s back to physical space
-        tic = time()
-        n_s_ravel = self.decoder(z_s)
-        toc = time()
-        dec_time = toc - tic
-        ## Reshape correctly
-        n_s = n_s_ravel.reshape(1, tstep.shape[-1], self.n_dim)
-        #print('\nencoder time:', enc_time)
-        #print('solver  time:', solve_time)
-        #print('decoder time:', dec_time)
+        Only g is registered as a submodule.
 
-        return n_s, z_s, solution.status
+        @Claude (avoid double gradient)
+        '''
+        # set G and tolerances
+        if self.g_nn:
+            self.g = lODE.Gnn(self.p_dim, self.z_dim)
+        else:
+            self.g = lODE.G(self.z_dim)
+        self.atol, self.rtol = atol, rtol
 
+        # adapt g to torchode's calling convention f(t, z[, args]).
+        term = to.ODETerm(self.g, with_args=self.g_nn, with_stats=False)
+        # setup solver with custom backprop (adjoint)
+        solver = to.AutoDiffAdjoint(to.Dopri5(), #type:ignore all around
+                                    to.IntegralController(atol=atol, rtol=rtol)) #type:ignore
+        # object.__setattr__ bypasses nn.Module's automatic submodule registration
+        object.__setattr__(self, '_term', term)
+        object.__setattr__(self, '_solver', solver)
 
+    def solveNeuralODE(self, z0, p, dt):
+        '''
+        Integrate the latent ODE from t = 0 to t = dt, independently per batch row.
 
-## ---------- OLD VERSION OF THE SOLVER CLASS ---------- ##
-## This class is compatible with an older version of the autoencoder
+        - z0: (B, z_dim) initial latent states
+        - p:  (B, p_dim) physical parameters (only used by Gnn)
+        - dt: (B,)       time steps
 
+        Returns
+        - z1:    (B, z_dim) latent states at t = dt
+        - status:(B,)       torchode status codes (0 = success, see torchode.status_codes.Status)
+        '''
+        problem = to.InitialValueProblem(y0=z0,
+                                         t_start=torch.zeros_like(dt), #type:ignore
+                                         t_end=dt,
+                                         t_eval=dt[:, None]) # TODO:remove this (will slightly break old models)
+        solution = self._solver.solve(problem, term=self._term, args=p) # Args is ignored if not self.g_nn
+        return solution.ys[:, -1], solution.status
 
-# from scipy.stats            import gmean
+    def forward(self, n0, p, dt):
+        '''
+        Evolves n0 over a timestep dt using physical state p.
+        
+        - n0: (B, n_dim) initial real states
+        - p:  (B, p_dim) physical parameters
+        - dt: (B,)       time steps
 
-# class Solver_old(nn.Module):
-#     '''
-#     The Solver class presents the architecture of MACE.
-#     Components:
-#         1) Encoder; neural network with adjustable amount of nodes and layers
-#         2) Neural ODE; ODE given by function g, with trainable elements
-#         3) Decoder; neural network with adjustable amount of nodes and layers
+        Returns
+        - n1:    (B, n_dim) evolved real states
+        - z1:    (B, z_dim) evolved latent states
+        - status:(B,)       ODE solver error codes
+        '''
+        z0 = self.encode(n0, p)
+        z1, status = self.solveNeuralODE(z0, p, dt)
+        n1 = self.decode(z1)
+        return n1, z1, status
 
-#     '''
-#     def __init__(self, p_dim, z_dim, DEVICE,  n_dim=466, g_nn = False, atol = 1e-5, rtol = 1e-2):
-#         super(Solver_old, self).__init__() # type: ignore
+    def rollout(self, n0, p_seq, dt_seq):
+        '''
+        Repeatedly evolves a starting state n0 
+        over a timestep dt, injecting p at every step e.
 
-#         self.status_train = list()
-#         self.status_test = list()
+        - n0:    (B,    n_dim) initial real states
+        - p_seq: (B, e, p_dim) physical parameters per step
+        - dt_seq:(B, e)        time step sizes
 
-#         self.z_dim = z_dim
-#         self.n_dim = n_dim
-#         self.DEVICE = DEVICE
-#         self.g_nn = g_nn
-
-#         ## Setting the neural ODE
-#         input_ae_dim  = n_dim
-#         if not self.g_nn:
-#             self.g = lODE.G(z_dim)
-#             input_ae_dim  = input_ae_dim+p_dim
-#             self.odeterm = to.ODETerm(self.g, with_args=False)
-#         if self.g_nn:
-#             self.g = lODE.Gnn(p_dim, z_dim)
-#             self.odeterm = to.ODETerm(self.g, with_args=True)
-
-#         self.step_method          = to.Dopri5(term=self.odeterm)
-#         self.step_size_controller = to.IntegralController(atol=atol, rtol=rtol, term=self.odeterm)
-#         self.adjoint              = to.AutoDiffAdjoint(self.step_method, self.step_size_controller).to(self.DEVICE) # type: ignore
-
-#         self.jit_solver = torch.compile(self.adjoint)
-
-#         ## Setting the autoencoder (enocder + decoder)
-#         hidden_ae_dim = int(gmean([input_ae_dim, z_dim]))
-#         self.encoder = ae.Encoder_old(input_dim=input_ae_dim, hidden_dim=hidden_ae_dim, latent_dim=z_dim)
-#         self.decoder = ae.Decoder_old(latent_dim=z_dim      , hidden_dim=hidden_ae_dim, output_dim=n_dim)
-
-#     def set_status(self, status, phase):
-#         if phase == 'train':
-#             self.status_train.append(status)
-#         elif phase == 'test':
-#             self.status_test.append(status)
-
-#     def get_status(self, phase):
-#         if phase == 'train':
-#             return np.array(self.status_train)
-#         elif phase == 'test':
-#             return np.array(self.status_test)
-
-
-#     def forward(self, n_0, p, tstep):
-#         '''
-#         Forward function giving the workflow of the MACE architecture.
-#         '''
-
-#         x_0 = n_0               ## use NN version of G
-#         if not self.g_nn:       ## DON'T use NN version of G
-#             ## Ravel the abundances n_0 and physical input p to x_0
-#             x_0 = torch.cat((p, n_0), axis=-1) # type: ignore
-
-#         ## Encode x_0, returning the encoded z_0 in latent space
-#         z_0 = self.encoder(x_0)
-
-#         ## Create initial value problem
-#         problem = to.InitialValueProblem(
-#             y0     = z_0.to(self.DEVICE),  ## "view" is om met de batches om te gaan
-#             t_eval = tstep.view(z_0.shape[0],-1).to(self.DEVICE),
-#         )
-
-#         ## Solve initial value problem. Details are set in the __init__() of this class.
-#         solution = self.jit_solver.solve(problem, args=p)
-#         z_s = solution.ys.view(-1, self.z_dim)  ## want batches
-
-#         ## Decode the resulting values from latent space z_s back to physical space
-#         n_s_ravel = self.decoder(z_s)
-
-#         ## Reshape correctly
-#         n_s = n_s_ravel.reshape(1,tstep.shape[-1], self.n_dim)
-
-#         return n_s, z_s, solution.status
+        Returns
+        - n_e_hat:(B, e, n_dim) predicted real states after each step
+        - status: (B, e)        torchode status codes (0 = success, see torchode.status_codes.Status)
+        '''
+        n, n_e_hat, status = n0, [], []
+        for i in range(p_seq.shape[1]):
+            n, _, s = self(n, p_seq[:, i], dt_seq[:, i])
+            n_e_hat.append(n)
+            status.append(s)
+        return torch.stack(n_e_hat, dim=1), torch.stack(status, dim=1)

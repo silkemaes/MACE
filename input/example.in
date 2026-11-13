@@ -1,14 +1,13 @@
 ## input model
 
 lr          = 1.e-4
-nb_epochs   = 15
+nb_epochs   = 150
 ini_epochs  = 5
 losstype    = abs_idn
 z_dim       = 8
 nb_samples  = 10
 scheme      = int
 nb_evol     = 16
-nb_hidden   = 1
 ae_type     = simple
 nb_test     = 3
 
@@ -24,3 +23,9 @@ elm = 0
 
 
 
+
+Name = 20261105_172820
+
+Name = 20261105_185411
+
+Name = 20261106_112418
