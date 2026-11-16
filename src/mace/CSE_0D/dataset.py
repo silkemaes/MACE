@@ -200,7 +200,10 @@ def get_phys(p_transf, dataset):
 ### Base class for models and datasets
 
 class ChemModel:
-    ''' basics of chemical models: time, abundances, and physical parameters (rho, T, Xi and AV)'''
+    ''' 
+    Basic class to load chemical model: time, abundances, and physical parameters (rho, T, Xi and AV)
+    For a new type of model, define a new subclass with its own loading method.
+    '''
     def __len__(self):     return len(self.time)
     def get_time(self):    return self.time
     def get_phys(self):    return self.dens, self.temp, self.xi, self.Av
@@ -229,96 +232,90 @@ class ChemModel:
 
         return delta_t.astype(np.float64), n_0D.astype(np.float64), p.T.astype(
             np.float64)
-### ----------------------- 1D CSE models ----------------------- ###
 
-
-class CSEdata(Dataset):
+class ChemData(Dataset):
+    ''' basic class to initialise the dataset for PyTorch.
+        subclasses for each type of datasets are defined after this class.
+        For each new dataset subclass, define how it loads data using load_model(self, path)
     '''
-    Class to initialise the dataset to train & test emulator.
-
-    More specifically, this Dataset uses 1D CSE models, and splits them in 0D models.
-    '''
-
-    def __init__(self,
-                 meta,
-                 inpackage=False,
-                 train=True,
-                 datapath='train',
-                 cutoff=1e-20):
+    def __init__(self, meta, inpackage=False, train=True, datapath='train', cutoff=1e-20):
         '''
         Initialising the attributes of the dataset.
 
         Input:
             - meta [object]: contains dataset metadata
-            - train [boolean]: True if training, False if testing
+            - inpackage [bool]: if data is in package (repo) or located somewhere else
+            - train [boolean]: True if training, False if validating
+            - datapath [str]: subdirectory for data files if inpackage
             - cutoff [float]: cutoff value for the abundances, depends on tolerances of classical chemistry kinetics solver, 
                 default = 1e-20
-            - scale [str]: type of scaling to use, default = 'norm'
 
         Preprocess on data:
             - clip all abundances to cutoff
             - take np.log10 of abudances
+            - normalise data to log10 of min and max values
 
         Structure:
             1. Load the paths of the models
-            2. Select a certain number of paths, given by nb_train, nb_test, nb_valid
-            3. Shuffle the paths according to seed
-            4. Split the paths into train, test, and valid sets
-            5. Set the min and max values of the physical parameters and abundances, 
+            2. Select a certain number of paths, split in nb_train, nb_test, nb_valid and shuffle according to seed
+            3. Set the min and max values of the physical parameters and abundances, 
                 resulting from a search through the full dataset; see 'minmax.json' file.
                 These values are used for normalisation of the data. 
                 --> self.mins, self.maxs
         '''
         print('> Train state:', train)
-
-        # loc = '/STER/silkem/MACE/'
         loc = str(Path().cwd()) + '/'
-        paths = np.atleast_1d(np.loadtxt(loc + 'data/paths_train_data.txt', dtype=str))
-        print('Found paths:', len(paths))
+        self.cutoff, self.train, self.inpackage, self.datapath = cutoff, train, inpackage, datapath
 
-        self.cutoff = cutoff
-        self.train = train
-        self.inpackage = inpackage
-        self.datapath = datapath
+        # grab paths listed in data file
+        # atleast_1d to ensure path is an array (loadtxt returns an array scalar (0D array) if only one path) 
+        paths = self.find_paths(loc)
+        print('Paths found:', len(paths))
+        self._split_paths(paths, meta, train)
+        self.set_minmax(meta, loc+'data/minmax.json')
+        
 
-        ## select a certain number of paths
+    def _split_paths(self, paths, meta, train):
+        '''
+        Split paths into train/valid/test randomly
+        '''
         nb_samples = meta.nb_train + meta.nb_valid + meta.nb_test
         if nb_samples > len(paths):
             raise ValueError('Not enough models in paths_train_data.txt for training, validation and testing.')
-
-        ## permute paths randomly
         np.random.seed(meta.seed)
         perm = np.random.permutation(len(paths))
         train_idx = perm[:meta.nb_train]
         valid_idx = perm[meta.nb_train:meta.nb_train + meta.nb_valid]
-        test_idx = perm[meta.nb_train + meta.nb_valid:nb_samples]
-
-        if self.train:
+        test_idx  = perm[meta.nb_train + meta.nb_valid:nb_samples]
+        if train:
             self.path = paths[train_idx]
-            print('Selected train paths:', len(self.path))
+            print('Train paths:', len(self.path))
         else:
             self.path = paths[valid_idx]
-            print('Selected valid paths:', len(self.path))
+            print('Valid paths:', len(self.path))
         self.testpath = paths[test_idx]
-        print('Selected test paths:', len(self.testpath))
-        print('\n')
+        print('Test paths:', len(self.testpath))
 
-        # Load physics
+    def set_minmax(self, meta, file):
+        '''
+        Set min and max values for normalisation
+        '''
         ## These values are the results from a search through the full dataset; see 'minmax.json' file
-        self.logrho_min = np.log10(0.008223)
-        self.logrho_max = np.log10(5009000000.0)
-        self.logT_min = np.log10(10.)
-        self.logT_max = np.log10(1851.0)
-        y = 1.e-100  ## this number is added to xi, since it contains zeros
-        self.logdelta_min = np.log10(y)
-        self.logdelta_max = np.log10(y + 0.9999)
-        self.Av_min = np.log10(2.141e-05)
-        self.Av_max = np.log10(1246.0)
-        self.dt_max = 434800000000.0
+        with open(file, 'r') as f:
+            minmax = json.load(f)
+        self.logrho_min = np.log10(minmax['dens_min'])
+        self.logrho_max = np.log10(minmax['dens_max'])
+        self.logT_min = np.log10(minmax['temp_min'])
+        self.logT_max = np.log10(minmax['temp_max'])
+        y = 1.e-100  ## this number is added to xi and AV, since they can contain zeros
+        self.logdelta_min = np.log10(y + minmax['delta_min'])
+        self.logdelta_max = np.log10(y + minmax['delta_max'])
+        self.Av_min = np.log10(y + minmax['Av_min'])
+        self.Av_max = np.log10(y + minmax['Av_max'])
+        self.dt_max = minmax['dt_max']
         self.dt_fract = meta.dt_fract
-        self.n_min = np.log10(cutoff)
+        self.n_min = np.log10(self.cutoff)
         self.n_max = np.log10(0.85e-1)  ## initial abundance He
-
         self.mins = np.array([
             self.logrho_min, self.logT_min, self.logdelta_min, self.Av_min,
             self.n_min, self.dt_fract
@@ -327,58 +324,41 @@ class CSEdata(Dataset):
             self.logrho_max, self.logT_max, self.logdelta_max, self.Av_max,
             self.n_max, self.dt_max
         ])
-
+    
+    def preprocess(self, mod):
+        '''
+        Preprocess data in model: clip to cutoff value, log10, then normalise
+        '''
+        delta_t, n, p = mod.split_in_0D()
+        # physical params
+        p_transf = np.empty_like(p)
+        for j in range(p.shape[1]):
+            p_transf[:, j] = utils.normalise(np.log10(p[:, j]), self.mins[j], self.maxs[j])
+        # abundances
+        n_transf = utils.normalise(np.log10(np.clip(n, self.cutoff, None)), self.n_min, self.n_max)
+        # timesteps
+        delta_t_transf = delta_t / self.dt_max * self.dt_fract
+        return (torch.from_numpy(n_transf), torch.from_numpy(p_transf),
+                torch.from_numpy(delta_t_transf))
+    
     def __len__(self):
-        '''
-        Return the length of the dataset (number of 1D models used for training or validation).
-        '''
         return len(self.path)
 
     def __getitem__(self, idx):
-        '''
-        Get the data of the idx-th 1D model.
+        return self.preprocess(self.load_model(self.path[idx]))
+    
 
-        The CSEmod class is used to get the data of the 1D model.
-        Subsequently, this data is preprocessed:
-            - abundances (n) are
-                - clipped to the cutoff value
-                - np.log10 is taken 
-                - normalised to [0,1]
-            - physical parameters (p) are
-                - np.log10 is taken
-                - normalised to [0,1]
-            - timesteps (delta_t) are 
-                - scaled to [0,1]
-                - multiplied with dt_fract
+### ----------------------- 1D CSE models ----------------------- ###
 
-        Returns the preprocessed data in torch tensors.
-        '''
 
-        mod = CSEmod(self.path[idx],
-                     inpackage=self.inpackage,
-                     data=self.datapath)
-
-        delta_t, n, p = mod.split_in_0D()
-
-        ## physical parameters
-        p_transf = np.empty_like(p)
-        for j in range(p.shape[1]):
-            # print(j)
-            p_transf[:, j] = utils.normalise(np.log10(p[:, j]), self.mins[j],
-                                             self.maxs[j])
-
-        ## abundances
-        n_transf = np.clip(n, self.cutoff, None)
-        n_transf = np.log10(n_transf)
-        n_transf = utils.normalise(
-            n_transf, self.n_min,
-            self.n_max)  ## max boundary = rel. abundance of He
-
-        ## timesteps
-        delta_t_transf = delta_t / self.dt_max * self.dt_fract  ## scale to [0,1] and multiply with dt_fract
-
-        return torch.from_numpy(n_transf), torch.from_numpy(
-            p_transf), torch.from_numpy(delta_t_transf)
+class CSEdata(ChemData):
+    '''
+    1D CSE models
+    '''
+    def find_paths(self, loc):
+        return np.atleast_1d(np.loadtxt(loc + 'data/paths_train_data.txt', dtype=str))
+    def load_model(self, path):
+        return CSEmod(path, inpackage=self.inpackage, data=self.datapath)
 
 
 class CSEmod(ChemModel):
@@ -536,7 +516,7 @@ class Phantommod(ChemModel):
     One output file contains physical parameters and abundances for one particle at all time steps.
     '''
 
-    def __init__(self, path, data='test'):
+    def __init__(self, path):
         '''
         Load the phantom model, given a path.
 
@@ -583,154 +563,12 @@ class Phantommod(ChemModel):
 
 class PhantomData(Dataset):
     '''
-    Class to initialise the dataset to train & test emulator with phantom+Krome 
-    models split in 0D models.
+    Class to initialise train with data from phantom+Krome models split in 0D models.
     '''
-
-    def __init__(self,
-                 meta,
-                 inpackage=False,
-                 train=True,
-                 datapath='train',
-                 cutoff=1e-20):
-        '''
-        Initialising the attributes of the dataset.
-
-        Input:
-            - meta [object]: contains dataset parameters like nb_train, nb_test, nb_valid, seed
-            - cutoff [float]: cutoff value for the abundances, depends on tolerances of classical chemistry kinetics solver, 
-                default = 1e-20
-
-        Preprocess on data:
-            - clip all abundances to cutoff
-            - take np.log10 of abudances
-
-        Structure:
-            1. Load the paths of the models
-            2. Select a certain number of paths, given by nb_train, nb_test, nb_valid
-            3. Shuffle the paths according to seed
-            4. Split the paths into train, test, and valid sets
-            5. Set the min and max values of the physical parameters and abundances, 
-                resulting from a search through the full dataset; see 'minmax.json' file.
-                These values are used for normalisation of the data. 
-                --> self.mins, self.maxs
-        '''
-        print('> Train state:', train)
-
-        loc = str(Path().cwd()) + '/'
-        # atleast_1d to ensure path is an array, because loadtxt returns an array scalar (0D array)
-        # if only one path is is in the path file
-        path = np.atleast_1d(np.loadtxt(loc + 'data/paths_train_data.txt', dtype=str))
-        # get path of all files in path
-        paths = np.array([])
-        for p in path:
-            # decode if path is bytes
-            ps = sorted(os.listdir(p))
-            if isinstance(ps[0], bytes):
-                ps = [_.decode('utf-8') for _ in ps]
-            paths = np.append(paths, [os.path.join(p, _) for _ in ps])
-        paths = paths.flatten()
-        print('Found paths:', len(paths))
-
-        self.cutoff = cutoff
-        self.train = train
-        self.inpackage = inpackage
-        self.datapath = datapath
-
-        ## select paths for training and testing
-        nb_samples = meta.nb_train + meta.nb_test + meta.nb_valid
-        if nb_samples > len(paths):
-                    raise ValueError('Not enough models in paths_train_data.txt for training, validation and testing.')
-
-        ## select a certain number of paths, given by nb_samples
-        np.random.seed(meta.seed)
-        perm = np.random.permutation(len(paths))
-        train_idx = perm[:meta.nb_train]
-        valid_idx = perm[meta.nb_train:meta.nb_train + meta.nb_valid]
-        test_idx = perm[meta.nb_train + meta.nb_valid:nb_samples]
-
-        if self.train:
-            self.path = paths[train_idx]
-            print('Selected train paths:', len(self.path))
-        else:
-            self.path = paths[valid_idx]
-            print('Selected valid paths:', len(self.path))
-        self.testpath = paths[test_idx]
-        print('Selected test paths:', len(self.testpath))
-        print('\n')
-
-        # Load physics
-        ## These values are the results from a search through the full dataset; see 'minmax.json' file
-        with open(loc + 'data/minmax.json', 'r') as f:
-            minmax = json.load(f)
-        self.logrho_min = np.log10(minmax['dens_min'])
-        self.logrho_max = np.log10(minmax['dens_max'])
-        self.logT_min = np.log10(minmax['temp_min'])
-        self.logT_max = np.log10(minmax['temp_max'])
-        y = 1.e-100  ## this number is added to xi, since it contains zeros
-        self.logdelta_min = np.log10(y + minmax['delta_min'])
-        self.logdelta_max = np.log10(y + minmax['delta_max'])
-        self.Av_min = np.log10(y + minmax['Av_min'])
-        self.Av_max = np.log10(y + minmax['Av_max'])
-        self.dt_max = minmax['dt_max']
-        self.dt_fract = meta.dt_fract
-        self.n_min = np.log10(cutoff)
-        self.n_max = np.log10(0.85e-1)  ## initial abundance He
-
-        self.mins = np.array([
-            self.logrho_min, self.logT_min, self.logdelta_min, self.Av_min,
-            self.n_min, self.dt_fract
-        ])
-        self.maxs = np.array([
-            self.logrho_max, self.logT_max, self.logdelta_max, self.Av_max,
-            self.n_max, self.dt_max
-        ])
-
-    def __len__(self):
-        '''
-        Return the length of the dataset (number of 1D models used for training or validation).
-        '''
-        return len(self.path)
-
-    def __getitem__(self, idx):
-        '''
-        Get the data of the idx-th 1D model.
-
-        The phantommod class is used to get the data of the phantom model.
-        Subsequently, this data is preprocessed:
-            - abundances (n) are
-                - clipped to the cutoff value
-                - np.log10 is taken 
-                - normalised to [0,1]
-            - physical parameters (p) are
-                - np.log10 is taken
-                - normalised to [0,1]
-            - timesteps (delta_t) are 
-                - scaled to [0,1]
-                - multiplied with dt_fract
-
-        Returns the preprocessed data in torch tensors.
-        '''
-        print('Loading phantom+krome model from:', self.path[idx])
-        mod = Phantommod(self.path[idx], data=self.datapath)
-        delta_t, n, p = mod.split_in_0D()
-
-        ## physical parameters
-        p_transf = np.empty_like(p)
-        for j in range(p.shape[1]):
-            # print(j)
-            p_transf[:, j] = utils.normalise(np.log10(p[:, j]), self.mins[j],
-                                             self.maxs[j])
-
-        ## abundances
-        n_transf = np.clip(n, self.cutoff, None)
-        n_transf = np.log10(n_transf)
-        n_transf = utils.normalise(
-            n_transf, self.n_min,
-            self.n_max)  ## max boundary = rel. abundance of He
-
-        ## timesteps
-        delta_t_transf = delta_t / self.dt_max * self.dt_fract  ## scale to [0,1] and multiply with dt_fract
-
-        return torch.from_numpy(n_transf), torch.from_numpy(
-            p_transf), torch.from_numpy(delta_t_transf)
+    def find_paths(self, loc):
+        dirs = np.atleast_1d(np.loadtxt(loc + 'data/paths_train_data.txt', dtype=str))
+        return np.array([os.path.join(d, f) for d in dirs for f in sorted(os.listdir(d))])
+    
+    def load_model(self, path):
+        print('Loading phantom+krome model from:', path)
+        return Phantommod(path)
