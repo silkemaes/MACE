@@ -14,8 +14,6 @@ Contains:
         - get_test_data: get the data of the test a 1D model, given a path and meta-data from a training setup
         - get_abs: get the abundances, given the normalised abundances
         - get_phys: reverse the normalisation of the physical parameters
-        - read_input_1Dmodel: read input text file of 1D CSE models, given the filename
-        - read_data_1Dmodel: read data text file of output abundances of 1D CSE models
 
 NOTE:
 This script only works for this specific dataset.
@@ -199,7 +197,38 @@ def get_phys(p_transf, dataset):
 
     return p
 
+### Base class for models and datasets
 
+class ChemModel:
+    ''' basics of chemical models: time, abundances, and physical parameters (rho, T, Xi and AV)'''
+    def __len__(self):     return len(self.time)
+    def get_time(self):    return self.time
+    def get_phys(self):    return self.dens, self.temp, self.xi, self.Av
+    def get_abs(self):     return self.n
+    def get_dens(self):    return self.dens
+    def get_temp(self):    return self.temp
+    def get_Av(self):      return self.Av
+    def get_xi(self):      return self.xi
+    def get_path(self):    return self.path
+    def get_name(self):    return self.name
+    def get_dt(self):      return self.time[1:] - self.time[:-1]
+
+    def split_in_0D(self):
+        '''
+        Split the 1D model in 0D models (just a collection of separate points)
+        '''
+        delta_t = self.get_dt()
+        n_0D = self.get_abs()
+        y = 1.e-100  ## this number is added to xi, since it can contain zeros
+        p = np.array([
+            self.get_dens()[:-1],
+            self.get_temp()[:-1],
+            self.get_xi()[:-1] + y,
+            self.get_Av()[:-1] + y
+        ])
+
+        return delta_t.astype(np.float64), n_0D.astype(np.float64), p.T.astype(
+            np.float64)
 ### ----------------------- 1D CSE models ----------------------- ###
 
 
@@ -352,8 +381,7 @@ class CSEdata(Dataset):
             p_transf), torch.from_numpy(delta_t_transf)
 
 
-
-class CSEmod():
+class CSEmod(ChemModel):
     '''
     Class to load a 1D CSE model, calculated with the classical fortan code.
     For more info on this model, see https://github.com/MarieVdS/rate22_cse_code.
@@ -384,7 +412,7 @@ class CSEmod():
             self.path = '/STER/silkem/CHEM/out/' + path[34:-17]
             self.model = path[34:-51]
             self.name = path[-43:-18]
-            inp_path = self.path[:-26] + 'inputChemistry_' + self.name + '.txt'
+            self.inp_path = self.path[:-26] + 'inputChemistry_' + self.name + '.txt'
 
         if inpackage:
             if data == 'test':
@@ -393,7 +421,6 @@ class CSEmod():
                 self.path = parentpath + 'data/test/' + path + '/'
                 self.model = path[-62:-1]
                 self.name = path
-                inp_path = self.path + 'input.txt'
             if data == 'train':
                 parentpath = str(Path(__file__).parent)[:-15]
                 ## paths_train_data.txt lists '<model>/csfrac_smooth.out' (old format, stripped
@@ -403,56 +430,68 @@ class CSEmod():
                 self.path = parentpath + 'data/train/' + path + '/'
                 self.model = self.path
                 self.name = self.path
-                inp_path = self.path + 'input.txt'
-                print('inp_path:', inp_path)
-
-        abs_path = 'csfrac_smooth.out'
-        phys_path = 'csphyspar_smooth.out'
+            self.inp_path = self.path + 'input.txt'
+            print('inp_path:', self.inp_path)
 
         ## retrieve input
-        self.Rstar, self.Tstar, self.Mdot, self.v, self.eps, self.rtol, self.atol = read_input_1Dmodel(
-            inp_path)
+        self.Rstar, self.Tstar, self.Mdot, self.v, self.eps, self.rtol, self.atol = self.read_input()
 
         ## retrieve abundances
-        abs = read_data_1Dmodel(self.path + abs_path)
+        abs = self.read_data()
         self.n = abs
 
         ## retrieve physical parameters
-        arr = np.loadtxt(self.path + phys_path,
+        arr = np.loadtxt(self.path + 'csphyspar_smooth.out',
                          skiprows=4,
                          usecols=(0, 1, 2, 3, 4))
-        self.radius, self.dens, self.temp, self.Av, self.xi = arr[:,
-                                                                  0], arr[:,
-                                                                          1], arr[:,
-                                                                                  2], arr[:,
-                                                                                          3], arr[:,
-                                                                                                  4]
+        self.radius, self.dens, self.temp, self.Av, self.xi = arr[:,0], arr[:,1], arr[:,2], arr[:,3], arr[:,4]
         self.time = self.radius / (self.v)
+    
+    def read_data(self):
+        '''
+        Read data text file of output abundances of 1D CSE models.
 
-    def __len__(self):
-        '''
-        Return the length of the time array, which indicates the length of the 1D model.
-        '''
-        return len(self.time)
+        This data text file is build up in an inconvenient way,
+        hence the data is read in this specific way.
 
-    def get_time(self):
+        The data is stored in a numpy array.
         '''
-        Return the time array of the 1D model.
+        with open(self.path + 'csfrac_smooth.out', 'r') as file:
+            part = []
+            full = None
+            for line in file:
+                try:
+                    if len(line) > 1:
+                        part.append([float(el) for el in line.split()])
+                except:
+                    if len(part) != 0:
+                        part = np.array(part)[:, 1:]
+                        if full is None:
+                            full = part
+                        else:
+                            full = np.concatenate((full, part), axis=1)
+                    part = []
+        return full
+    
+    def read_input(self):
         '''
-        return self.time
+        Read input text file of 1D CSE models, given the filename.
+        '''
+        with open(self.inp_path, 'r') as file:
+            lines = file.readlines()
+            lines = [item.rstrip() for item in lines]
 
-    def get_phys(self):
-        '''
-        Return the physical parameters of the 1D model.
-        '''
-        return self.dens, self.temp, self.xi, self.Av
+        Rstar = float(lines[3][9:])
+        Tstar = float(lines[4][9:])
+        Mdot = float(lines[5][8:])  ## Msol/yr
+        v = float(lines[6][11:])  ## sec
+        eps = float(lines[8][19:])
 
-    def get_abs(self):
-        '''
-        Return the abundances of the 1D model.
-        '''
-        return self.n
+        rtol = float(lines[31][7:])
+        atol = float(lines[32][6:])
 
+        return Rstar, Tstar, Mdot, v, eps, rtol, atol
+    
     def get_abs_spec(self, spec):
         '''
         Return the abundance of a specific species of the 1D model.
@@ -463,70 +502,11 @@ class CSEmod():
             abs = abs.T[i]
         return abs
 
-    def get_dens(self):
-        '''
-        Return the density of the 1D model.
-        '''
-        return self.dens
-
-    def get_temp(self):
-        '''
-        Return the temperature of the 1D model.
-        '''
-        return self.temp
-
-    def get_Av(self):
-        '''
-        Return the visual extinction of the 1D model.
-        '''
-        return self.Av
-
-    def get_xi(self):
-        '''
-        Return the radiation parameter of the 1D model.
-        '''
-        return self.xi
-
     def get_vel(self):
         '''
         Return the velocity of the 1D model.
         '''
         return self.v
-
-    def get_path(self):
-        '''
-        Return the path of the 1D model.
-        '''
-        return self.path
-
-    def get_name(self):
-        '''
-        Return the name of the 1D model.
-        '''
-        return self.name
-
-    def get_dt(self):
-        '''
-        Return the time steps of the 1D model.
-        '''
-        return self.time[1:] - self.time[:-1]
-
-    def split_in_0D(self):
-        '''
-        Split the 1D model in 0D models.
-        '''
-        delta_t = self.get_dt()
-        n_0D = self.get_abs()
-        y = 1.e-100  ## this number is added to xi, since it contains zeros
-        p = np.array([
-            self.get_dens()[:-1],
-            self.get_temp()[:-1],
-            self.get_xi()[:-1] + y,
-            self.get_Av()[:-1]
-        ])
-
-        return delta_t.astype(np.float64), n_0D.astype(np.float64), p.T.astype(
-            np.float64)  # type: ignore
 
     def get_input(self):
         print('-------------------')
@@ -545,57 +525,12 @@ class CSEmod():
         return self.Mdot, self.v, self.Tstar, self.eps
 
 
-def read_input_1Dmodel(file_name):
-    '''
-    Read input text file of 1D CSE models, given the filename.
-    '''
-    with open(file_name, 'r') as file:
-        lines = file.readlines()
-        lines = [item.rstrip() for item in lines]
-
-    Rstar = float(lines[3][9:])
-    Tstar = float(lines[4][9:])
-    Mdot = float(lines[5][8:])  ## Msol/yr
-    v = float(lines[6][11:])  ## sec
-    eps = float(lines[8][19:])
-
-    rtol = float(lines[31][7:])
-    atol = float(lines[32][6:])
-
-    return Rstar, Tstar, Mdot, v, eps, rtol, atol
-
-
-def read_data_1Dmodel(file_name):
-    '''
-    Read data text file of output abundances of 1D CSE models.
-
-    This data text file is build up in an inconvenient way,
-    hence the data is read in this specific way.
-
-    The data is stored in a numpy array.
-    '''
-    with open(file_name, 'r') as file:
-        part = []
-        full = None
-        for line in file:
-            try:
-                if len(line) > 1:
-                    part.append([float(el) for el in line.split()])
-            except:
-                if len(part) != 0:
-                    part = np.array(part)[:, 1:]
-                    if full is None:
-                        full = part
-                    else:
-                        full = np.concatenate((full, part), axis=1)
-                part = []
-    return full
 
 
 ##----------------------- Phantom+krome models ----------------------- ###
 
 
-class Phantommod():
+class Phantommod(ChemModel):
     '''
     Class to load a phantom+krome wind model, calculated using Krome on particle paths from a phantom simulation.
     One output file contains physical parameters and abundances for one particle at all time steps.
@@ -620,7 +555,8 @@ class Phantommod():
 
         ## retrieve abundances and physical parameters
         self.path = path
-        abs = read_data_phantom(self.path)
+        self.name = os.path.basename(path)
+        abs = self.read_data()
         if len(abs[:, 0]) < 10:
             print(f'Warning: {self.path} has less than 10 time steps.')
         self.time = abs[:, 0]
@@ -628,105 +564,21 @@ class Phantommod():
         self.dens, self.temp, self.mu, self.Av, self.xi = abs[:, 2], abs[:, 3], abs[:, 4], abs[:, 5], abs[:, 6]
         self.n = abs[:, 7:]
 
-    def __len__(self):
-        '''
-        Return the length of the time array, which indicates the length of the 1D model.
-        '''
 
-        return len(self.time)
-
-    def get_time(self):
+    def read_data(self):
         '''
-        Return the time array of the 1D model.
+        Read data text file of output abundances of phantom+krome models.
+        The data is stored in a numpy array.
         '''
-        return self.time
-
-    def get_phys(self):
-        '''
-        Return the physical parameters of the 1D model.
-        '''
-        return self.dens, self.temp, self.xi, self.Av
-
-    def get_abs(self):
-        '''
-        Return the abundances of the 1D model.
-        '''
-        return self.n
-
-    def get_dens(self):
-        '''
-        Return the density of the 1D model.
-        '''
-        return self.dens
-
-    def get_temp(self):
-        '''
-        Return the temperature of the 1D model.
-        '''
-        return self.temp
-
-    def get_Av(self):
-        '''
-        Return the visual extinction of the 1D model.
-        '''
-        return self.Av
-
-    def get_xi(self):
-        '''
-        Return the radiation parameter of the 1D model.
-        '''
-        return self.xi
-
-    def get_path(self):
-        '''
-        Return the path of the 1D model.
-        '''
-        return self.path
-
-    def get_name(self):
-        '''
-        Return the name of the 1D model.
-        '''
-        return self.name
-
-    def get_dt(self):
-        '''
-        Return the time steps of the 1D model.
-        '''
-        return self.time[1:] - self.time[:-1]
-
-    def split_in_0D(self):
-        '''
-        Split the 1D model in 0D models.
-        '''
-        delta_t = self.get_dt()
-        n_0D = self.get_abs()
-        y = 1.e-100  ## this number is added to xi, since it can contain zeros
-        p = np.array([
-            self.get_dens()[:-1],
-            self.get_temp()[:-1],
-            self.get_xi()[:-1] + y,
-            self.get_Av()[:-1] + y
-        ])
-
-        return delta_t.astype(np.float64), n_0D.astype(np.float64), p.T.astype(
-            np.float64)  # type: ignore
-
-
-def read_data_phantom(file_name):
-    '''
-    Read data text file of output abundances of phantom+krome models.
-    The data is stored in a numpy array.
-    '''
-    data = []
-    with open(file_name, 'r') as f:
-        for line in f:
-            if not line.startswith(' #'):
-                try:
-                    data.append([float(_) for _ in line.strip().split()])
-                except ValueError:
-                    print(f'Error: could not convert line to float: {line.strip()} in file {file_name}')
-    return np.array(data)
+        data = []
+        with open(self.path, 'r') as f:
+            for line in f:
+                if not line.startswith(' #'):
+                    try:
+                        data.append([float(_) for _ in line.strip().split()])
+                    except ValueError:
+                        print(f'Error: could not convert line to float: {line.strip()} in file {self.path}')
+        return np.array(data)
 
 
 class PhantomData(Dataset):
