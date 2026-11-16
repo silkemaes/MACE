@@ -114,6 +114,7 @@ class Meta():
 
         ## TRAINING INPUT
         self.lr          = float(self._req('lr'))
+        self.paths       = str(self._opt('paths', 'paths_example.txt'))
         self.nb_evol     = int(self._req('nb_evol'))
         self.nb_train    = int(self._req('nb_train'))
         self.nb_valid    = int(self._opt('nb_valid', 3))
@@ -186,6 +187,7 @@ class Meta():
                     'rtol'      : self.rtol,
                     'g_nn'      : self.g_nn,
                     'lr'        : self.lr,
+                    'paths'     : self.paths,    
                     'nb_evol'   : self.nb_evol,
                     'nb_train'  : self.nb_train,
                     'nb_valid'  : self.nb_valid,
