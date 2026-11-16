@@ -36,7 +36,7 @@ specs_dict = utils.get_specs()
 
 AU_to_cm = 1.495978707e13
 
-def get_data(data_type, meta, inpackage, batch_size,
+def get_data(meta, inpackage, batch_size,
              kwargs):
     '''
     Prepare the data for training and validating the emulator.
@@ -53,14 +53,18 @@ def get_data(data_type, meta, inpackage, batch_size,
     kwargs = {'num_workers': 1, 'pin_memory': True} for the DataLoader        
     '''
     ## Make PyTorch dataset
-    if data_type == '1DCSE':
-        data_class = CSEdata
-    elif data_type == 'Phantom':
-        data_class = PhantomData
-    else:
-        print(
-            'Error: data_type not recognised (Phantom or 1DCSE), defaulting to 1DCSE'
-        )
+    try:
+        if meta.data_type == '1DCSE':
+            data_class = CSEdata
+        elif meta.data_type == 'Phantom':
+            data_class = PhantomData
+        else:
+            print(
+                'Error: data_type not recognised (Phantom or 1DCSE), defaulting to 1DCSE'
+            )
+            data_class = CSEdata
+    except:
+        # previous versions of mace do not have data_type (but were only using CSE_data)
         data_class = CSEdata
     train = data_class(meta=meta,
                        inpackage=inpackage,
@@ -92,8 +96,7 @@ def get_data(data_type, meta, inpackage, batch_size,
     return train, valid, data_loader, test_loader
 
 
-def get_test_data(data_type,
-                  testpath,
+def get_test_data(testpath,
                   meta,
                   inpackage=False,
                   train=False,
@@ -109,14 +112,19 @@ def get_test_data(data_type,
         - testpath [str]: path of the 1D test model
         - meta [dict]: meta data from the training setup
     '''
-    if data_type == '1DCSE':
-        data_class = CSEdata
-        mod_class = CSEmod
-    elif data_type == 'Phantom':
-        data_class = PhantomData
-        mod_class = Phantommod
-    else:
-        print('Error: data_type not recognised, defaulting to 1DCSE')
+    try:
+        if meta.data_type == '1DCSE':
+            data_class = CSEdata
+            mod_class = CSEmod
+        elif meta.data_type == 'Phantom':
+            data_class = PhantomData
+            mod_class = Phantommod
+        else:
+            print('Error: data_type not recognised, defaulting to 1DCSE')
+            data_class = CSEdata
+            mod_class = CSEmod
+    except:
+        # exception for old models that do not have data_type
         data_class = CSEdata
         mod_class = CSEmod
 
@@ -125,7 +133,7 @@ def get_test_data(data_type,
                       cutoff=1e-20,
                       inpackage=inpackage)
 
-    if data_type == 'Phantom':
+    if meta.data_type == 'Phantom':
         # no need for input data for the phantom models
         mod = mod_class(testpath, datapath)
         name = {'path': testpath, 'name': testpath.split('/')[-1]}
