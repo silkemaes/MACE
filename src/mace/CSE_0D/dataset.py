@@ -236,7 +236,7 @@ class CSEdata(Dataset):
 
         # loc = '/STER/silkem/MACE/'
         loc = str(Path().cwd()) + '/'
-        paths = np.loadtxt(loc + 'data/paths_train_data.txt', dtype=str)
+        paths = np.atleast_1d(np.loadtxt(loc + 'data/paths_train_data.txt', dtype=str))
         print('Found paths:', len(paths))
 
         self.cutoff = cutoff
