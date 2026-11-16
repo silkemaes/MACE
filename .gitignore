@@ -7,6 +7,8 @@
 !data/
 !docs/
 !input
+!input/example.in
+!input/example_v2.in
 !MACE_fortran
 !src
 !load&test.ipynb
@@ -17,5 +19,20 @@
 !README.md
 !requirements.txt
 !routine.ipynb
+!routine_v2.ipynb
 !train.py
 !test.py
+
+# Weights
+!model/
+# MACE v1 weights
+!model/example_weights_v1/
+!model/example_weights_v1/**
+# MACE rework: converted v2 weights
+!model/example_weights_v2/
+!model/example_weights_v2/**
+
+# MACE rework: tests
+!test_loss.ipynb
+!test_MACE_v2.ipynb
+!test_train_v2.ipynb

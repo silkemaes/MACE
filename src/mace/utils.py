@@ -1,5 +1,7 @@
 '''
 This script contains utility functions for MACE.
+
+Half-ported to Version 2.0
 '''
 
 
@@ -7,6 +9,7 @@ import os
 import numpy            as np
 import json
 import torch
+import math
 import src.mace.mace    as mace
 from pathlib import Path
 
@@ -29,7 +32,7 @@ def relative_error(x,x_hat):
 
         x contains one element more than x_hat (the initial value of the system)
     '''
-    res = np.abs((x[1:]-x_hat)/x[1:])
+    res = abs((x[1:]-x_hat)/x[1:])
     return res
 
 def temp(Tstar, eps, r):
@@ -59,10 +62,10 @@ def error(n,n_hat):
         - err: the error per species, for each sample
         - the summed error, averaged by the number of samples in n
     '''
-    err = (np.log10(n[:])-np.log10(n_hat))[:]/np.log10(n[:][:])
+    err = (torch.log10(n[:])-torch.log10(n_hat))[:]/torch.log10(n[:][:])# TODO check this
     nb_samples = len(n[:,0])
 
-    return err, np.abs(err).sum()/nb_samples
+    return err, torch.abs(err).sum()/nb_samples
 
 
 def get_absolute_residuals(real, pred):
@@ -96,7 +99,7 @@ def unscale(x, min, max):
     '''
     Unscale the data from the range [0,1] to the original range [min,max]
     '''
-    unscaled = x*np.abs(max-min)+min
+    unscaled = x*abs(max-min)+min
     return unscaled
 
 
@@ -154,55 +157,6 @@ def generate_random_numbers(n, start, end):
     Generates n random numbers between start and end
     '''
     return np.random.randint(start, end, size=n)
-
-
-
-def load_model(loc, meta, epoch):
-    '''
-    Load a MACE model.
-
-    Option to load a specific epoch file, or the latest epoch.
-
-        if sepr == True, the model is loaded from the epoch file, indicated with epoch
-
-        meta; meta data from the model, needed to know the hyperparameters
-    
-    '''
-    n_dim = 468
-    cuda   = False
-    DEVICE = torch.device("cuda" if cuda else "cpu")
-
-    # model = mace.Solver(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, nb_hidden=meta['nb_hidden'], ae_type=meta['ae_type'], DEVICE = DEVICE)
-
-    model = mace.Solver(p_dim=4,z_dim = meta['z_dim'], n_dim=n_dim, nb_hidden=meta['nb_hidden'], ae_type=meta['ae_type'], scheme = meta['scheme'],nb_evol=meta['nb_evol'] , lr = meta['lr'], path = loc,DEVICE = DEVICE)
-
-    if epoch >= 0:
-        file = 'nn/nn'+str(epoch)+'.pt'
-    else:
-        file = 'nn/nn.pt'
-
-    model.load_state_dict(torch.load(loc+file))
-
-    num_params = count_parameters(model)
-    print(f'The model has {num_params} trainable parameters')
-
-    return model, num_params
-
-
-
-def load_meta(loc):
-    '''
-    Load the meta file of a MACE model,
-    given the output location (outloc) and the name of the directory (loc).
-    '''
-    ## loading meta file
-    with open(loc+'meta.json', 'r') as f:
-        meta=f.read()
-    meta  = json.loads(meta)
-
-    return meta
-
-
 
 def count_parameters(model):
     '''

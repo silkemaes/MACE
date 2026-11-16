@@ -1,0 +1,30 @@
+## MODEL INPUT
+n_dim       = 468
+p_dim       = 4
+z_dim       = 8
+
+ae_type     = simple
+atol        = 1e-5
+rtol        = 1e-2
+g_nn        = False
+
+
+
+## TRAINING INPUT
+lr          = 1.e-4
+nb_evol     = 16
+nb_train    = 10
+nb_valid    = 3
+
+ini_epochs  = 5
+nb_epochs   = 150
+data_type   = 1DCSE
+
+
+
+## LOSS INPUT
+losstype    = abs_idn
+abs = 1.
+idn = 1.
+
+## RESULTS
