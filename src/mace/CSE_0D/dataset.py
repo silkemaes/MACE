@@ -34,8 +34,7 @@ specs_dict = utils.get_specs()
 
 AU_to_cm = 1.495978707e13
 
-def get_data(meta, inpackage, batch_size,
-             kwargs):
+def get_data(meta, batch_size, kwargs):
     '''
     Prepare the data for training and validating the emulator.
 
@@ -65,13 +64,11 @@ def get_data(meta, inpackage, batch_size,
         # previous versions of mace do not have data_type (but were only using CSE_data)
         data_class = CSEdata
     train = data_class(meta=meta,
-                       inpackage=inpackage,
-                       train=True,
-                       datapath='train')
+                       train=True
+                       )
     valid = data_class(meta=meta,
-                       inpackage=inpackage,
-                       train=False,
-                       datapath='train')
+                       train=False
+                       )
 
     print('Dataset:')
     print('------------------------------')
@@ -96,9 +93,7 @@ def get_data(meta, inpackage, batch_size,
 
 def get_test_data(testpath,
                   meta,
-                  inpackage=False,
-                  train=False,
-                  datapath='test'):
+                  train=False):
     '''
     Get the data of the test 1D model, given a path and meta-data from a training setup.
 
@@ -128,18 +123,14 @@ def get_test_data(testpath,
 
     data = data_class(meta=meta,
                       train=train,
-                      cutoff=1e-20,
-                      inpackage=inpackage)
+                      cutoff=1e-20)
 
     if meta.data_type == 'Phantom':
         # no need for input data for the phantom models
-        mod = mod_class(testpath, datapath)
+        mod = mod_class(testpath)
         name = {'path': testpath, 'name': testpath.split('/')[-1]}
     else:
-        mod = mod_class(testpath, inpackage=inpackage, data=datapath)
-
-        if inpackage:
-            input = mod.get_input()
+        mod = mod_class(testpath)
 
         if data_class == CSEdata:
             # specifics of the 1DCSE model
@@ -238,15 +229,13 @@ class ChemData(Dataset):
         subclasses for each type of datasets are defined after this class.
         For each new dataset subclass, define how it loads data using load_model(self, path)
     '''
-    def __init__(self, meta, inpackage=False, train=True, datapath='train', cutoff=1e-20):
+    def __init__(self, meta, train=True, cutoff=1e-20):
         '''
         Initialising the attributes of the dataset.
 
         Input:
             - meta [object]: contains dataset metadata
-            - inpackage [bool]: if data is in package (repo) or located somewhere else
             - train [boolean]: True if training, False if validating
-            - datapath [str]: subdirectory for data files if inpackage
             - cutoff [float]: cutoff value for the abundances, depends on tolerances of classical chemistry kinetics solver, 
                 default = 1e-20
 
@@ -265,11 +254,11 @@ class ChemData(Dataset):
         '''
         print('> Train state:', train)
         loc = str(Path().cwd()) + '/'
-        self.cutoff, self.train, self.inpackage, self.datapath = cutoff, train, inpackage, datapath
+        self.cutoff, self.train = cutoff, train
 
         # grab paths listed in data file
         # atleast_1d to ensure path is an array (loadtxt returns an array scalar (0D array) if only one path) 
-        paths = self.find_paths(loc)
+        paths = self.find_paths(loc, meta)
         print('Paths found:', len(paths))
         self._split_paths(paths, meta, train)
         self.set_minmax(meta, loc+'data/minmax.json')
@@ -355,10 +344,12 @@ class CSEdata(ChemData):
     '''
     1D CSE models
     '''
-    def find_paths(self, loc):
-        return np.atleast_1d(np.loadtxt(loc + 'data/paths_train_data.txt', dtype=str))
+    def find_paths(self, loc, meta):
+        return np.atleast_1d(np.loadtxt(loc + 'data/' + meta.paths, dtype=str))
+    
     def load_model(self, path):
-        return CSEmod(path, inpackage=self.inpackage, data=self.datapath)
+        print('Loading 1D CSE model from', path)
+        return CSEmod(path)
 
 
 class CSEmod(ChemModel):
@@ -367,7 +358,7 @@ class CSEmod(ChemModel):
     For more info on this model, see https://github.com/MarieVdS/rate22_cse_code.
     '''
 
-    def __init__(self, path, inpackage=False, data='test'):
+    def __init__(self, path):
         '''
         Load the 1D CSE model, given a path.
 
@@ -388,30 +379,10 @@ class CSEmod(ChemModel):
             - input --> self.Rstar, self.Tstar, self.Mdot, self.v, self.eps, self.rtol, self.atol
         '''
 
-        if not inpackage:
-            self.path = '/STER/silkem/CHEM/out/' + path[34:-17]
-            self.model = path[34:-51]
-            self.name = path[-43:-18]
-            self.inp_path = self.path[:-26] + 'inputChemistry_' + self.name + '.txt'
-
-        if inpackage:
-            if data == 'test':
-                parentpath = str(Path(__file__).parent)[:-15]
-                print(parentpath)
-                self.path = parentpath + 'data/test/' + path + '/'
-                self.model = path[-62:-1]
-                self.name = path
-            if data == 'train':
-                parentpath = str(Path(__file__).parent)[:-15]
-                ## paths_train_data.txt lists '<model>/csfrac_smooth.out' (old format, stripped
-                ## with path[:-18] before the merge with main); the new format lists only '<model>'.
-                ## Accept both.
-                path = path.removesuffix('csfrac_smooth.out').rstrip('/')
-                self.path = parentpath + 'data/train/' + path + '/'
-                self.model = self.path
-                self.name = self.path
-            self.inp_path = self.path + 'input.txt'
-            print('inp_path:', self.inp_path)
+        self.path = os.path.join(path, '')
+        self.name = os.path.basename(os.path.normpath(path))
+        self.model = self.path
+        self.inp_path = self.path + 'input.txt'
 
         ## retrieve input
         self.Rstar, self.Tstar, self.Mdot, self.v, self.eps, self.rtol, self.atol = self.read_input()
@@ -561,12 +532,12 @@ class Phantommod(ChemModel):
         return np.array(data)
 
 
-class PhantomData(Dataset):
+class PhantomData(ChemData):
     '''
     Class to initialise train with data from phantom+Krome models split in 0D models.
     '''
-    def find_paths(self, loc):
-        dirs = np.atleast_1d(np.loadtxt(loc + 'data/paths_train_data.txt', dtype=str))
+    def find_paths(self, loc, meta):
+        dirs = np.atleast_1d(np.loadtxt(loc + 'data/' + meta.paths, dtype=str))
         return np.array([os.path.join(d, f) for d in dirs for f in sorted(os.listdir(d))])
     
     def load_model(self, path):
