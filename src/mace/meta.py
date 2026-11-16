@@ -115,6 +115,7 @@ class Meta():
         ## TRAINING INPUT
         self.lr          = float(self._req('lr'))
         self.paths       = str(self._opt('paths', 'paths_example.txt'))
+        self.minmax      = str(self._opt('minmax', 'minmax_1D.json'))
         self.nb_evol     = int(self._req('nb_evol'))
         self.nb_train    = int(self._req('nb_train'))
         self.nb_valid    = int(self._opt('nb_valid', 3))

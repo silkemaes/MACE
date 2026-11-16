@@ -10,6 +10,7 @@ g_nn        = False
 
 ## DATASET INPUT
 paths       = paths_example.txt
+minmax      = minmax_1D.json
 nb_train    = 7
 nb_valid    = 3
 nb_test     = 3

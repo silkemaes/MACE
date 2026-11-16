@@ -6,8 +6,10 @@ as well as code to preprocess the data.
 
 Contains:
     Classes:
-        - CSEdata: Dataset class (PyTorch) to prepare the dataset for training and validating the emulator
-        - CSEmod: Class to load a 1D CSE model
+        - ChemData: Dataset class for chemical data to prepare the dataset for training and validating the emulator
+        - CSEmod: Class to load a model
+        - PhantomData + Phantommod: Dataset and model class for Phantom models
+        - CSEdata + CSEmod: Dataset and model class for 1D CSE models
     
     Functions:
         - get_data: prepare the data for training and validating the emulator, using the PyTorch-specific dataloader
@@ -261,7 +263,7 @@ class ChemData(Dataset):
         paths = self.find_paths(loc, meta)
         print('Paths found:', len(paths))
         self._split_paths(paths, meta, train)
-        self.set_minmax(meta, loc+'data/minmax.json')
+        self.set_minmax(meta, loc+'data/'+ meta.minmax)
         
 
     def _split_paths(self, paths, meta, train):
