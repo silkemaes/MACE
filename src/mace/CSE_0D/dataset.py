@@ -1,13 +1,11 @@
 '''
-This script contains classes for loading the 1D CSE models,
-which is the training data for MACE,
+This script contains classes for loading chemical models used to train MACE,
 as well as code to preprocess the data.
-
 
 Contains:
     Classes:
         - ChemData: Dataset class for chemical data to prepare the dataset for training and validating the emulator
-        - CSEmod: Class to load a model
+        - ChemModel: Class to load a model
         - PhantomData + Phantommod: Dataset and model class for Phantom models
         - CSEdata + CSEmod: Dataset and model class for 1D CSE models
     
@@ -17,9 +15,8 @@ Contains:
         - get_n: reverse normalisation of abundances
         - get_phys: reverse the normalisation of the physical parameters
 
-NOTE:
-This script only works for this specific dataset.
-
+        NOTE: for any new type of datasets, define a new subclass of ChemData and ChemModel to account 
+        for how it should be processed
 '''
 import json
 import os
@@ -43,7 +40,7 @@ class ChemModel:
     def __len__(self):     return len(self.time)
     def get_time(self):    return self.time
     def get_phys(self):    return self.dens, self.temp, self.xi, self.Av
-    def get_n(self):     return self.n
+    def get_n(self):       return self.n
     def get_dens(self):    return self.dens
     def get_temp(self):    return self.temp
     def get_Av(self):      return self.Av
@@ -114,7 +111,7 @@ class ChemData(Dataset):
         '''
         nb_samples = meta.nb_train + meta.nb_valid + meta.nb_test
         if nb_samples > len(paths):
-            raise ValueError('Not enough models in paths_train_data.txt for training, validation and testing.')
+            raise ValueError(f'Not enough models in {meta.paths} for training, validation and testing.')
         np.random.seed(meta.seed)
         perm = np.random.permutation(len(paths))
         train_idx = perm[:meta.nb_train]
@@ -169,9 +166,10 @@ class ChemData(Dataset):
     def __getitem__(self, idx):
         return self.preprocess(self.load_model(self.path[idx]))
 
-    def load_model(self, path): return NotImplementedError('load_model not implemented in Data subclass')
+    def load_model(self, path): raise NotImplementedError('load_model not implemented in Data subclass')
 
-    def find_paths(self, loc, meta): return NotImplementedError('find_paths not implemented in Data subclass')
+    def find_paths(self, loc, meta): raise NotImplementedError('find_paths not implemented in Data subclass')
+
 ### ----------------------- 1D CSE models ----------------------- ###
 
 class CSEdata(ChemData):
@@ -179,7 +177,7 @@ class CSEdata(ChemData):
     1D CSE models
     '''
     def find_paths(self, loc, meta):
-         # atleast_1d to ensure path is an array (loadtxt returns an array scalar (0D array) if only one path) 
+        # atleast_1d to ensure path is an array (loadtxt returns an array scalar (0D array) if only one path) 
         return np.atleast_1d(np.loadtxt(loc + 'data/' + meta.paths, dtype=str))
     
     def load_model(self, path):
@@ -454,7 +452,6 @@ def get_n(n):
     nmax = math.log10(0.85e-1)
 
     return 10**utils.unscale(n, nmin, nmax)
-
 
 def get_phys(p_transf, dataset):
     '''
