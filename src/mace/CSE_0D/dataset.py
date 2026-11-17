@@ -23,7 +23,6 @@ This script only works for this specific dataset.
 '''
 import json
 import os
-import sys
 
 import numpy as np
 import torch
@@ -33,162 +32,6 @@ import src.mace.utils as utils
 from pathlib import Path
 
 specs_dict = utils.get_specs()
-
-AU_to_cm = 1.495978707e13
-
-def get_data(meta, batch_size, kwargs):
-    '''
-    Prepare the data for training and validating the emulator.
-
-    1. Make PyTorch dataset for the training and validation set.
-    2. Make PyTorch dataloader for the 
-        training 
-            - batch size = batch_size
-            - shuffle = True
-        and validation set.
-            - batch size = 1
-            - shuffle = False 
-
-    kwargs = {'num_workers': 1, 'pin_memory': True} for the DataLoader        
-    '''
-    ## Make PyTorch dataset
-    try:
-        if meta.data_type == '1DCSE':
-            data_class = CSEdata
-        elif meta.data_type == 'Phantom':
-            data_class = PhantomData
-        else:
-            print(
-                'Error: data_type not recognised (Phantom or 1DCSE), defaulting to 1DCSE'
-            )
-            data_class = CSEdata
-    except:
-        # previous versions of mace do not have data_type (but were only using CSE_data)
-        data_class = CSEdata
-    train = data_class(meta=meta,
-                       train=True
-                       )
-    valid = data_class(meta=meta,
-                       train=False
-                       )
-
-    print('Dataset:')
-    print('------------------------------')
-    print('  total # of samples:', len(train) + len(valid))
-    print('#   training samples:', len(train))
-    print('# validation samples:', len(valid))
-    print('               ratio:',
-          np.round(len(valid) / (len(train) + len(valid)), 2))
-    print('     #  test samples:', len(train.testpath))
-
-    data_loader = DataLoader(dataset=train,
-                             batch_size=batch_size,
-                             shuffle=True,
-                             **kwargs)
-    test_loader = DataLoader(dataset=valid,
-                             batch_size=1,
-                             shuffle=False,
-                             **kwargs)
-
-    return train, valid, data_loader, test_loader
-
-
-def get_test_data(testpath,
-                  meta,
-                  train=False):
-    '''
-    Get the data of the test 1D model, given a path and meta-data from a training setup.
-
-    Similar procedure as in the __getitem__() of the CSEdata class.
-
-    The specifics of the 1D test model are stored in the 'name' dictionary.
-
-    Input:
-        - testpath [str]: path of the 1D test model
-        - meta [dict]: meta data from the training setup
-    '''
-    try:
-        if meta.data_type == '1DCSE':
-            data_class = CSEdata
-            mod_class = CSEmod
-        elif meta.data_type == 'Phantom':
-            data_class = PhantomData
-            mod_class = Phantommod
-        else:
-            print('Error: data_type not recognised, defaulting to 1DCSE')
-            data_class = CSEdata
-            mod_class = CSEmod
-    except:
-        # exception for old models that do not have data_type
-        data_class = CSEdata
-        mod_class = CSEmod
-
-    data = data_class(meta=meta,
-                      train=train,
-                      cutoff=1e-20)
-
-    if meta.data_type == 'Phantom':
-        # no need for input data for the phantom models
-        mod = mod_class(testpath)
-        name = {'path': testpath, 'name': testpath.split('/')[-1]}
-    else:
-        mod = mod_class(testpath)
-
-        if data_class == CSEdata:
-            # specifics of the 1DCSE model
-            name = {
-                'path': testpath[49:-57],
-                'name': mod.name,
-                'Tstar': mod.Tstar,
-                'Mdot': mod.Mdot,
-                'v': mod.v,
-                'eps': mod.eps
-            }
-    delta_t, n, p = mod.split_in_0D()
-
-    ## physical parameters
-    p_transf = np.empty_like(p)
-    for j in range(p.shape[1]):
-        p_transf[:, j] = utils.normalise(np.log10(p[:, j]), data.mins[j],
-                                         data.maxs[j])
-
-    ## abundances
-    n_transf = np.clip(n, data.cutoff, None)
-    n_transf = np.log10(n_transf)
-    n_transf = utils.normalise(
-        n_transf, data.n_min,
-        data.n_max)  ## max boundary = rel. abundance of He
-
-    ## timesteps
-    delta_t_transf = delta_t / data.dt_max * data.dt_fract  ## scale to [0,1] and multiply with dt_fract
-
-    return mod, (torch.from_numpy(n_transf), torch.from_numpy(p_transf),
-                 torch.from_numpy(delta_t_transf)), name
-
-
-def get_abs(n):
-    '''
-    Get the abundances, given the normalised abundances.
-
-    This function reverses the normalisation of the abundances.
-    '''
-    cutoff = 1e-20
-    nmin = math.log10(cutoff)
-    nmax = math.log10(0.85e-1)
-
-    return 10**utils.unscale(n, nmin, nmax)
-
-
-def get_phys(p_transf, dataset):
-    '''
-    Reverse the normalisation of the physical parameters.
-    '''
-    p = torch.empty_like(p_transf)
-    for j in range(p_transf.shape[1]):
-        p[:, j] = 10**utils.unscale(p_transf[:, j], dataset.mins[j],
-                                    dataset.maxs[j])
-
-    return p
 
 ### Base class for models and datasets
 
@@ -338,9 +181,7 @@ class ChemData(Dataset):
     def __getitem__(self, idx):
         return self.preprocess(self.load_model(self.path[idx]))
     
-
 ### ----------------------- 1D CSE models ----------------------- ###
-
 
 class CSEdata(ChemData):
     '''
@@ -352,7 +193,6 @@ class CSEdata(ChemData):
     def load_model(self, path):
         print('Loading 1D CSE model from', path)
         return CSEmod(path)
-
 
 class CSEmod(ChemModel):
     '''
@@ -478,10 +318,7 @@ class CSEmod(ChemModel):
         return self.Mdot, self.v, self.Tstar, self.eps
 
 
-
-
-##----------------------- Phantom+krome models ----------------------- ###
-
+##--------------------- Phantom+krome models -------------------- ###
 
 class Phantommod(ChemModel):
     '''
@@ -533,7 +370,6 @@ class Phantommod(ChemModel):
                         print(f'Error: could not convert line to float: {line.strip()} in file {self.path}')
         return np.array(data)
 
-
 class PhantomData(ChemData):
     '''
     Class to initialise train with data from phantom+Krome models split in 0D models.
@@ -545,3 +381,102 @@ class PhantomData(ChemData):
     def load_model(self, path):
         print('Loading phantom+krome model from:', path)
         return Phantommod(path)
+
+## ---------------------- common functions ---------------------- ###
+
+DATA_CLASSES = {'1DCSE': CSEdata,'Phantom': PhantomData}
+
+def get_data_class(meta):
+    if meta.data_type not in DATA_CLASSES:
+        print(f'Error: data_type {meta.data_type} not recognised (Phantom or 1DCSE), defaulting to 1DCSE')
+    return DATA_CLASSES.get(meta.data_type, CSEdata)
+
+def get_data(meta, batch_size, kwargs):
+    '''
+    Prepare the data for training and validating the emulator.
+
+    1. Make PyTorch dataset for the training and validation set.
+    2. Make PyTorch dataloader for the 
+        training 
+            - batch size = batch_size
+            - shuffle = True
+        and validation set.
+            - batch size = 1
+            - shuffle = False 
+
+    kwargs = {'num_workers': 1, 'pin_memory': True} for the DataLoader        
+    '''
+    data_class = get_data_class(meta)
+    train = data_class(meta=meta,
+                       train=True
+                       )
+    valid = data_class(meta=meta,
+                       train=False
+                       )
+
+    print('Dataset:')
+    print('------------------------------')
+    print('  total # of samples:', len(train) + len(valid))
+    print('#   training samples:', len(train))
+    print('# validation samples:', len(valid))
+    print('               ratio:',
+          np.round(len(valid) / (len(train) + len(valid)), 2))
+    print('     #  test samples:', len(train.testpath))
+
+    data_loader = DataLoader(dataset=train,
+                             batch_size=batch_size,
+                             shuffle=True,
+                             **kwargs)
+    valid_loader = DataLoader(dataset=valid,
+                             batch_size=1,
+                             shuffle=False,
+                             **kwargs)
+
+    return train, valid, data_loader, valid_loader
+
+def get_test_data(testpath,
+                  meta,
+                  train=False):
+    '''
+    Get the data of the test 1D model, given a path and meta-data from a training setup.
+
+    Similar procedure as in the __getitem__() of the CSEdata class.
+
+    The specifics of the 1D test model are stored in the 'name' dictionary.
+
+    Input:
+        - testpath [str]: path of the 1D test model
+        - meta [dict]: meta data from the training setup
+    '''
+    data_class = get_data_class(meta)
+    data = data_class(meta=meta,
+                      train=train
+                      )
+    mod = data.load_model(testpath)
+    name = {'path': testpath, 'name': mod.name}
+    if isinstance(mod, CSEmod):
+        name.update(Tstar=mod.Tstar, Mdot=mod.Mdot,v=mod.v,eps=mod.eps)
+
+    return mod, data.preprocess(mod), name
+
+def get_abs(n):
+    '''
+    Reverses the normalisation of the abundances.
+    '''
+    cutoff = 1e-20
+    nmin = math.log10(cutoff)
+    nmax = math.log10(0.85e-1)
+
+    return 10**utils.unscale(n, nmin, nmax)
+
+
+def get_phys(p_transf, dataset):
+    '''
+    Reverse the normalisation of the physical parameters.
+    '''
+    p = torch.empty_like(p_transf)
+    for j in range(p_transf.shape[1]):
+        p[:, j] = 10**utils.unscale(p_transf[:, j], dataset.mins[j],
+                                    dataset.maxs[j])
+
+    return p
