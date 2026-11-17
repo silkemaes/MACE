@@ -14,7 +14,7 @@ Contains:
     Functions:
         - get_data: prepare the data for training and validating the emulator, using the PyTorch-specific dataloader
         - get_test_data: get the data of the test a 1D model, given a path and meta-data from a training setup
-        - get_abs: get the abundances, given the normalised abundances
+        - get_n: reverse normalisation of abundances
         - get_phys: reverse the normalisation of the physical parameters
 
 NOTE:
@@ -43,7 +43,7 @@ class ChemModel:
     def __len__(self):     return len(self.time)
     def get_time(self):    return self.time
     def get_phys(self):    return self.dens, self.temp, self.xi, self.Av
-    def get_abs(self):     return self.n
+    def get_n(self):     return self.n
     def get_dens(self):    return self.dens
     def get_temp(self):    return self.temp
     def get_Av(self):      return self.Av
@@ -57,7 +57,7 @@ class ChemModel:
         Split the 1D model in 0D models (just a collection of separate points)
         '''
         delta_t = self.get_dt()
-        n_0D = self.get_abs()
+        n_0D = self.get_n()
         y = 1.e-100  ## this number is added to xi, since it can contain zeros
         p = np.array([
             self.get_dens()[:-1],
@@ -136,28 +136,17 @@ class ChemData(Dataset):
         '''
         ## These values are the results from a search through the full dataset; see 'minmax.json' file
         with open(file, 'r') as f:
-            minmax = json.load(f)
-        self.logrho_min = np.log10(minmax['dens_min'])
-        self.logrho_max = np.log10(minmax['dens_max'])
-        self.logT_min = np.log10(minmax['temp_min'])
-        self.logT_max = np.log10(minmax['temp_max'])
-        y = 1.e-100  ## this number is added to xi and AV, since they can contain zeros
-        self.logdelta_min = np.log10(y + minmax['delta_min'])
-        self.logdelta_max = np.log10(y + minmax['delta_max'])
-        self.Av_min = np.log10(y + minmax['Av_min'])
-        self.Av_max = np.log10(y + minmax['Av_max'])
-        self.dt_max = minmax['dt_max']
-        self.dt_fract = meta.dt_fract
+            mm = json.load(f)
+        y = 1.e-100  ## xi and Av can contain zeros
+        self.dt_max, self.dt_fract = mm['dt_max'], meta.dt_fract
         self.n_min = np.log10(self.cutoff)
         self.n_max = np.log10(0.85e-1)  ## initial abundance He
-        self.mins = np.array([
-            self.logrho_min, self.logT_min, self.logdelta_min, self.Av_min,
-            self.n_min, self.dt_fract
-        ])
-        self.maxs = np.array([
-            self.logrho_max, self.logT_max, self.logdelta_max, self.Av_max,
-            self.n_max, self.dt_max
-        ])
+        self.mins = np.array([np.log10(mm['dens_min']), np.log10(mm['temp_min']),
+                            np.log10(y + mm['delta_min']), np.log10(y + mm['Av_min']),
+                            self.n_min, self.dt_fract])
+        self.maxs = np.array([np.log10(mm['dens_max']), np.log10(mm['temp_max']),
+                            np.log10(y + mm['delta_max']), np.log10(y + mm['Av_max']),
+                            self.n_max, self.dt_max])
     
     def preprocess(self, mod):
         '''
@@ -180,7 +169,10 @@ class ChemData(Dataset):
 
     def __getitem__(self, idx):
         return self.preprocess(self.load_model(self.path[idx]))
-    
+
+    def load_model(self, path): return NotImplementedError('load_model not implemented in Data subclass')
+
+    def find_paths(self, loc, meta): return NotImplementedError('find_paths not implemented in Data subclass')
 ### ----------------------- 1D CSE models ----------------------- ###
 
 class CSEdata(ChemData):
@@ -230,8 +222,7 @@ class CSEmod(ChemModel):
         self.Rstar, self.Tstar, self.Mdot, self.v, self.eps, self.rtol, self.atol = self.read_input()
 
         ## retrieve abundances
-        abs = self.read_data()
-        self.n = abs
+        self.n = self.read_data()
 
         ## retrieve physical parameters
         arr = np.loadtxt(self.path + 'csphyspar_smooth.out',
@@ -285,15 +276,15 @@ class CSEmod(ChemModel):
 
         return Rstar, Tstar, Mdot, v, eps, rtol, atol
     
-    def get_abs_spec(self, spec):
+    def get_n_spec(self, spec):
         '''
         Return the abundance of a specific species of the 1D model.
         '''
         i = specs_dict[spec]
-        abs = self.get_abs()
-        if abs is not None:
-            abs = abs.T[i]
-        return abs
+        n = self.get_n()
+        if n is not None:
+            n = n.T[i]
+        return n
 
     def get_vel(self):
         '''
@@ -346,13 +337,13 @@ class Phantommod(ChemModel):
         ## retrieve abundances and physical parameters
         self.path = path
         self.name = os.path.basename(path)
-        abs = self.read_data()
-        if len(abs[:, 0]) < 10:
+        data = self.read_data()
+        if len(data[:, 0]) < 10:
             print(f'Warning: {self.path} has less than 10 time steps.')
-        self.time = abs[:, 0]
-        self.radius = abs[:,1]
-        self.dens, self.temp, self.mu, self.Av, self.xi = abs[:, 2], abs[:, 3], abs[:, 4], abs[:, 5], abs[:, 6]
-        self.n = abs[:, 7:]
+        self.time = data[:, 0]
+        self.radius = data[:,1]
+        self.dens, self.temp, self.mu, self.Av, self.xi = data[:, 2], data[:, 3], data[:, 4], data[:, 5], data[:, 6]
+        self.n = data[:, 7:]
 
 
     def read_data(self):
@@ -459,7 +450,7 @@ def get_test_data(testpath,
 
     return mod, data.preprocess(mod), name
 
-def get_abs(n):
+def get_n(n):
     '''
     Reverses the normalisation of the abundances.
     '''
