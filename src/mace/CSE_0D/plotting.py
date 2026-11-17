@@ -18,7 +18,7 @@ import src.mace.utils as utils
 
 
 
-def plot_abs(model1D, modeltype, n, n_hat, specs, step=False):
+def plot_n(model1D, modeltype, n, n_hat, specs, step=False):
     '''
     Function to plot the 1D abundance profiles of a model (middle panel, ax1), 
     together with the density (rho) and temperature (T) profile (upper panel, ax3 & ax4, respectively).

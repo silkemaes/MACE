@@ -11,7 +11,7 @@ import multiprocessing as mp
 import time
 
 DIRS = ['/path/to/dir']
-SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
+SOURCE_DIR = os.path.dirname(os.path.npath(__file__))
 outputfile = os.path.join(SOURCE_DIR,'data', 'minmax.txt')
 
 files = []
@@ -26,7 +26,7 @@ abundance_cutoff = 1e-20
 
 def find_min_max(file, skip=skip, keep=keep, abundance_cutoff=abundance_cutoff):
     data = pd.read_csv(file, sep=r'\s+\s+', engine='python')
-    abs = []
+    n = []
     mins = {}
     maxs = {}
     for key in data.keys():
@@ -41,9 +41,9 @@ def find_min_max(file, skip=skip, keep=keep, abundance_cutoff=abundance_cutoff):
             maxs['time(s)'] = (max(timestep))
         else:
             # abundances, concatenate all values before querying min and max
-            abs += list(data[key].values)
-    mins['abs'] = (max(np.min(abs), abundance_cutoff))
-    maxs['abs'] = (np.max(abs))
+            n += list(data[key].values)
+    mins['n'] = (max(np.min(n), abundance_cutoff))
+    maxs['n'] = (np.max(n))
     return mins, maxs
 
 if __name__ == '__main__':
@@ -60,8 +60,8 @@ if __name__ == '__main__':
     for key in keep:
         mins[key] = []
         maxs[key] = []
-    mins['abs'] = []
-    maxs['abs'] = []
+    mins['n'] = []
+    maxs['n'] = []
     mins['time(s)'] = []
     maxs['time(s)'] = []
 
@@ -95,6 +95,6 @@ if __name__ == '__main__':
         f.write(f'delta_max: {maxs["xi"]}\n')
         f.write(f'A_UV_min: {mins["A_UV"]}\n')
         f.write(f'A_UV_max: {maxs["A_UV"]}\n')
-        f.write(f'n_min: {mins["abs"]}\n')
-        f.write(f'n_max: {maxs["abs"]}\n')
+        f.write(f'n_min: {mins["n"]}\n')
+        f.write(f'n_max: {maxs["n"]}\n')
         f.write(f'dt_max: {maxs["time(s)"]}\n')

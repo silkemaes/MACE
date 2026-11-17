@@ -19,7 +19,7 @@ import src.mace.CSE_0D.dataset  as ds
 import src.mace.utils           as utils
 import src.mace.loss            as loss
 import src.mace.train           as train
-from src.mace.CSE_0D.plotting   import plot_abs
+from src.mace.CSE_0D.plotting   import plot_n
 
 ## Im fairly certain I can make this outta recycled validation code
 ## fosho
@@ -52,7 +52,7 @@ def testModel(model, loader):
             tic = time()
             n_i_hat = model.autoencode(n_i, p)
             times['idn'].append(time()-tic)
-            _,err_idn = utils.error(ds.get_abs(n_i), ds.get_abs(n_i_hat))
+            _,err_idn = utils.error(ds.get_n(n_i), ds.get_n(n_i_hat))
             errors['idn'].append(float(err_idn))
 
             # Evolution accuracy
@@ -63,7 +63,7 @@ def testModel(model, loader):
             tic=time()
             n_e_hat,_ = model.rollout(n0, p_seq, dt_seq)
             times['evol'].append(time()-tic)
-            _,err_evol = utils.error(ds.get_abs(n_e[0]), ds.get_abs(n_e_hat[0]))
+            _,err_evol = utils.error(ds.get_n(n_e[0]), ds.get_n(n_e_hat[0]))
             errors['evol'].append(float(err_evol))
 
     errors = {name:(sum(val)/len(val)) for name,val in errors.items()}
