@@ -58,7 +58,7 @@ class ChemModel:
         '''
         delta_t = self.get_dt()
         n_0D = self.get_n()
-        y = 1.e-100  ## this number is added to xi, since it can contain zeros
+        y = 1.e-100  ## this number is added to xi and Av since it can contain zeros
         p = np.array([
             self.get_dens()[:-1],
             self.get_temp()[:-1],
@@ -102,14 +102,13 @@ class ChemData(Dataset):
         self.cutoff, self.train = cutoff, train
 
         # grab paths listed in data file
-        # atleast_1d to ensure path is an array (loadtxt returns an array scalar (0D array) if only one path) 
         paths = self.find_paths(loc, meta)
         print('Paths found:', len(paths))
-        self._split_paths(paths, meta, train)
+        self._split_paths(paths, meta)
         self.set_minmax(meta, loc+'data/'+ meta.minmax)
         
 
-    def _split_paths(self, paths, meta, train):
+    def _split_paths(self, paths, meta):
         '''
         Split paths into train/valid/test randomly
         '''
@@ -121,7 +120,7 @@ class ChemData(Dataset):
         train_idx = perm[:meta.nb_train]
         valid_idx = perm[meta.nb_train:meta.nb_train + meta.nb_valid]
         test_idx  = perm[meta.nb_train + meta.nb_valid:nb_samples]
-        if train:
+        if self.train:
             self.path = paths[train_idx]
             print('Train paths:', len(self.path))
         else:
@@ -180,6 +179,7 @@ class CSEdata(ChemData):
     1D CSE models
     '''
     def find_paths(self, loc, meta):
+         # atleast_1d to ensure path is an array (loadtxt returns an array scalar (0D array) if only one path) 
         return np.atleast_1d(np.loadtxt(loc + 'data/' + meta.paths, dtype=str))
     
     def load_model(self, path):
@@ -196,10 +196,9 @@ class CSEmod(ChemModel):
         '''
         Load the 1D CSE model, given a path.
 
-        The abundances are stored in a file '
-        .out', 
+        The abundances are stored in a file 'csfrac_smooth.out', 
         the physical parameters are stored in a file 'csphyspar_smooth.out'.
-        The input of the 1D CSE model is stored in a file 'inputChemistry_*.txt'.
+        The input of the 1D CSE model is stored in a file 'input.txt'.
 
         From these paths, retrieve
             - the abundances            --> self.n
@@ -215,7 +214,6 @@ class CSEmod(ChemModel):
 
         self.path = os.path.join(path, '')
         self.name = os.path.basename(os.path.normpath(path))
-        self.model = self.path
         self.inp_path = self.path + 'input.txt'
 
         ## retrieve input
@@ -366,6 +364,7 @@ class PhantomData(ChemData):
     Class to initialise train with data from phantom+Krome models split in 0D models.
     '''
     def find_paths(self, loc, meta):
+        # atleast_1d to ensure path is an array (loadtxt returns an array scalar (0D array) if only one path) 
         dirs = np.atleast_1d(np.loadtxt(loc + 'data/' + meta.paths, dtype=str))
         return np.array([os.path.join(d, f) for d in dirs for f in sorted(os.listdir(d))])
     
@@ -426,22 +425,18 @@ def get_data(meta, batch_size, kwargs):
     return train, valid, data_loader, valid_loader
 
 def get_test_data(testpath,
-                  meta,
-                  train=False):
+                  meta):
     '''
-    Get the data of the test 1D model, given a path and meta-data from a training setup.
-
-    Similar procedure as in the __getitem__() of the CSEdata class.
-
-    The specifics of the 1D test model are stored in the 'name' dictionary.
+    Get the data to test a 1D model, given a path to the test data and metadata of the model.
+    The specifics of the test model are stored in the 'name' dictionary.
 
     Input:
         - testpath [str]: path of the 1D test model
-        - meta [dict]: meta data from the training setup
+        - meta [Meta]: metadata of the model
     '''
     data_class = get_data_class(meta)
     data = data_class(meta=meta,
-                      train=train
+                      train=False
                       )
     mod = data.load_model(testpath)
     name = {'path': testpath, 'name': mod.name}
