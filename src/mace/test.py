@@ -15,11 +15,11 @@ import matplotlib.pyplot    as plt
 import torch
 import math
 
-import src.mace.CSE_0D.dataset  as ds
+import src.mace.dataset         as ds
 import src.mace.utils           as utils
 import src.mace.loss            as loss
 import src.mace.train           as train
-from src.mace.CSE_0D.plotting   import plot_n
+from src.mace.plotting          import plot_n
 
 ## Im fairly certain I can make this outta recycled validation code
 ## fosho
