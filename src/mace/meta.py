@@ -31,13 +31,8 @@ class Meta():
 
     Required input variables:
     - self.n_dim, self.p_dim, self.z_dim
-<<<<<<< HEAD
-    - lr, nb_evol, nb_train, nb_valid
-    - losstype (see loss.py)
-=======
     - lr, nb_evol, nb_train, nb_valid, nb_test, seed
     - losstype
->>>>>>> origin/main
 
     Optional input variables:
     - ae_type, p_out, atol, rtol
