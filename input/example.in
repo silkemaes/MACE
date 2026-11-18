@@ -5,11 +5,13 @@ nb_epochs   = 150
 ini_epochs  = 5
 losstype    = abs_idn
 z_dim       = 8
-nb_samples  = 10
+nb_samples  = 7
 scheme      = int
 nb_evol     = 16
 ae_type     = simple
+nb_valid    = 3
 nb_test     = 3
+seed        = 0
 
 
 
