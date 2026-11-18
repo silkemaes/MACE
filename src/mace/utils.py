@@ -20,7 +20,7 @@ def makeOutputDir(path):
     Returns the path of that dir.
     '''
     if not os.path.exists(path):
-        os.mkdir(path)
+        os.makedirs(path)
 
     return path
 

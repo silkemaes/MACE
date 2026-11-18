@@ -1,6 +1,6 @@
 {   
     "name": "example_weights_v2",
-    "nb_train": 10,
+    "nb_train": 7,
     "lr": 0.0001,
     "epochs": 15,
     "n_dim": 468,
@@ -11,7 +11,6 @@
     "tmax": 434800000000.0,
     "train_time_h": 72.36221496270763,
     "overhead_s": 1.014007806777954,
-    "samples": 7,
     "cutoff_abs": 1e-20,
     "losstype": "abs_idn",
     "inputfile": "/STER/silkem/MACE/input/ignore/testing/int4.in",
@@ -26,6 +25,7 @@
     "owner": "Silke Maes",
     "info": "https://ui.adsabs.harvard.edu/abs/2024ApJ...969...79M/abstract",
     "nb_valid": 3,
+    "nb_test": 3,
     "atol": 1e-05,
     "rtol": 0.01,
     "version": "2"

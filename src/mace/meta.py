@@ -31,8 +31,13 @@ class Meta():
 
     Required input variables:
     - self.n_dim, self.p_dim, self.z_dim
+<<<<<<< HEAD
     - lr, nb_evol, nb_train, nb_valid
     - losstype (see loss.py)
+=======
+    - lr, nb_evol, nb_train, nb_valid, nb_test, seed
+    - losstype
+>>>>>>> origin/main
 
     Optional input variables:
     - ae_type, p_out, atol, rtol
@@ -114,9 +119,13 @@ class Meta():
 
         ## TRAINING INPUT
         self.lr          = float(self._req('lr'))
+        self.paths       = str(self._opt('paths', 'paths_example.txt'))
+        self.minmax      = str(self._opt('minmax', 'minmax_1D.json'))
         self.nb_evol     = int(self._req('nb_evol'))
         self.nb_train    = int(self._req('nb_train'))
-        self.nb_valid    = int(self._req('nb_valid'))
+        self.nb_valid    = int(self._opt('nb_valid', 3))
+        self.nb_test     = int(self._req('nb_test'))
+        self.seed        = int(self._opt('seed', 0))
         self.ini_epochs  = int(self._opt('ini_epochs', 5))
         self.nb_epochs   = int(self._opt('nb_epochs', 150))
         self.data_type   = str(self._opt('data_type', '1DCSE'))
@@ -161,7 +170,7 @@ class Meta():
         print(' Learning Rate:', self.lr)
         print('       #Epochs:', self.nb_epochs)
         print('   #Evolutions:', self.nb_evol)
-        print(f'Train|Validate: {self.nb_train}|{self.nb_valid}')
+        print(f'Train|Validate|Test: {self.nb_train}|{self.nb_valid}|{self.nb_test}')
         print('      Datatype:', self.data_type)
         print('     Loss Type:', self.losstype)
         print(f'  Loss Weights: {self.lossweights}')
@@ -184,9 +193,12 @@ class Meta():
                     'atol'      : self.atol,
                     'rtol'      : self.rtol,
                     'lr'        : self.lr,
+                    'paths'     : self.paths,    
                     'nb_evol'   : self.nb_evol,
                     'nb_train'  : self.nb_train,
                     'nb_valid'  : self.nb_valid,
+                    'nb_test'   : self.nb_test,
+                    'seed'      : self.seed,
                     'ini_epochs': self.ini_epochs,
                     'nb_epochs' : self.nb_epochs,
                     'data_type' : self.data_type,
