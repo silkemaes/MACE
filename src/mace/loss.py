@@ -110,14 +110,15 @@ class IdnLoss(LossTerm):
     Identity difference on dataset
     (n - D( E( n,p )))²
     '''
-    def compute(self, n, p, model, **_):
+    def compute(self, n, p, model, ae=None, **_):
         '''
         Arguments:
         - n:       Data abundance sample
         - p:       Data physical sample
         - model:   MACE model (must have autoencoder)
+        - ae:      Precomputed model.autoencode(n, p)
         '''
-        n_hat, _ = model.autoencode(n,p)
+        n_hat, _ = ae if ae is not None else model.autoencode(n,p)
         return (n - n_hat)**2
 
 
@@ -126,8 +127,15 @@ class PhysIdnLoss(LossTerm):
     Identity difference on physical state
     (p - D( E( n,p )))²
     '''
-    def compute(self, n, p, model, **_):
-        _, p_hat = model.autoencode(n, p)
+    def compute(self, n, p, model, ae=None, **_):
+        '''
+        Arguments:
+        - n:       Data abundance sample
+        - p:       Data physical sample
+        - model:   MACE model (must have autoencoder)
+        - ae:      Optional precomputed model.autoencode(n, p)
+        '''
+        _, p_hat = ae if ae is not None else model.autoencode(n, p)
         if p_hat is None:
             raise RuntimeError("'pidn' loss needs a model with p_out=True")
         return (p - p_hat)**2
@@ -162,6 +170,7 @@ class Loss(nn.Module):
     - n:       Data abundance sample
     - p:       Data physical sample
     - model:   MACE model
+    - ae:      Precomputed model.autoencode(n, p) (idn, pidn)
     '''
     def __init__(self, terms:dict):
         '''

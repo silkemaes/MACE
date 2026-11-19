@@ -71,7 +71,7 @@ class ChemData(Dataset):
         subclasses for each type of datasets are defined after this class.
         For each new dataset subclass, define how it loads data using load_model(self, path)
     '''
-    def __init__(self, meta, train=True, cutoff=1e-20):
+    def __init__(self, meta, train=True, cutoff=1e-20, verbose=True):
         '''
         Initialising the attributes of the dataset.
 
@@ -103,6 +103,8 @@ class ChemData(Dataset):
         print('Paths found:', len(paths))
         self._split_paths(paths, meta)
         self.set_minmax(meta, loc+'data/'+ meta.minmax)
+
+        self.verbose = verbose
         
 
     def _split_paths(self, paths, meta):
@@ -181,7 +183,7 @@ class CSEdata(ChemData):
         return np.atleast_1d(np.loadtxt(loc + 'data/' + meta.paths, dtype=str))
     
     def load_model(self, path):
-        print('Loading 1D CSE model from', path)
+        if self.verbose: print('Loading 1D CSE model from', path)
         return CSEmod(path)
 
 class CSEmod(ChemModel):
@@ -367,7 +369,7 @@ class PhantomData(ChemData):
         return np.array([os.path.join(d, f) for d in dirs for f in sorted(os.listdir(d))])
     
     def load_model(self, path):
-        print('Loading phantom+krome model from:', path)
+        if self.verbose: print('Loading phantom+krome model from:', path)
         return Phantommod(path)
 
 ## ---------------------- common functions ---------------------- ###
@@ -379,7 +381,7 @@ def get_data_class(meta):
         print(f'Error: data_type {meta.data_type} not recognised (Phantom or 1DCSE), defaulting to 1DCSE')
     return DATA_CLASSES.get(meta.data_type, CSEdata)
 
-def get_data(meta, batch_size, kwargs):
+def get_data(meta, batch_size, kwargs, verbose=True):
     '''
     Prepare the data for training and validating the emulator.
 
@@ -396,10 +398,12 @@ def get_data(meta, batch_size, kwargs):
     '''
     data_class = get_data_class(meta)
     train = data_class(meta=meta,
-                       train=True
+                       train=True,
+                       verbose=verbose
                        )
     valid = data_class(meta=meta,
-                       train=False
+                       train=False,
+                       verbose=verbose
                        )
 
     print('Dataset:')
