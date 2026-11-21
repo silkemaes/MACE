@@ -164,15 +164,18 @@ def plot_hairs(model, meta, test_path, nb_evol:int,
 
     # Plot every species in separate panel
     n_figs = len(specs)
-    fig, axes = plt.subplots(n_figs, figsize=(8, 2*n_figs), sharex=True ,squeeze=False)
+    fig, axes = plt.subplots(n_figs, figsize=(8, 2*n_figs), sharex=True ,squeeze=False, layout='constrained')
+    fig.get_layout_engine().set(h_pad=0, hspace=0)   # panels touch
     for spec, ax in zip(specs, axes.flat):
 
         idx = specs_dict[spec]
-        ax.loglog(r, n[:,idx], label=spec) # Species over r
+        ax.loglog(r, n[:,idx], 'black') # Species over r
+        ax.set_ylabel(f"{spec} abundance")
 
         for i, hair in enumerate(hairs):
             r_hair = r[i*interval : i*interval+nb_evol+1]
             ax.loglog(r_hair, hair[:,idx], lw=.5) # Hair over subset r
 
-    #fig.legend()
+    ax.set_xlabel('radius [cm]')
+    fig.suptitle(f"Evolutions over {nb_evol} steps")
     return fig, axes
