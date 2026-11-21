@@ -28,7 +28,7 @@ def make_windows(n, p, dt, e):
     '''
     N      = n.shape[0]
     if e > N:
-        raise RuntimeError(f"Can't evolve {e} datapoints in dataset with lenght {N}.")
+        raise RuntimeError(f"Woah there parther! This town of {N} datapoints ain't big enough for windows of length {e}.")
     n0     = n[:N-e]
     p_seq  = p.unfold(0, e, 1).transpose(1, 2)
     dt_seq = dt.unfold(0, e, 1)
@@ -163,6 +163,7 @@ def run_epoch_autoencoder(model,
                           loss,
                           device,
                           optimiser=None,
+                          batch_size=None,
                           scheduler=None):
     '''
     Single data pass over an epoch.
@@ -178,18 +179,23 @@ def run_epoch_autoencoder(model,
     '''
 
     for n, p, _ in loader:
+
         # drop the batch dimension (batch_size = 1)
         n, p = n[0, :-1].to(device), p[0].to(device) # last point redundant: no p
-        ae = model.autoencode(n=n, p=p)
+        
+        R = n.shape[0]
+        rows = torch.randperm(R, device=n.device) if optimiser is not None else torch.arange(R, device=n.device)
 
-        loss_value, _ = loss(n=n, p=p, model=model, ae=ae) #TODO: remove n, p, model
+        for m in rows.split(batch_size or R):
+            ae = model.autoencode(n[m], p[m]) # shared by idn and pidn
+            loss_value, _ = loss(n=n[m], p=p[m], model=model, ae=ae)
 
-        if optimiser is not None: # train: refresh optim and clear autograd
-            optimiser.zero_grad()
-            loss_value.backward()
-            optimiser.step()
-            if scheduler is not None:
-                scheduler.step()
+            if optimiser is not None: # train: refresh optim and clear autograd
+                optimiser.zero_grad()
+                loss_value.backward()
+                optimiser.step()
+                if scheduler is not None:
+                    scheduler.step()
 
     loss.endEpoch()
 
@@ -198,6 +204,7 @@ def train_autoencoder(model,
                       train_loss, valid_loss, 
                       optimiser, 
                       nb_epochs,
+                      batch_size=None,
                       scheduler=None,
                       print_every=1):
     '''
@@ -222,10 +229,10 @@ def train_autoencoder(model,
 
         model.train()
         run_epoch_autoencoder(model, train_loader, train_loss, device, 
-                              optimiser, scheduler)
+                              optimiser, batch_size, scheduler)
         model.eval()
         with torch.no_grad():
-            run_epoch_autoencoder(model, valid_loader, valid_loss, device)
+            run_epoch_autoencoder(model, valid_loader, valid_loss, device, batch_size=batch_size)
 
         if print_every < 1:
             continue
