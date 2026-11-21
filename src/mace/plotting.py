@@ -15,7 +15,6 @@ rcParams.update({'figure.dpi': 200})
 import src.mace.utils           as utils
 import src.mace.dataset         as ds
 import src.mace.train           as train
-specs_dict = utils.get_specs()
 
 
 def plot_n(model1D, modeltype, n, n_hat, specs, step=False):
@@ -153,6 +152,8 @@ def plot_hairs(model, meta, test_path, nb_evol:int,
 
     Plots this evolution for each datapoint with interval between.
     '''
+    specs_dict = utils.get_specs(meta.data_type)
+
     model1D, (n, p, dt), info = ds.get_test_data(test_path, meta) #TODO: figure out a better name for model1D
     r  = model1D.radius
 
@@ -195,6 +196,8 @@ def plot_identity(model, meta, test_path,
     
     If model.p_out, plots reconstruction of p (dashed). Everything is denormalised.
     '''
+    specs_dict = utils.get_specs(meta.data_type)
+
     # Not ds.get_test_data: we need the dataset object to denormalise p
     data    = ds.get_data_class(meta)(meta=meta, train=False)
     model1D = data.load_model(test_path)
@@ -236,3 +239,35 @@ def plot_identity(model, meta, test_path,
 
     fig.suptitle(f"Identity loss of autoencoder on {test_path}")
     return fig, axes
+
+
+
+def diagnose(model, meta, test_path, nb_evol:int, 
+             specs:list=['CO', 'H2O', 'OH', 'C2H2', 'C2H', 'CH3C5NH+', 'C10H2+'], 
+             interval:int=1):
+    # Ensure model folder exists
+    if not hasattr(meta, 'path'):
+        print("Model does not have a directory! Use meta.makeMeta('path'). Defaulting to /temp")
+        meta.makeMeta('/temp') #TODO: implement os.cwd
+
+    # Bigplot
+    model1D, (n, p, dt), info = ds.get_test_data(test_path, meta)
+    with torch.no_grad():
+        n_hat, status = model.rollout(n[0:1], p[None], dt[None])
+    n_evol = torch.cat((n[0:1], n_hat[0]), dim=0)      ## (N, 468)
+    n_real = ds.get_n(n)
+    n_evol = ds.get_n(n_evol)
+    fig, axes = plot_n(model1D, '1DCSE', n_real, n_evol, specs=specs, step=False)
+    fig.suptitle(f'MACE v2, {test_path}', y=1.0)
+    fig.savefig(meta.path+'/figs/preds.png')
+    plt.show()
+
+    # HAIRPLOT
+    fig, axes = plot_hairs(model, meta, test_path, nb_evol, specs, interval)
+    fig.savefig(meta.path+'/figs/hairs.png')
+    plt.show()
+
+    # IDENTITY PLOT
+    fig, axes = plot_identity(model, meta, test_path, specs)
+    fig.savefig(meta.path+'/figs/identity.png')
+    plt.show()
