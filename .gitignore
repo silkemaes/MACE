@@ -9,6 +9,7 @@
 !input
 !input/example.in
 !input/example_v2.in
+!input/pout.in
 !MACE_fortran
 !src
 !load&test.ipynb
@@ -18,8 +19,8 @@
 !paper.md
 !README.md
 !requirements.txt
-!routine.ipynb
 !routine_v2.ipynb
+!routine_pout.ipynb
 !train.py
 !test.py
 

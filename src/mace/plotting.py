@@ -2,6 +2,9 @@
 This script contains a function to plot the 1D abundance profiles of a model,
 together with the predictions of MACE for this model.
 
+Version 2.1
+
+#TODO: Make hairplot and identityplot return scaled values 
 '''
 
 import torch
@@ -147,6 +150,7 @@ def plot_hairs(model, meta, test_path, nb_evol:int,
                interval:int=1):
     '''
     ZEvolves model for nb_evol steps on the test data at test_path. 
+
     Plots this evolution for each datapoint with interval between.
     '''
     model1D, (n, p, dt), info = ds.get_test_data(test_path, meta) #TODO: figure out a better name for model1D
@@ -154,13 +158,15 @@ def plot_hairs(model, meta, test_path, nb_evol:int,
 
     n0, p_seq, dt_seq, _ = train.make_windows(n, p, dt, nb_evol)
 
-    # Make hairs (but better)
+    # Make hairs
     with torch.no_grad():
         hairs, status = model.rollout(n0[::interval], # Slice with step
                                          p_seq[::interval], 
                                          dt_seq[::interval])
         
     hairs = torch.concatenate((n0[::interval,None], hairs), dim=1) # Plop n0 to the front of each hair
+    n = ds.get_n(n)          # denormalise
+    hairs  = ds.get_n(hairs)
 
     # Plot every species in separate panel
     n_figs = len(specs)
@@ -177,5 +183,56 @@ def plot_hairs(model, meta, test_path, nb_evol:int,
             ax.loglog(r_hair, hair[:,idx], lw=.5) # Hair over subset r
 
     ax.set_xlabel('radius [cm]')
-    fig.suptitle(f"Evolutions over {nb_evol} steps")
+    fig.suptitle(f"Evolutions over {nb_evol} steps on {test_path}")
+    return fig, axes
+
+
+
+def plot_identity(model, meta, test_path, 
+                 specs:list=['CO', 'H2O', 'OH', 'C2H2', 'C2H', 'CH3C5NH+', 'C10H2+']):
+    '''
+    Plots the autoencoded forms of the given specs. 
+    
+    If model.p_out, plots reconstruction of p (dashed). Everything is denormalised.
+    '''
+    # Not ds.get_test_data: we need the dataset object to denormalise p
+    data    = ds.get_data_class(meta)(meta=meta, train=False)
+    model1D = data.load_model(test_path)
+    n, p, _ = data.preprocess(model1D)
+    r  = model1D.radius
+
+    # n has one row more than p: n[j] with p[j] is the state at r[j]
+    with torch.no_grad():
+        n_hat, p_hat = model.autoencode(n[:-1], p)
+    n     = ds.get_n(n)               # denormalise
+    n_hat = ds.get_n(n_hat)
+    p     = ds.get_phys(p, data)
+    if model.p_out:
+        p_hat = ds.get_phys(p_hat, data)
+
+    fig, axes = plt.subplots(2, figsize=(8, 8), sharex=True ,squeeze=False, layout='constrained')
+    axp, axn = axes.ravel()[0], axes.ravel()[1]
+    fig.get_layout_engine().set(h_pad=0, hspace=0)   # panels touch
+
+    # Physical state
+    p_names = ['ρ', 'T', 'ξ', 'A_V']
+    for k, param in enumerate(p_names):
+        color = f"C{k}"
+        axp.loglog(r[:-1], p[:,k], lw=1, color=color, label=param)
+        if model.p_out:
+            axp.loglog(r[:-1], p_hat[:,k], lw=1, ls='--', color=color)
+    axp.set_ylabel("Physical state")
+    axp.legend()
+
+    # Abundances
+    for k, spec in enumerate(specs):
+        idx = specs_dict[spec]
+        color = f"C{k}"
+        axn.loglog(r, n[:,idx], lw=1, color=color, label=spec) # Species over r
+        axn.loglog(r[:-1], n_hat[:,idx], lw=1, ls='--', color=color) # Autoencoded, same rows as p
+    axn.set_ylabel(r"Abundances relative to $H_2$")
+    axn.set_xlabel('radius [cm]')
+    axn.legend()
+
+    fig.suptitle(f"Identity loss of autoencoder on {test_path}")
     return fig, axes

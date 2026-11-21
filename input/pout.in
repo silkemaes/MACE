@@ -1,0 +1,29 @@
+## MODEL INPUT
+n_dim       = 468
+p_dim       = 4
+z_dim       = 8 # genuinely does not matter T_T
+
+ae_type     = simple
+p_out       = true
+atol        = 1e-5
+rtol        = 1e-2
+
+## DATASET INPUT
+paths       = paths_example.txt
+minmax      = minmax_1D.json
+nb_train    = 10
+nb_valid    = 3
+nb_test     = 0
+seed        = 0
+
+## TRAINING INPUT
+lr          = 1.e-3
+data_type   = 1DCSE
+nb_evol     = 16
+
+## LOSS INPUT
+losstype    = idn_pidn
+idn  = 1.
+pidn = .1 # nothing matters istg
+
+## RESULTS

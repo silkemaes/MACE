@@ -327,7 +327,7 @@ class Loss(nn.Module):
 ### Loss Setup ###
 ##################
 
-def setup_loss(losstypes:dict|str={'abs':1,'idn':1}, weights=None):
+def setup_loss(losstypes:dict[str,float]|str={'abs':1,'idn':1}, weights:list[float]|None=None):
     '''
     Sets up a loss with {types: weights} or types_like_this.
 

@@ -185,3 +185,13 @@ class MACE(nn.Module):
             n_e_hat.append(n)
             status.append(s)
         return torch.stack(n_e_hat, dim=1), torch.stack(status, dim=1)
+
+    def freeze(self, encoder:bool=False, decoder:bool=False, g:bool=False):
+        '''
+        Freeze (requires_grad=False) the weights of the chosen submodules.
+
+        self.freeze() with no args enables tracking on all submodules.
+        '''
+        for module, frozen in ((self.encoder, encoder), (self.decoder, decoder), (self.g, g)):
+            module.requires_grad_(not frozen)
+
