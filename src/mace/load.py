@@ -17,9 +17,8 @@ from pathlib import Path
 import torch
 import os
 
-
-
-def load_MACE(dir, epoch=-1, complain=True):
+def load_MACE(dir:str|Path, epoch:int=-1, complain:bool=True
+              ) -> tuple[mace.MACE, dict[str,loss.Loss], meta.Meta]:
     '''
     Loads a MACE model from weights. Loads losses.
 
@@ -45,7 +44,8 @@ def load_MACE(dir, epoch=-1, complain=True):
 
     return model, losses, metadata
 
-def load_model(dir, meta, epoch=-1):
+def load_model(dir:str|Path, meta:meta.Meta, epoch:int=-1
+               ) -> tuple[mace.MACE, int]:
     '''
     Initializes MACE model. Loads hyperparameters from meta.json.
     Overwrites MACE weights by those found in meta.json.
@@ -69,7 +69,7 @@ def load_model(dir, meta, epoch=-1):
     
     return model, num_params
 
-def overwrite_weights(model, dir, epoch=-1):
+def overwrite_weights(model:mace.MACE, dir:str|Path, epoch:int=-1):
     '''
     Overwrites a MACE model's weights by those in dir/nn/nn{epoch}.pt
     '''

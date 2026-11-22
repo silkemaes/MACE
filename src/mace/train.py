@@ -3,11 +3,29 @@ Training functionality for MACE. Supports local and integrated schemes,
 and autoencoder-only training (train_ae).
 
 Version 2.0
+
+# TODO: decrease validation frequency
 '''
 from time                   import time
 import torch
+from torch.utils.data       import DataLoader
+from torch.optim            import Optimizer
+from torch.optim.lr_scheduler import LRScheduler
+from src.mace.mace          import MACE
+from src.mace.loss          import Loss
+from src.mace.dataset       import ChemData
+type N_P_DT = tuple[torch.Tensor, torch.Tensor, torch.Tensor]
 
-def make_windows(n, p, dt, e):
+
+#####################
+### Full training ###
+#####################
+
+def make_windows(n:torch.Tensor, 
+                 p:torch.Tensor, 
+                 dt:torch.Tensor, 
+                 e: int
+                 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     '''
     Cut one 1D entry into windows with length e
 
@@ -35,20 +53,15 @@ def make_windows(n, p, dt, e):
     n_e    = n[1:].unfold(0, e, 1).transpose(1, 2)
     return n0, p_seq, dt_seq, n_e
 
-
-
-#####################
-### Full training ###
-#####################
-
-def run_epoch(model,
-              loader,
-              loss,
-              nb_evol,
-              device,
-              optimiser=None,
-              batch_size=None,
-              scheduler=None):
+def run_epoch(model:MACE,
+              loader:DataLoader[N_P_DT],
+              loss:Loss,
+              nb_evol:int,
+              device:torch.device,
+              optimiser:Optimizer|None=None,
+              batch_size:int|None=None,
+              scheduler:LRScheduler|None=None
+              ) -> tuple[int,int]:
     '''
     Single data pass over an epoch.
 
@@ -93,17 +106,18 @@ def run_epoch(model,
     loss.endEpoch()
     return nb_failed, nb_solves
 
-def train(model,
-          train_loader, valid_loader,
-          train_loss, valid_loss, 
-          optimiser, 
-          nb_epochs, 
-          nb_evol=1,
-          batch_size=None,
-          scheduler=None,
-          print_every=1):
+def train(model:MACE,
+          train_loader:DataLoader[N_P_DT], valid_loader:DataLoader[N_P_DT],
+          train_loss:Loss, valid_loss:Loss, 
+          optimiser:Optimizer, 
+          nb_epochs:int, 
+          nb_evol:int=1,
+          batch_size:int|None=None,
+          scheduler:LRScheduler|None=None,
+          print_every:int=1
+          ) -> int:
     '''
-    Training and validation loop.
+    Autoencoder and ODE joint training.
 
     - model:        MACE
     - train_loader: DataLoader yielding (n, p, dt) for one 1D model, batch_size = 1
@@ -121,7 +135,7 @@ def train(model,
     exit_code:      Summed nODE solver status. Should be 0.
     '''
     device = next(model.parameters()).device
-    exit_code = 0.
+    exit_code = 0
 
     tic = time()
     for epoch in range(nb_epochs):
@@ -158,13 +172,13 @@ def train(model,
 ### Autoencoder-only mode ###
 #############################
 
-def run_epoch_autoencoder(model,
-                          loader,
-                          loss,
-                          device,
-                          optimiser=None,
-                          batch_size=None,
-                          scheduler=None):
+def run_epoch_autoencoder(model:MACE,
+                          loader:DataLoader[N_P_DT],
+                          loss:Loss,
+                          device:torch.device,
+                          optimiser:Optimizer|None=None,
+                          batch_size:int|None=None,
+                          scheduler:LRScheduler|None=None):
     '''
     Single data pass over an epoch.
 
@@ -199,14 +213,14 @@ def run_epoch_autoencoder(model,
 
     loss.endEpoch()
 
-def train_autoencoder(model,
-                      train_loader, valid_loader,
-                      train_loss, valid_loss, 
-                      optimiser, 
-                      nb_epochs,
-                      batch_size=None,
-                      scheduler=None,
-                      print_every=1):
+def train_autoencoder(model:MACE,
+                      train_loader:DataLoader[N_P_DT], valid_loader:DataLoader[N_P_DT],
+                      train_loss:Loss, valid_loss:Loss, 
+                      optimiser:Optimizer, 
+                      nb_epochs:int,
+                      batch_size:int|None=None,
+                      scheduler:LRScheduler|None=None,
+                      print_every:int=1):
     '''
     Training and validation loop.
 
@@ -251,13 +265,13 @@ def train_autoencoder(model,
 ### Autoencoder training, full memory loading @CLaude###
 ########################################################
 
-def stack_rows(dataset):
+def stack_rows(dataset:ChemData) -> tuple[torch.Tensor, torch.Tensor]:
     '''
     Parse every 1D model of a dataset once and stack its rows.
 
     Row i of a 1D model is (n[i], p[i]); the last abundance row has no p and is dropped.
 
-    - dataset:  ChemData (e.g. CSEdata), item = (n (N, n_dim), p (N-1, p_dim), dt (N-1,))
+    - dataset:  ChemData (e.g. CseData), item = (n (N, n_dim), p (N-1, p_dim), dt (N-1,))
 
     Returns
     - n: (R, n_dim) abundances of all models
@@ -272,7 +286,13 @@ def stack_rows(dataset):
         ps.append(p)
     return torch.cat(ns), torch.cat(ps)
 
-def run_ae_epoch(model, n, p, loss, optimiser=None, batch_size=None, scheduler=None):
+def run_ae_epoch(model:MACE, 
+                 n:torch.Tensor, 
+                 p:torch.Tensor, 
+                 loss:Loss, 
+                 optimiser:Optimizer|None=None, 
+                 batch_size:int|None=None, 
+                 scheduler:LRScheduler|None=None):
     '''
     Single autoencoder-only pass over rows (n, p): no ODE solve.
 
@@ -301,14 +321,14 @@ def run_ae_epoch(model, n, p, loss, optimiser=None, batch_size=None, scheduler=N
 
     loss.endEpoch()
 
-def train_ae(model,
-             train_rows, valid_rows,
-             train_loss, valid_loss,
-             optimiser,
-             nb_epochs,
-             batch_size=64,
-             scheduler=None,
-             print_every=10):
+def train_ae(model:MACE,
+             train_rows:tuple[torch.Tensor, torch.Tensor], valid_rows:tuple[torch.Tensor, torch.Tensor],
+             train_loss:Loss, valid_loss:Loss,
+             optimiser:Optimizer,
+             nb_epochs:int,
+             batch_size:int|None=64,
+             scheduler:LRScheduler|None=None,
+             print_every:int=1):
     '''
     Autoencoder-only training (stage A of the training recipe in CLAUDE.md):
     rows shuffled over all 1D models, no ODE, so G is not trained.

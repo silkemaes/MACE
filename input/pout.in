@@ -20,6 +20,7 @@ seed        = 0
 lr          = 1.e-3
 data_type   = 1DCSE
 nb_evol     = 16
+nb_epochs   = 300
 
 ## LOSS INPUT
 losstype    = idn_pidn

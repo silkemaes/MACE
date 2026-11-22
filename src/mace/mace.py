@@ -4,6 +4,9 @@ MACE architecture.
 Reworked from the ground up with love :D
 
 Version 2.1
+
+TODO: Look into typeErrors for nODE
+TODO: Fix dt timesteppers
 '''
 
 import torch.nn             as nn
@@ -11,7 +14,7 @@ import torch
 import torchode             as to      # Lienen, M., & Günnemann, S. 2022, in The Symbiosis of Deep Learning and Differential Equations II, NeurIPS. https://openreview.net/forum?id=uiKVKTiUYB0
 import src.mace.autoencoder as ae
 import src.mace.latentODE   as lODE
-
+from typing import Literal
 
 
 class MACE(nn.Module):
@@ -33,15 +36,15 @@ class MACE(nn.Module):
     _solver: to.AutoDiffAdjoint
 
     def __init__(self, 
-                 n_dim,
-                 p_dim,
-                 z_dim,
-                 ae_type='simple',
-                 p_out= False,
-                 atol=1e-5,
-                 rtol=1e-2):
+                 n_dim:int,
+                 p_dim:int,
+                 z_dim:int,
+                 ae_type:Literal['simple','linear']='simple',
+                 p_out:bool= False,
+                 atol:float=1e-5,
+                 rtol:float=1e-2):
         '''
-        Main MACE architecture. Contains all updateable weights.
+        Beep Boop
         '''
         super().__init__()
         # Data dimensions
@@ -56,7 +59,7 @@ class MACE(nn.Module):
         # Neural ODE (self.g, self._term, self._solver)
         self.setNeuralODE(atol, rtol)
 
-    def setAutoencoder(self, ae_type):
+    def setAutoencoder(self, ae_type:str):
         self.encoder = ae.Encoder(input_dim=self.in_dim,
                                   latent_dim=self.z_dim,
                                   ae_type=ae_type)
@@ -64,7 +67,7 @@ class MACE(nn.Module):
                                   latent_dim=self.z_dim,
                                   ae_type=ae_type)
 
-    def encode(self, n, p):
+    def encode(self, n:torch.Tensor, p:torch.Tensor) -> torch.Tensor:
         '''
         Encode the real state (n)
 
@@ -78,7 +81,7 @@ class MACE(nn.Module):
         z = self.encoder(x)
         return z
 
-    def decode(self, z):
+    def decode(self, z:torch.Tensor) -> tuple[torch.Tensor, torch.Tensor|None]:
         '''
         Decode the latent state (z)
 
@@ -94,7 +97,7 @@ class MACE(nn.Module):
         p, n = x.split([self.p_dim, self.n_dim], dim=-1)
         return n, p
 
-    def autoencode(self, n, p):
+    def autoencode(self, n:torch.Tensor, p:torch.Tensor) -> tuple[torch.Tensor, torch.Tensor|None]:
         '''
         Auto-encodes n. Returns D(E(n)).
 
@@ -109,7 +112,7 @@ class MACE(nn.Module):
         n_hat, p_hat = self.decode(z)
         return n_hat, p_hat
 
-    def setNeuralODE(self, atol, rtol):
+    def setNeuralODE(self, atol:float, rtol:float):
         '''
         Build the latent ODE dz/dt = g(z)
 
@@ -130,7 +133,7 @@ class MACE(nn.Module):
         object.__setattr__(self, '_term', term)
         object.__setattr__(self, '_solver', solver)
 
-    def solveNeuralODE(self, z0, dt):
+    def solveNeuralODE(self, z0:torch.Tensor, dt:torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         '''
         Integrate the latent ODE from t = 0 to t = dt, independently per batch row.
 
@@ -141,14 +144,14 @@ class MACE(nn.Module):
         - z1:    (B, z_dim) latent states at t = dt
         - status:(B,)       torchode status codes (0 = success, see torchode.status_codes.Status)
         '''
-        problem = to.InitialValueProblem(y0=z0,
+        problem = to.InitialValueProblem(y0=z0, #type:ignore
                                          t_start=torch.zeros_like(dt), #type:ignore
-                                         t_end=dt,
-                                         t_eval=dt[:, None]) # TODO:remove this (will slightly break old models)
+                                         t_end=dt, #type:ignore
+                                         t_eval=dt[:, None]) #type:ignore #TODO:remove this (will slightly break old models)
         solution = self._solver.solve(problem, term=self._term)
         return solution.ys[:, -1], solution.status
 
-    def forward(self, n0, p, dt):
+    def forward(self, n0:torch.Tensor, p:torch.Tensor, dt:torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         '''
         Evolves n0 over a timestep dt using physical state p.
         
@@ -166,7 +169,7 @@ class MACE(nn.Module):
         n1, _ = self.decode(z1)
         return n1, z1, status
 
-    def rollout(self, n0, p_seq, dt_seq):
+    def rollout(self, n0:torch.Tensor, p_seq:torch.Tensor, dt_seq:torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         '''
         Repeatedly evolves a starting state n0 
         over a timestep dt, injecting p at every step e.

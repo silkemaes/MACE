@@ -5,7 +5,9 @@ Two different options exist:
     - G: ODE without neural network, but with adjustable/trainable elements (C, A, B)
     - Gnn: ODE with neural networks that constructs the tensors A and B from the output layer, starting from the physical input of the chemistry model.
 
-Version 2.0
+Version 2.1
+
+TODO: Fix neural ABC
 '''
 
 

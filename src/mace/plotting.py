@@ -15,6 +15,11 @@ rcParams.update({'figure.dpi': 200})
 import src.mace.utils           as utils
 import src.mace.dataset         as ds
 import src.mace.train           as train
+from src.mace.mace import MACE
+from src.mace.loss import Loss
+from src.mace.meta import Meta
+from pathlib import Path
+import os
 
 
 def plot_n(model1D, modeltype, n, n_hat, specs, step=False):
@@ -144,8 +149,8 @@ def plot_n(model1D, modeltype, n, n_hat, specs, step=False):
 
 
 
-def plot_hairs(model, meta, test_path, nb_evol:int, 
-               specs:list=['CO', 'H2O', 'OH', 'C2H2', 'C2H', 'CH3C5NH+', 'C10H2+'], 
+def plot_hairs(model:MACE, meta:Meta, test_path:str|Path, nb_evol:int, 
+               specs:list[str]=['CO', 'H2O', 'OH', 'C2H2', 'C2H', 'CH3C5NH+', 'C10H2+'], 
                interval:int=1):
     '''
     ZEvolves model for nb_evol steps on the test data at test_path. 
@@ -189,8 +194,8 @@ def plot_hairs(model, meta, test_path, nb_evol:int,
 
 
 
-def plot_identity(model, meta, test_path, 
-                 specs:list=['CO', 'H2O', 'OH', 'C2H2', 'C2H', 'CH3C5NH+', 'C10H2+']):
+def plot_identity(model:MACE, meta:Meta, test_path:str|Path, 
+                 specs:list[str]=['CO', 'H2O', 'OH', 'C2H2', 'C2H', 'CH3C5NH+', 'C10H2+']):
     '''
     Plots the autoencoded forms of the given specs. 
     
@@ -199,7 +204,7 @@ def plot_identity(model, meta, test_path,
     specs_dict = utils.get_specs(meta.data_type)
 
     # Not ds.get_test_data: we need the dataset object to denormalise p
-    data    = ds.get_data_class(meta)(meta=meta, train=False)
+    data    = ds.get_type_class(meta.data_type, ds.DATA_CLASSES)(meta=meta, train=False)
     model1D = data.load_model(test_path)
     n, p, _ = data.preprocess(model1D)
     r  = model1D.radius
@@ -222,7 +227,7 @@ def plot_identity(model, meta, test_path,
     for k, param in enumerate(p_names):
         color = f"C{k}"
         axp.loglog(r[:-1], p[:,k], lw=1, color=color, label=param)
-        if model.p_out:
+        if model.p_out and (p_hat is not None):
             axp.loglog(r[:-1], p_hat[:,k], lw=1, ls='--', color=color)
     axp.set_ylabel("Physical state")
     axp.legend()
@@ -242,8 +247,8 @@ def plot_identity(model, meta, test_path,
 
 
 
-def diagnose(model, meta, test_path, nb_evol:int, 
-             specs:list=['CO', 'H2O', 'OH', 'C2H2', 'C2H', 'CH3C5NH+', 'C10H2+'], 
+def diagnose(model:MACE, meta:Meta, test_path:str|Path, nb_evol:int, 
+             specs:list[str]=['CO', 'H2O', 'OH', 'C2H2', 'C2H', 'CH3C5NH+', 'C10H2+'], 
              interval:int=1):
     # Ensure model folder exists
     if not hasattr(meta, 'path'):
@@ -259,15 +264,15 @@ def diagnose(model, meta, test_path, nb_evol:int,
     n_evol = ds.get_n(n_evol)
     fig, axes = plot_n(model1D, '1DCSE', n_real, n_evol, specs=specs, step=False)
     fig.suptitle(f'MACE v2, {test_path}', y=1.0)
-    fig.savefig(meta.path+'/figs/preds.png')
+    fig.savefig(os.path.join(meta.path,'figs/preds.png'))
     plt.show()
 
     # HAIRPLOT
     fig, axes = plot_hairs(model, meta, test_path, nb_evol, specs, interval)
-    fig.savefig(meta.path+'/figs/hairs.png')
+    fig.savefig(os.path.join(meta.path,'figs/hairs.png'))
     plt.show()
 
     # IDENTITY PLOT
     fig, axes = plot_identity(model, meta, test_path, specs)
-    fig.savefig(meta.path+'/figs/identity.png')
+    fig.savefig(os.path.join(meta.path,'figs/identity.png'))
     plt.show()

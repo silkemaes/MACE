@@ -9,12 +9,18 @@ Adding meta parameter:
 - add in .setMeta()
 - add in .makeMeta() OR .updateMeta()
 - add in .print() [optional]
+
 Version 2.1
 '''
 import json
 import os
+from pathlib import Path
 
-dt_fracts = {4 : 0.296, 5: 0.269,8: 0.221,10: 0.175,12: 0.146,16: 0.117,20: 0.09,25: 0.078,32: 0.062,48: 0.043,64: 0.033,128: 0.017}
+type FileLike_in = str|Path|None
+type DirLike_json = str|Path|None
+
+dt_fracts = {4:0.296, 5:0.269, 8:0.221, 10:0.175, 12:0.146, 16:0.117, 
+             20:0.09, 25:0.078, 32:0.062, 48:0.043, 64:0.033, 128:0.017}
 
 class Meta():
     '''
@@ -39,8 +45,8 @@ class Meta():
     - ini_epochs, nb_epochs, data_type
     '''
     # Setup
-    def __init__(self, infile=None, meta_path=None, 
-                 name=None, complain=True):
+    def __init__(self, infile:FileLike_in=None, meta_path:DirLike_json=None, 
+                 name:str|None=None, complain=True):
         self.complain = complain
         self.name = name
 
@@ -53,9 +59,10 @@ class Meta():
         else:
             raise ValueError('Needs a meta_path or infile_in.')
 
-    def loadInfile(self, path, name):
+    def loadInfile(self, path:str|Path, name:str|None):
         '''
-        Setup '''
+        Setup, dont call
+        '''
         self.file = path
 
         if name is not None:
@@ -81,7 +88,7 @@ class Meta():
 
         self.setMeta()
 
-    def loadJson(self, path):
+    def loadJson(self, path:str|Path):
         '''
         Load an existing meta.json into self.meta.
 
@@ -95,7 +102,7 @@ class Meta():
         self.meta['name'] = self.name
         self.file = self.meta.get('inputfile')
 
-        self.path = path
+        self.path = Path(path)
         self.inputfile = self.meta | self.meta.get('lossweights', {})
         self.setMeta()
 
@@ -133,7 +140,7 @@ class Meta():
             lossweight   = float(self._opt(ltype, 1, True))
             self.lossweights[ltype] = lossweight
 
-    def _req(self, key):
+    def _req(self, key:str):
         '''
         Find required key in input, error if missing.
         '''
@@ -141,7 +148,7 @@ class Meta():
             return self.inputfile[key]
         raise KeyError(f"Missing value for required key {key}.")
 
-    def _opt(self, key, default, complain=False):
+    def _opt(self, key:str, default, complain:bool=False):
         '''
         Find optional key in input, go default and complain if missing.'''
         if key in self.inputfile.keys():
@@ -171,13 +178,13 @@ class Meta():
         print(f'  Loss Weights: {self.lossweights}')
         print('')
         
-    def makeMeta(self, path):
+    def makeMeta(self, path:str|Path):
         '''
         Makes a new meta.json.
         Saves initial metadata to path/meta.json.
         Overwrites existing meta.json.
         '''
-        self.path = path
+        self.path = Path(path)
         self.meta ={'inputfile' : self.file,
                     'name'      : self.name,
                     'n_dim'     : self.n_dim,
@@ -205,7 +212,7 @@ class Meta():
         with open(os.path.join(path, 'meta.json'), "w") as outfile:
             outfile.write(json_object)
         
-    def updateMeta(self, path=None, **kwargs):
+    def updateMeta(self, path:DirLike_json=None, **kwargs):
         '''
         Update metadata with any with passed kwargs.
         

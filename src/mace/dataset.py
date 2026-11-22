@@ -6,8 +6,8 @@ Contains:
     Classes:
         - ChemData: Dataset class for chemical data to prepare the dataset for training and validating the emulator
         - ChemModel: Class to load a model
-        - PhantomData + Phantommod: Dataset and model class for Phantom models
-        - CSEdata + CSEmod: Dataset and model class for 1D CSE models
+        - PhantomData + PhantomMod: Dataset and model class for Phantom models
+        - CseData + CseMod: Dataset and model class for 1D CSE models
     
     Functions:
         - get_data: prepare the data for training and validating the emulator, using the PyTorch-specific dataloader
@@ -17,6 +17,12 @@ Contains:
 
         NOTE: for any new type of datasets, define a new subclass of ChemData and ChemModel to account 
         for how it should be processed
+
+Version 2.1
+
+TODO: Why are we preprocessing on iterations???
+TODO: Convert to binary storage
+TODO: Shuffle buffer for faster loading and mixing
 '''
 import json
 import os
@@ -26,9 +32,11 @@ import torch
 import math
 from torch.utils.data import Dataset, DataLoader
 import src.mace.utils as utils
+from src.mace.meta import Meta
 from pathlib import Path
 
 specs_dict = utils.get_specs()
+type N_P_DT = tuple[torch.Tensor, torch.Tensor, torch.Tensor]
 
 ### Base class for models and datasets
 
@@ -166,7 +174,7 @@ class ChemData(Dataset):
         return len(self.path)
 
     def __getitem__(self, idx):
-        return self.preprocess(self.load_model(self.path[idx]))
+        return self.preprocess(self.load_model(self.path[idx])) # TODO: This needs to go. Like. Wow.
 
     def load_model(self, path): raise NotImplementedError('load_model not implemented in Data subclass')
 
@@ -174,7 +182,7 @@ class ChemData(Dataset):
 
 ### ----------------------- 1D CSE models ----------------------- ###
 
-class CSEdata(ChemData):
+class CseData(ChemData):
     '''
     1D CSE models
     '''
@@ -184,9 +192,9 @@ class CSEdata(ChemData):
     
     def load_model(self, path):
         if self.verbose: print('Loading 1D CSE model from', path)
-        return CSEmod(path)
+        return CseMod(path)
 
-class CSEmod(ChemModel):
+class CseMod(ChemModel):
     '''
     Class to load a 1D CSE model, calculated with the classical fortan code.
     For more info on this model, see https://github.com/MarieVdS/rate22_cse_code.
@@ -309,7 +317,7 @@ class CSEmod(ChemModel):
 
 ##--------------------- Phantom+krome models -------------------- ###
 
-class Phantommod(ChemModel):
+class PhantomMod(ChemModel):
     '''
     Class to load a phantom+krome wind model, calculated using Krome on particle paths from a phantom simulation.
     One output file contains physical parameters and abundances for one particle at all time steps.
@@ -370,18 +378,22 @@ class PhantomData(ChemData):
     
     def load_model(self, path):
         if self.verbose: print('Loading phantom+krome model from:', path)
-        return Phantommod(path)
+        return PhantomMod(path)
 
 ## ---------------------- common functions ---------------------- ###
 
-DATA_CLASSES = {'1DCSE': CSEdata,'Phantom': PhantomData}
+DATA_CLASSES = {'1DCSE': CseData,'Phantom': PhantomData}
+MODEL_CLASSES = {'1DCSE': CseMod,'Phantom': PhantomMod}
 
-def get_data_class(meta):
-    if meta.data_type not in DATA_CLASSES:
-        print(f'Error: data_type {meta.data_type} not recognised (Phantom or 1DCSE), defaulting to 1DCSE')
-    return DATA_CLASSES.get(meta.data_type, CSEdata)
+def get_type_class(type_:str, classes:dict):
+    if type_ not in classes:
+        backup = list(classes.keys())[0]
+        print(f'Error: data_type {type_} not in defaults ({classes.keys()}), defaulting to {backup}')
+        type_ = backup
+    return classes.get(type_, CseData)
 
-def get_data(meta, batch_size, kwargs, verbose=True):
+def get_data(meta:Meta, batch_size:int, kwargs:dict, verbose:bool=True
+             ) -> tuple[ChemData, ChemData, DataLoader[N_P_DT], DataLoader[N_P_DT]]:
     '''
     Prepare the data for training and validating the emulator.
 
@@ -396,7 +408,7 @@ def get_data(meta, batch_size, kwargs, verbose=True):
 
     kwargs = {'num_workers': 1, 'pin_memory': True} for the DataLoader        
     '''
-    data_class = get_data_class(meta)
+    data_class = get_type_class(meta.data_type, DATA_CLASSES)
     train = data_class(meta=meta,
                        train=True,
                        verbose=verbose
@@ -426,8 +438,8 @@ def get_data(meta, batch_size, kwargs, verbose=True):
 
     return train, valid, data_loader, valid_loader
 
-def get_test_data(testpath,
-                  meta):
+def get_test_data(testpath, meta:Meta
+                  )-> tuple[ChemModel, N_P_DT, dict[str, str | float]]:
     '''
     Get the data to test a 1D model, given a path to the test data and metadata of the model.
     The specifics of the test model are stored in the 'name' dictionary.
@@ -436,13 +448,13 @@ def get_test_data(testpath,
         - testpath [str]: path of the 1D test model
         - meta [Meta]: metadata of the model
     '''
-    data_class = get_data_class(meta)
+    data_class = get_type_class(meta.data_type, DATA_CLASSES)
     data = data_class(meta=meta,
                       train=False
                       )
     mod = data.load_model(testpath)
     name = {'path': testpath, 'name': mod.name}
-    if isinstance(mod, CSEmod):
+    if isinstance(mod, CseMod):
         name.update(Tstar=mod.Tstar, Mdot=mod.Mdot,v=mod.v,eps=mod.eps)
 
     return mod, data.preprocess(mod), name
@@ -467,3 +479,9 @@ def get_phys(p_transf, dataset):
                                     dataset.maxs[j])
 
     return p
+
+'''
+def make_binary_cache(path, data_type:str):
+    chemModel = get_type_class(data_type, MODEL_CLASSES)
+    model = chemModel(path)
+    '''

@@ -14,18 +14,22 @@ from time                   import time
 import numpy                as np
 import matplotlib.pyplot    as plt
 import torch
+from torch.utils.data       import DataLoader
 import math
 
 import src.mace.dataset         as ds
+import src.mace.mace            as mace
 import src.mace.utils           as utils
 import src.mace.loss            as loss
 import src.mace.train           as train
 from src.mace.plotting          import plot_n
+type N_P_DT = tuple[torch.Tensor, torch.Tensor, torch.Tensor]
 
 ## Im fairly certain I can make this outta recycled validation code
 ## fosho
 
-def testModel(model, loader):
+def testModel(model:mace.MACE, loader:DataLoader[N_P_DT]
+              ) -> tuple[dict[str, float], dict[str, float]]:
     '''
     Tests a model against given data.
 
