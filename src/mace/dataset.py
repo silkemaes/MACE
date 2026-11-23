@@ -495,14 +495,6 @@ def get_phys(p_transf, dataset):
 
     return p
 
-def clear_cache(target:Path):
-    for item in target.iterdir():
-        if item.is_dir():
-            clear_cache(item)
-        else:
-            item.unlink()
-    target.rmdir()
-
 def save_as_binary(model:ChemModel, target:Path):
     dt,n,p = model.split_in_0D()
     target.mkdir(exist_ok=True)
@@ -511,23 +503,69 @@ def save_as_binary(model:ChemModel, target:Path):
     np.save(target/'dt.npy', dt)
 
 def make_binary_cache(path:str|Path, data_type:str, 
-                      empty_cache:bool=True, verbose:bool=True):
+                      force:bool=False, verbose:bool=True) -> Path:
+    '''
+    Goes over every model within path/ and converts it to a binary file. Stores the binary files in path/../../cache/.
     
+    If force is false, tries to find old cached models and reuses them.
+    
+    - path:         Path to model set. Example: MACE/data/train/ caches to MACE/cache/train/
+    - data_type:    '1DCSE' or 'Phantom'
+    - force:        Force full cache reconstruction
+    - verbose:      Complain. A lot.
+
+    Returns:
+    - target:       Cache path
+    '''
+
+    # Final destination
     path=Path(path)
-    target = path.parent.parent /"cache" /path.parent.name /"temp"
-    if target.is_dir():
-        if empty_cache: clear_cache(target)
-        else:           warnings.warn(f'Binary cache already exists, use empty_cache for clean override.', RuntimeWarning)
-    target.mkdir(exist_ok=True)
+    target = path.parent.parent/"cache"/path.name
+    target.parent.mkdir(parents=True, exist_ok=True)
 
+    # Check existing cache
+    existing = set()
+    if target.is_dir() and not force:
+        existing = {m.name for m in target.iterdir() if m.is_dir()}
+        if verbose: print(f'Binary cache already exists at {target}, force=True for clean override.')
+
+    # Staging storage
+    tmp = target.parent/f'{target.name}.tmp'
+    if tmp.is_dir():
+        warnings.warn(f'Previous broken cache found at {tmp}, cleaning up.', RuntimeWarning)
+        shutil.rmtree(tmp)
+    tmp.mkdir()
+
+    # Iterate over models
     chemModel = get_type_class(data_type, MODEL_CLASSES)
-    for d in [d_ for d_ in Path(path).iterdir() if d_.is_dir()]:
+    for d in [d_ for d_ in path.iterdir() if d_.is_dir()]:
         name = d.name
-        if name == 'temp': continue
 
+        # Copy existing
+        if (not force) and name in existing:
+            shutil.copytree(target/name, tmp/name)
+            if verbose: print(f"Finished copying {name}")
+            continue
+
+        # Make new cached
         if verbose: print(f"Converting {name} into {target}", end='\r')
-        model = chemModel(d)
-        save_as_binary(model, target/name)
-        if verbose: print(f"Finished {name}")
-        
-    
+        try:
+            # Convert and store
+            model = chemModel(d)
+            save_as_binary(model, tmp/name)
+            if verbose: print(f"Finished converting {name}")
+        except Exception as err:
+            # Delete partial conversion and log
+            shutil.rmtree(tmp/name, ignore_errors=True)
+            if verbose: print(f"Failed converting {name} with exit code {err}")
+
+    # Remove target
+    if target.is_dir():
+        if verbose: print(f'Cleaning up {target}')
+        shutil.rmtree(target)
+        if verbose: print('Finished cleanup.')
+
+    # Rename target.tmp to target
+    tmp.rename(target)
+
+    return target
