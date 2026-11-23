@@ -24,19 +24,25 @@ TODO: Why are we preprocessing on iterations???
 TODO: Convert to binary storage
 TODO: Shuffle buffer for faster loading and mixing
 '''
+# Navigation
 import json
 import os
+from pathlib import Path
+import warnings
+import shutil
 
+# Math
 import numpy as np
 import torch
 import math
 from torch.utils.data import Dataset, DataLoader
 import src.mace.utils as utils
 from src.mace.meta import Meta
-from pathlib import Path
+
+# Typechecker
+type N_P_DT = tuple[torch.Tensor, torch.Tensor, torch.Tensor]
 
 specs_dict = utils.get_specs()
-type N_P_DT = tuple[torch.Tensor, torch.Tensor, torch.Tensor]
 
 ### Base class for models and datasets
 
@@ -45,6 +51,15 @@ class ChemModel:
     Basic class to load chemical model: time, abundances, and physical parameters (rho, T, Xi and AV)
     For a new type of model, define a new subclass with its own loading method.
     '''
+    time: np.ndarray
+    dens: np.ndarray
+    temp: np.ndarray
+    xi: np.ndarray
+    Av: np.ndarray
+    n: np.ndarray
+    path: str
+    name: str
+    def __init__(self, path:str|Path): raise NotImplementedError("Subclass ChemModel")
     def __len__(self):     return len(self.time)
     def get_time(self):    return self.time
     def get_phys(self):    return self.dens, self.temp, self.xi, self.Av
@@ -382,15 +397,15 @@ class PhantomData(ChemData):
 
 ## ---------------------- common functions ---------------------- ###
 
-DATA_CLASSES = {'1DCSE': CseData,'Phantom': PhantomData}
-MODEL_CLASSES = {'1DCSE': CseMod,'Phantom': PhantomMod}
+DATA_CLASSES:dict[str,type[ChemData]] = {'1DCSE': CseData,'Phantom': PhantomData}
+MODEL_CLASSES:dict[str,type[ChemModel]] = {'1DCSE': CseMod,'Phantom': PhantomMod}
 
-def get_type_class(type_:str, classes:dict):
+def get_type_class[T](type_: str, classes: dict[str, type[T]]) -> type[T]:
     if type_ not in classes:
-        backup = list(classes.keys())[0]
-        print(f'Error: data_type {type_} not in defaults ({classes.keys()}), defaulting to {backup}')
+        backup = next(iter(classes))
+        warnings.warn(f'Error: data_type {type_} not in defaults ({classes.keys()}), defaulting to {backup}', RuntimeWarning)
         type_ = backup
-    return classes.get(type_, CseData)
+    return classes[type_]
 
 def get_data(meta:Meta, batch_size:int, kwargs:dict, verbose:bool=True
              ) -> tuple[ChemData, ChemData, DataLoader[N_P_DT], DataLoader[N_P_DT]]:
@@ -480,8 +495,39 @@ def get_phys(p_transf, dataset):
 
     return p
 
-'''
-def make_binary_cache(path, data_type:str):
+def clear_cache(target:Path):
+    for item in target.iterdir():
+        if item.is_dir():
+            clear_cache(item)
+        else:
+            item.unlink()
+    target.rmdir()
+
+def save_as_binary(model:ChemModel, target:Path):
+    dt,n,p = model.split_in_0D()
+    target.mkdir(exist_ok=True)
+    np.save(target/'n.npy', n)
+    np.save(target/'p.npy', p)
+    np.save(target/'dt.npy', dt)
+
+def make_binary_cache(path:str|Path, data_type:str, 
+                      empty_cache:bool=True, verbose:bool=True):
+    
+    path=Path(path)
+    target = path.parent.parent /"cache" /path.parent.name /"temp"
+    if target.is_dir():
+        if empty_cache: clear_cache(target)
+        else:           warnings.warn(f'Binary cache already exists, use empty_cache for clean override.', RuntimeWarning)
+    target.mkdir(exist_ok=True)
+
     chemModel = get_type_class(data_type, MODEL_CLASSES)
-    model = chemModel(path)
-    '''
+    for d in [d_ for d_ in Path(path).iterdir() if d_.is_dir()]:
+        name = d.name
+        if name == 'temp': continue
+
+        if verbose: print(f"Converting {name} into {target}", end='\r')
+        model = chemModel(d)
+        save_as_binary(model, target/name)
+        if verbose: print(f"Finished {name}")
+        
+    
