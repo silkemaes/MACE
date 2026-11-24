@@ -89,6 +89,14 @@ class ChemModel:
         return delta_t.astype(np.float64), n_0D.astype(np.float64), p.T.astype(
             np.float64)
 
+    @staticmethod
+    def discover(path:Path) -> list[Path]:
+        '''
+        Returns all plausible chemical models in path.
+        '''
+        raise NotImplementedError("Subclass ChemModel")
+
+
 class ChemData(Dataset):
     ''' basic class to initialise the dataset for PyTorch.
         subclasses for each type of datasets are defined after this class.
@@ -329,6 +337,12 @@ class CseMod(ChemModel):
 
         return self.Mdot, self.v, self.Tstar, self.eps
 
+    @staticmethod
+    def discover(path:Path) -> list[Path]:
+        '''
+        Returns all children of path, assumed to be models.
+        '''
+        return [d_ for d_ in path.iterdir() if d_.is_dir()]
 
 ##--------------------- Phantom+krome models -------------------- ###
 
@@ -381,6 +395,14 @@ class PhantomMod(ChemModel):
                     except ValueError:
                         print(f'Error: could not convert line to float: {line.strip()} in file {self.path}')
         return np.array(data)
+
+    @staticmethod
+    def discover(path:Path) -> list[Path]:
+        '''
+        Returns all files ending in .chem within path.
+        '''
+        return [d_ for d_ in path.iterdir() if d_.suffix == '.chem' and d_.is_file()]
+
 
 class PhantomData(ChemData):
     '''
@@ -495,15 +517,51 @@ def get_phys(p_transf, dataset):
 
     return p
 
-def save_as_binary(model:ChemModel, target:Path):
+def dir_size(dir:Path):
+    '''
+    Returns size of dir.
+    '''
+    size = 0
+    for ele in os.scandir(dir):
+        size+=os.stat(ele).st_size
+    return size
+
+
+def update_cache_meta(meta, n, p, dt, dir):
+    '''
+    Updates metadata with file bounds and data size.
+    '''
+    meta['max'] = np.maximum(meta['max'], [n.max(), p.max(), dt.max()]).tolist()
+    meta['min'] = np.minimum(meta["min"], [n.min(), p.min(), dt.min()]).tolist()
+    meta['data_sizes'][dir.name] = dir_size(dir)
+
+def save_model_as_binary(model:ChemModel, dst:Path, meta:dict):
+    '''
+    Saves a chemical model's training attributes as binaries in dst.
+    Updates metadata with file bounds and data size.
+    '''
     dt,n,p = model.split_in_0D()
-    target.mkdir(exist_ok=True)
-    np.save(target/'n.npy', n)
-    np.save(target/'p.npy', p)
-    np.save(target/'dt.npy', dt)
+    dst.mkdir(exist_ok=True)
+
+    np.save(dst/'n.npy', n)
+    np.save(dst/'p.npy', p)
+    np.save(dst/'dt.npy', dt)
+    update_cache_meta(meta, n, p, dt, dst)
+
+def copy_binary_from_binary(src:Path, dst:Path, meta:dict):
+    '''
+    Copy a chemical model's cache from src to dst.
+    Updates metadata with file bounds and data size.
+    '''
+    shutil.copytree(src, dst)
+    
+    n = np.load(dst/'n.npy')
+    p = np.load(dst/'p.npy')
+    dt = np.load(dst/'dt.npy')
+    update_cache_meta(meta, n, p, dt, dst)
 
 def make_binary_cache(path:str|Path, data_type:str, 
-                      force:bool=False, verbose:bool=True) -> Path:
+                      force:bool=False, safe:bool=False, verbose:bool=True) -> tuple[Path, dict]:
     '''
     Goes over every model within path/ and converts it to a binary file. Stores the binary files in path/../../cache/.
     
@@ -512,25 +570,34 @@ def make_binary_cache(path:str|Path, data_type:str,
     - path:         Path to model set. Example: MACE/data/train/ caches to MACE/cache/train/
     - data_type:    '1DCSE' or 'Phantom'
     - force:        Force full cache reconstruction
+    - safe:         Abort if a file fails
     - verbose:      Complain. A lot.
 
     Returns:
-    - target:       Cache path
+    - cache:        Cache path
+    - meta:         Data boundaries and model sizes
     '''
+    # Cache metadata (boundarie, namess and file sizes)
+    meta = {}
+    meta["max"] = [0,0,0], 
+    meta["min"] = [np.inf, np.inf, np.inf]
+    meta["data_sizes"] = {}
 
     # Final destination
     path=Path(path)
-    target = path.parent.parent/"cache"/path.name
-    target.parent.mkdir(parents=True, exist_ok=True)
+    cache = Path(os.getcwd())/"cache"/path.name
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    if verbose: print(f"Caching to {cache}")
 
     # Check existing cache
     existing = set()
-    if target.is_dir() and not force:
-        existing = {m.name for m in target.iterdir() if m.is_dir()}
-        if verbose: print(f'Binary cache already exists at {target}, force=True for clean override.')
+    if cache.is_dir() and not force:
+        existing = {m.name for m in cache.iterdir() if m.is_dir()}
+        if verbose: print(f'Binary cache already exists at {cache}, force=True for clean cache.')
+    print(existing)
 
     # Staging storage
-    tmp = target.parent/f'{target.name}.tmp'
+    tmp = cache.parent/f'{cache.name}.tmp'
     if tmp.is_dir():
         warnings.warn(f'Previous broken cache found at {tmp}, cleaning up.', RuntimeWarning)
         shutil.rmtree(tmp)
@@ -538,34 +605,44 @@ def make_binary_cache(path:str|Path, data_type:str,
 
     # Iterate over models
     chemModel = get_type_class(data_type, MODEL_CLASSES)
-    for d in [d_ for d_ in path.iterdir() if d_.is_dir()]:
-        name = d.name
+    if not chemModel.discover(path): raise FileNotFoundError(f'No models found at {path}')
+    for d in chemModel.discover(path):
+        name = d.relative_to(path)
 
         # Copy existing
-        if (not force) and name in existing:
-            shutil.copytree(target/name, tmp/name)
+        if (not force) and str(name) in existing:
+            copy_binary_from_binary(cache/name, tmp/name, meta)
             if verbose: print(f"Finished copying {name}")
             continue
 
         # Make new cached
-        if verbose: print(f"Converting {name} into {target}", end='\r')
+        if verbose: print(f"Converting {name} ...", end='\r')
         try:
-            # Convert and store
             model = chemModel(d)
-            save_as_binary(model, tmp/name)
+            save_model_as_binary(model, tmp/name, meta)
             if verbose: print(f"Finished converting {name}")
         except Exception as err:
+
             # Delete partial conversion and log
             shutil.rmtree(tmp/name, ignore_errors=True)
             if verbose: print(f"Failed converting {name} with exit code {err}")
+            if safe:
+                # Undo whole operation and abort
+                shutil.rmtree(tmp, ignore_errors=True)
+                raise RuntimeError(f'Failed on {path}') from err
 
-    # Remove target
-    if target.is_dir():
-        if verbose: print(f'Cleaning up {target}')
-        shutil.rmtree(target)
+    # Remove cache
+    if cache.is_dir():
+        if verbose: print(f'Cleaning up {cache}')
+        shutil.rmtree(cache)
         if verbose: print('Finished cleanup.')
 
-    # Rename target.tmp to target
-    tmp.rename(target)
+    # Rename cache.tmp to cache
+    tmp.rename(cache)
 
-    return target
+    # Add metadata to cache
+    json_object = json.dumps(meta, indent=4)
+    with open(cache/'cache.json', "w") as outfile:
+        outfile.write(json_object)
+
+    return cache, meta
